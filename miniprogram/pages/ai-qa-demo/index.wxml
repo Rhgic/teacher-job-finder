@@ -1,0 +1,66 @@
+<view class="page">
+  <view class="hero-card qa-hero">
+    <view class="hero-kicker">RAG 公告问答</view>
+    <view class="hero-title">只根据公告回答</view>
+    <view class="hero-subtitle">先检索公告片段，再基于公告回答；公告没写就说未提及。</view>
+  </view>
+
+  <view class="card flow-card">
+    <view class="card-title">这页演示什么</view>
+    <view class="flow-grid">
+      <view class="flow-item">
+        <view class="flow-num">1</view>
+        <view class="flow-name">公告切片</view>
+      </view>
+      <view class="flow-item">
+        <view class="flow-num">2</view>
+        <view class="flow-name">向量检索</view>
+      </view>
+      <view class="flow-item">
+        <view class="flow-num">3</view>
+        <view class="flow-name">带来源回答</view>
+      </view>
+    </view>
+  </view>
+
+  <view class="card">
+    <view class="card-title">演示问题</view>
+    <input class="question-input" value="{{question}}" placeholder="这个岗位有编制吗？" bindinput="onQuestionInput" />
+    <view class="button-row">
+      <button class="ghost-btn half-btn" bindtap="runDemoQuestion">一键演示</button>
+      <button class="primary-btn half-btn" loading="{{loading}}" bindtap="submitQuestion">提问</button>
+    </view>
+  </view>
+
+  <view class="card">
+    <view class="card-title">可以问的问题</view>
+    <view class="muted question-examples">报名需要哪些材料？这个岗位有编制吗？截止到几号？</view>
+  </view>
+
+  <view wx:if="{{errorText}}" class="card warn-card">
+    <view class="card-title warn-title">查询失败</view>
+    <view class="muted">{{errorText}}</view>
+  </view>
+
+  <view wx:if="{{answer}}" class="card answer-card">
+    <view class="answer-head">
+      <view class="card-title">{{answerTitle}}</view>
+      <view class="pill green">{{answerPillText}}</view>
+    </view>
+    <view class="answer-text">{{answer}}</view>
+    <view class="answer-note">信息由 AI 依据公告整理，请以公告原文为准。</view>
+  </view>
+
+  <view wx:if="{{hasSources}}" class="card">
+    <view class="card-title">依据以下公告</view>
+    <view wx:for="{{sources}}" wx:key="id" class="source-item">
+      <view class="source-title">{{item.title}}</view>
+      <view class="source-snippet">{{item.snippet}}</view>
+    </view>
+  </view>
+
+  <view class="card notice-card">
+    <view class="card-title">面试时要如实说</view>
+    <view class="muted">当前本地测试版先用占位 embedding 和占位生成逻辑跑通 RAG 链路，真实上线可以接 DeepSeek、智谱或正式向量模型。</view>
+  </view>
+</view>

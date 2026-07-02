@@ -1,0 +1,135 @@
+.qa-hero {
+  background: linear-gradient(132deg, #ffffff 0%, #eef7f2 52%, #f4efe5 100%);
+}
+
+.card-title {
+  color: #15231f;
+  font-size: 28rpx;
+  font-weight: 850;
+}
+
+.flow-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12rpx;
+  margin-top: 18rpx;
+}
+
+.flow-item {
+  min-width: 0;
+  padding: 16rpx 12rpx;
+  border-radius: 10rpx;
+  background: #f6faf7;
+  border: 1rpx solid #e0ebe4;
+}
+
+.flow-num {
+  width: 34rpx;
+  height: 34rpx;
+  line-height: 34rpx;
+  border-radius: 8rpx;
+  background: #14604f;
+  color: #ffffff;
+  font-size: 20rpx;
+  font-weight: 900;
+  text-align: center;
+}
+
+.flow-name {
+  margin-top: 12rpx;
+  color: #15231f;
+  font-size: 23rpx;
+  font-weight: 850;
+  line-height: 1.35;
+}
+
+.question-input {
+  height: 82rpx;
+  margin-top: 16rpx;
+  padding: 0 20rpx;
+  border-radius: 10rpx;
+  background: #f8faf8;
+  border: 1rpx solid #dfe6df;
+  color: #15231f;
+  font-size: 26rpx;
+  box-sizing: border-box;
+}
+
+.button-row {
+  display: flex;
+  gap: 16rpx;
+  margin-top: 18rpx;
+}
+
+.half-btn {
+  flex: 1;
+  min-width: 0;
+  height: 68rpx;
+  margin: 0;
+  padding: 0;
+  font-size: 24rpx;
+}
+
+.question-examples {
+  margin-top: 10rpx;
+  line-height: 1.6;
+}
+
+.warn-card {
+  background: #fff8ee;
+  border-color: #f4ddb9;
+}
+
+.warn-title {
+  color: #a25713;
+}
+
+.answer-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18rpx;
+}
+
+.answer-text {
+  margin-top: 16rpx;
+  color: #30413a;
+  font-size: 26rpx;
+  line-height: 1.65;
+}
+
+.answer-note {
+  margin-top: 16rpx;
+  padding-top: 14rpx;
+  border-top: 1rpx solid rgba(223, 230, 223, 0.9);
+  color: #66736d;
+  font-size: 22rpx;
+  line-height: 1.5;
+}
+
+.source-item {
+  padding: 18rpx 0;
+  border-top: 1rpx solid #edf1ee;
+}
+
+.source-title {
+  color: #15231f;
+  font-size: 25rpx;
+  font-weight: 800;
+  line-height: 1.35;
+}
+
+.source-snippet {
+  margin-top: 12rpx;
+  padding: 16rpx;
+  border-radius: 10rpx;
+  background: #f6faf7;
+  color: #52645d;
+  font-size: 23rpx;
+  line-height: 1.55;
+  word-break: break-all;
+}
+
+.notice-card {
+  background: #f7fbf8;
+}

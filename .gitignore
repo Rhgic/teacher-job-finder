@@ -1,0 +1,36 @@
+.DS_Store
+__pycache__/
+*.py[cod]
+.venv*/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Local secrets and runtime data
+.env
+.env.*
+!.env.example
+teacher_jobs.db
+*.db
+*.db-*
+
+# User uploads / generated private materials
+uploads/
+job_apply_package/
+*_优化版.html
+*_优化版.json
+
+# WeChat developer local files
+miniprogram/project.private.config.json
+miniprogram/preview-qrcode.png
+miniprogram/preview-info.json
+
+# Private process notes, not needed in the public repo
+CLAUDE_*.md
+给Claude*.md
+Demo_*.md
+正式上线执行清单.md
+miniprogram/上线前必读.md
+miniprogram/审核前验收清单.md
+miniprogram/微信后台填写清单.md
+miniprogram/醒来后上线待办.md

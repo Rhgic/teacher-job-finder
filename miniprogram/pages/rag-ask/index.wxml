@@ -1,0 +1,54 @@
+<view class="page qa-page">
+  <view class="hero-card qa-hero">
+    <view class="hero-kicker">RAG 公告问答</view>
+    <view class="hero-title">只根据公告回答</view>
+    <view class="hero-subtitle">先检索公告片段，再基于片段回答；公告没写就说未提及。</view>
+  </view>
+
+  <view class="rag-flow-card">
+    <view class="flow-title">这页主要演示什么</view>
+    <view class="rag-flow">
+      <view class="rag-flow-step">公告切片</view>
+      <view class="rag-flow-step">向量检索</view>
+      <view class="rag-flow-step">带来源回答</view>
+    </view>
+  </view>
+
+  <view class="ask-card">
+    <view class="field-label">演示问题</view>
+    <input class="question-input compact-input" value="{{question}}" placeholder="{{demoQuestion}}" bindinput="onQuestionInput" />
+    <view class="ask-actions">
+      <button class="ghost-btn ask-half" bindtap="runDemoQuestion">一键演示</button>
+      <button class="primary-btn ask-half" loading="{{loading}}" bindtap="submitQuestion">提问</button>
+    </view>
+  </view>
+
+  <view class="empty-card">
+    <view class="empty-title">可以问我这些问题</view>
+    <view class="example-list">
+      <view wx:for="{{examples}}" wx:key="*this" class="example-chip" data-text="{{item}}" bindtap="useExample">{{item}}</view>
+    </view>
+  </view>
+
+  <view wx:if="{{errorText}}" class="error-card">
+    <view class="error-title">查询失败</view>
+    <view class="error-text">{{errorText}}</view>
+  </view>
+
+  <view wx:if="{{answer}}" class="answer-card">
+    <view class="answer-head">
+      <view class="answer-title">{{answerTitle}}</view>
+      <view class="pill {{answerPillClass}}">{{answerPillText}}</view>
+    </view>
+    <view class="answer-text">{{answer}}</view>
+    <view class="answer-note">信息由 AI 依据公告整理，请以公告原文为准。</view>
+  </view>
+
+  <view wx:if="{{hasSources}}" class="sources-card">
+    <view class="section-title compact">依据以下公告</view>
+    <view wx:for="{{sources}}" wx:key="id" class="source-item">
+      <view class="source-title">{{item.title}}</view>
+      <view class="source-snippet">{{item.snippet}}</view>
+    </view>
+  </view>
+</view>

@@ -1,0 +1,95 @@
+<view class="page">
+  <view class="hero-card recommend-hero">
+    <view class="recommend-copy">
+      <view class="hero-kicker">AI 岗位匹配</view>
+      <view class="hero-title">先筛掉不合适的，再给你排序</view>
+      <view class="hero-subtitle">规则层先按区域、学段、学科、编制筛选；候选岗位再做评分、理由和缺口提示。</view>
+    </view>
+    <view class="hero-metrics">
+      <view class="hero-metric">
+        <view class="hero-metric-value">{{matchCountText}}</view>
+        <view class="hero-metric-label">推荐岗位</view>
+      </view>
+      <view class="hero-metric">
+        <view class="hero-metric-value">{{topScoreText}}</view>
+        <view class="hero-metric-label">最高评分</view>
+      </view>
+    </view>
+  </view>
+
+  <view class="flow-card">
+    <view class="flow-title">这页主要演示什么</view>
+    <view class="flow-row">
+      <view class="flow-step">
+        <view class="flow-num">1</view>
+        <view class="flow-name">规则先筛</view>
+        <view class="flow-desc">用硬条件减少无效岗位</view>
+      </view>
+      <view class="flow-step">
+        <view class="flow-num">2</view>
+        <view class="flow-name">模型评分</view>
+        <view class="flow-desc">读 JD 和简历摘要打分</view>
+      </view>
+      <view class="flow-step">
+        <view class="flow-num">3</view>
+        <view class="flow-name">给出解释</view>
+        <view class="flow-desc">输出理由、缺口和草稿</view>
+      </view>
+    </view>
+  </view>
+
+  <view class="list-head">
+    <view>
+      <view class="list-title">AI 推荐结果</view>
+      <view class="muted">先看分数，再看原因和缺口</view>
+    </view>
+    <button class="ghost-btn run-btn" loading="{{running}}" bindtap="refreshRecommendations">刷新</button>
+  </view>
+
+  <block wx:for="{{matches}}" wx:key="id">
+    <view class="match-card">
+      <view class="match-head">
+        <view class="score-box">
+          <view class="score-value">{{item.scoreText}}</view>
+          <view class="score-label">AI评分</view>
+        </view>
+        <view class="match-main">
+          <view class="match-school">{{item.job.school_name}}</view>
+          <view class="match-title">{{item.job.title}}</view>
+          <view class="match-meta">{{item.job.district}} · {{item.job.stage}} · {{item.job.subject}}</view>
+        </view>
+      </view>
+
+      <view class="reason-panel">
+        <view class="panel-label">为什么推荐</view>
+        <view class="reason-text">{{item.reasonText}}</view>
+      </view>
+
+      <view class="panel-label">匹配点</view>
+      <view class="point-list">
+        <view wx:for="{{item.matchedPoints}}" wx:for-item="point" wx:key="*this" class="point-chip">{{point}}</view>
+      </view>
+
+      <view class="panel-label gap-label">风险/缺口</view>
+      <view class="gap-box {{item.gapTone}}">
+        <view wx:for="{{item.gaps}}" wx:for-item="gap" wx:key="*this" class="gap-text">{{gap}}</view>
+      </view>
+
+      <view class="cover-box">
+        <view class="panel-label">求职信草稿片段</view>
+        <view class="cover-text">{{item.coverLetterPreview}}</view>
+      </view>
+
+      <view class="actions">
+        <button class="ghost-btn small-btn" data-id="{{item.job.id}}" bindtap="openJob">看公告</button>
+        <button class="primary-btn small-btn" data-id="{{item.job.id}}" bindtap="openApply">确认投递</button>
+      </view>
+    </view>
+  </block>
+
+  <view wx:if="{{isEmpty}}" class="empty-card">
+    <view class="empty-title">暂无推荐</view>
+    <view class="muted">先完善求职档案，或者稍后刷新列表看看。</view>
+    <button class="ghost-btn empty-btn" bindtap="openProfile">完善档案</button>
+  </view>
+</view>

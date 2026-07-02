@@ -1,0 +1,62 @@
+.add-btn {
+  width: 100%;
+  margin: 0 0 22rpx;
+}
+
+.source-pill {
+  position: absolute;
+  right: 24rpx;
+  top: 28rpx;
+  z-index: 1;
+  padding: 8rpx 12rpx;
+  border-radius: 8rpx;
+  background: #e4f3e9;
+  color: #176238;
+  font-size: 21rpx;
+  font-weight: 800;
+}
+
+.rule-card {
+  margin-bottom: 22rpx;
+  padding: 26rpx;
+  border-radius: 12rpx;
+  background: #ffffff;
+  border: 1rpx solid #dfe6df;
+  box-shadow: 0 12rpx 28rpx rgba(26, 52, 45, 0.06);
+}
+
+.rule-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16rpx;
+}
+
+.rule-name {
+  color: #15231f;
+  font-size: 30rpx;
+  font-weight: 850;
+}
+
+.switch {
+  padding: 10rpx 16rpx;
+  border-radius: 8rpx;
+  background: #edf1ef;
+  color: #61706a;
+  font-size: 22rpx;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.switch.on {
+  background: #e4f3e9;
+  color: #176238;
+}
+
+.rule-foot {
+  margin-top: 18rpx;
+  padding-top: 18rpx;
+  border-top: 1rpx solid #edf1ee;
+  color: #52645d;
+  font-size: 24rpx;
+}

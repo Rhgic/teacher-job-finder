@@ -1,0 +1,171 @@
+.status-pill {
+  position: absolute;
+  right: 24rpx;
+  top: 28rpx;
+  z-index: 1;
+  padding: 8rpx 14rpx;
+  border-radius: 8rpx;
+  background: #edf1ef;
+  color: #61706a;
+  font-size: 22rpx;
+  font-weight: 850;
+}
+
+.status-pill.green {
+  background: #e4f3e9;
+  color: #176238;
+}
+
+.status-pill.warn {
+  background: #fff2df;
+  color: #a25713;
+}
+
+.status-card {
+  margin-bottom: 22rpx;
+  padding: 26rpx;
+  border-radius: 12rpx;
+  background: #ffffff;
+  border: 1rpx solid #dfe6df;
+  box-shadow: 0 12rpx 28rpx rgba(26, 52, 45, 0.06);
+}
+
+.card-head {
+  display: flex;
+  align-items: center;
+  gap: 14rpx;
+}
+
+.compact {
+  margin: 0 0 14rpx;
+}
+
+.metric-line,
+.backup-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14rpx;
+}
+
+.metric-line > view,
+.backup-grid > view {
+  padding: 18rpx;
+  border-radius: 10rpx;
+  background: #f6faf7;
+  border: 1rpx solid #e4ebe5;
+}
+
+.metric-num {
+  color: #14604f;
+  font-size: 36rpx;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.metric-num.small {
+  font-size: 28rpx;
+  line-height: 1.2;
+}
+
+.metric-label {
+  margin-top: 8rpx;
+  color: #66736d;
+  font-size: 22rpx;
+}
+
+.latest {
+  margin-top: 16rpx;
+  color: #52645d;
+  font-size: 24rpx;
+}
+
+.latest.muted {
+  margin-top: 8rpx;
+  color: #7c8b84;
+  font-size: 22rpx;
+  word-break: break-all;
+}
+
+.small-pill {
+  flex: 0 0 auto;
+  margin-left: auto;
+  padding: 7rpx 12rpx;
+  border-radius: 8rpx;
+  background: #edf1ef;
+  color: #61706a;
+  font-size: 21rpx;
+  font-weight: 850;
+}
+
+.small-pill.green {
+  background: #e4f3e9;
+  color: #176238;
+}
+
+.small-pill.warn {
+  background: #fff2df;
+  color: #a25713;
+}
+
+.check-row {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+  min-height: 56rpx;
+  border-top: 1rpx solid #edf1ee;
+}
+
+.check-row:first-of-type {
+  border-top: 0;
+}
+
+.check-dot {
+  width: 15rpx;
+  height: 15rpx;
+  border-radius: 50%;
+  background: #d9dedb;
+  flex: 0 0 15rpx;
+}
+
+.check-dot.ok {
+  background: #14604f;
+}
+
+.check-label {
+  flex: 1;
+  min-width: 0;
+  color: #15231f;
+  font-size: 25rpx;
+  font-weight: 750;
+}
+
+.check-text {
+  flex: 0 0 auto;
+  color: #a25713;
+  font-size: 23rpx;
+  font-weight: 800;
+}
+
+.check-text.ok {
+  color: #176238;
+}
+
+.next-card {
+  padding: 24rpx;
+  border-radius: 12rpx;
+  background: #fff8ee;
+  border: 1rpx solid #f4ddb9;
+}
+
+.next-title {
+  color: #a25713;
+  font-size: 27rpx;
+  font-weight: 850;
+}
+
+.next-text {
+  margin-top: 8rpx;
+  color: #87591f;
+  font-size: 24rpx;
+  line-height: 1.6;
+}

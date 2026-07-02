@@ -1,0 +1,48 @@
+<view class="page">
+  <view class="hero-card">
+    <view class="hero-kicker">简历中心</view>
+    <view class="hero-title">先把简历信息写清楚</view>
+    <view class="hero-subtitle">当前 Demo 支持手动摘要，也能上传 PDF/TXT 做基础解析；Word 文件先保存，自动解析有限。</view>
+    <view class="source-pill">{{sourceText}}</view>
+  </view>
+
+  <view class="edit-card">
+    <view class="form-head">
+      <view class="form-title">{{formTitle}}</view>
+      <button wx:if="{{isEditing}}" class="text-btn" bindtap="resetForm">取消编辑</button>
+    </view>
+    <view class="field">
+      <view class="label">简历名称</view>
+      <input value="{{draft.name}}" placeholder="例如：体育教师专项简历" data-key="name" bindinput="onDraftInput" />
+    </view>
+    <view class="field">
+      <view class="label">简历摘要</view>
+      <textarea value="{{draft.summary}}" placeholder="写清楚专业、证书、教学经历、目标岗位等" data-key="summary" bindinput="onDraftInput" maxlength="500" />
+    </view>
+    <button class="primary-btn full-action" bindtap="saveResume">{{submitText}}</button>
+  </view>
+
+  <view class="actions-row">
+    <button class="ghost-btn action" bindtap="addDemoResume">添加演示简历</button>
+    <button class="primary-btn action" bindtap="chooseResumeFile">上传本地简历</button>
+  </view>
+  <button class="ghost-btn upload-tip" bindtap="showUploadTip">查看上传说明</button>
+
+  <view class="resume-card" wx:for="{{resumes}}" wx:key="id">
+    <view class="resume-head">
+      <view>
+        <view class="resume-name">{{item.name}}</view>
+        <view class="muted">更新：{{item.updated_at}}</view>
+      </view>
+      <view class="score">{{item.completeness}}%</view>
+    </view>
+    <view class="progress"><view class="progress-inner" style="width: {{item.completeness}}%;"></view></view>
+    <view class="tag-row">
+      <view class="soft-tag" wx:for="{{item.highlights}}" wx:key="*this">{{item}}</view>
+    </view>
+    <view class="card-actions">
+      <button class="ghost-btn card-btn" data-id="{{item.id}}" bindtap="editResume">编辑</button>
+      <button class="delete-btn card-btn" data-id="{{item.id}}" bindtap="deleteResume">删除</button>
+    </view>
+  </view>
+</view>

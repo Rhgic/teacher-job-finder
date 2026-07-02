@@ -1,0 +1,260 @@
+.detail-hero {
+  margin-bottom: 16rpx;
+}
+
+.title {
+  margin-top: 8rpx;
+  font-size: 38rpx;
+  font-weight: 800;
+  line-height: 1.45;
+  color: #15231f;
+}
+
+.meta {
+  margin-top: 12rpx;
+  color: #66736d;
+  font-size: 24rpx;
+}
+
+.tags {
+  display: flex;
+  gap: 12rpx;
+  flex-wrap: wrap;
+  margin-top: 18rpx;
+}
+
+.compact {
+  margin: 0 0 12rpx;
+}
+
+.detail-metrics {
+  margin-bottom: 20rpx;
+}
+
+.expired-banner {
+  margin-bottom: 18rpx;
+  padding: 22rpx;
+  border-radius: 12rpx;
+  background: #fff4e7;
+  border: 1rpx solid #f3d2a8;
+  color: #9a4d10;
+  font-size: 24rpx;
+  line-height: 1.6;
+}
+
+.expired-title {
+  margin-bottom: 4rpx;
+  color: #7a3609;
+  font-size: 27rpx;
+  font-weight: 850;
+}
+
+.check-card {
+  margin-bottom: 22rpx;
+  padding: 24rpx;
+  border-radius: 12rpx;
+  background: #123d34;
+  color: #ffffff;
+  box-shadow: 0 14rpx 32rpx rgba(18, 61, 52, 0.16);
+}
+
+.check-title {
+  font-size: 28rpx;
+  font-weight: 850;
+}
+
+.check-list {
+  margin-top: 16rpx;
+}
+
+.check-item {
+  display: flex;
+  gap: 12rpx;
+  align-items: flex-start;
+  margin-top: 12rpx;
+  color: rgba(255, 255, 255, 0.86);
+  font-size: 24rpx;
+  line-height: 1.5;
+}
+
+.check-dot {
+  width: 10rpx;
+  height: 10rpx;
+  margin-top: 12rpx;
+  border-radius: 50%;
+  background: #85d6bd;
+  flex: 0 0 10rpx;
+}
+
+.source-card {
+  margin-bottom: 22rpx;
+}
+
+.source-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18rpx;
+}
+
+.source-host {
+  color: #66736d;
+  font-size: 23rpx;
+  line-height: 1.45;
+  word-break: break-all;
+}
+
+.source-text {
+  margin-top: 16rpx;
+  padding: 16rpx;
+  border-radius: 10rpx;
+  background: #f6faf7;
+  color: #284139;
+  font-size: 23rpx;
+  line-height: 1.55;
+  word-break: break-all;
+}
+
+.source-status-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12rpx;
+  margin-top: 16rpx;
+}
+
+.status-chip {
+  min-height: 44rpx;
+  padding: 8rpx 16rpx;
+  border-radius: 999rpx;
+  background: #eef5f1;
+  color: #31544b;
+  font-size: 22rpx;
+  line-height: 28rpx;
+  box-sizing: border-box;
+}
+
+.risk-list {
+  margin-top: 14rpx;
+}
+
+.risk-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12rpx;
+  margin-top: 10rpx;
+  color: #52665f;
+  font-size: 23rpx;
+  line-height: 1.55;
+}
+
+.risk-mark {
+  width: 9rpx;
+  height: 9rpx;
+  margin-top: 13rpx;
+  border-radius: 50%;
+  background: #d99530;
+  flex: 0 0 9rpx;
+}
+
+.source-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12rpx;
+  margin-top: 18rpx;
+}
+
+.source-copy {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 60rpx;
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  border-radius: 10rpx;
+  border: 1rpx solid #cbded6;
+  background: #ffffff;
+  color: #14604f;
+  font-size: 24rpx;
+  line-height: 1;
+  font-weight: 700;
+  text-align: center;
+}
+
+.source-copy.guide {
+  background: #e7f1ee;
+}
+
+.source-copy::after {
+  border: 0;
+}
+
+.detail-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12rpx;
+  margin-bottom: 22rpx;
+}
+
+.action-btn {
+  width: 100%;
+  height: 62rpx;
+  margin: 0;
+  font-size: 24rpx;
+}
+
+.jd {
+  color: #30413a;
+  font-size: 26rpx;
+  line-height: 1.8;
+}
+
+.row {
+  display: flex;
+  justify-content: space-between;
+  gap: 20rpx;
+  padding: 18rpx 0;
+  border-top: 1rpx solid #edf1ee;
+  line-height: 1.45;
+}
+
+.row text:first-child {
+  color: #66736d;
+  flex: 0 0 150rpx;
+}
+
+.row text:last-child {
+  color: #15231f;
+  text-align: right;
+  flex: 1;
+  word-break: break-all;
+}
+
+.bottom-space {
+  height: 120rpx;
+}
+
+.bottom-bar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 18rpx 24rpx 32rpx;
+  background: #ffffff;
+  border-top: 1rpx solid #dfe6df;
+  box-shadow: 0 -10rpx 28rpx rgba(26, 52, 45, 0.08);
+}
+
+.expired-btn {
+  background: #8a6a45;
+  box-shadow: none;
+}
+
+.source-link {
+  margin-top: 20rpx;
+  color: #14604f;
+  font-size: 23rpx;
+  line-height: 1.6;
+  word-break: break-all;
+}

@@ -1,0 +1,188 @@
+.compare-hero {
+  padding-right: 150rpx;
+}
+
+.compare-badge {
+  position: absolute;
+  right: 24rpx;
+  top: 28rpx;
+  z-index: 1;
+  max-width: 118rpx;
+  padding: 8rpx 12rpx;
+  border-radius: 8rpx;
+  background: #e7f1ee;
+  color: #14604f;
+  font-size: 21rpx;
+  font-weight: 850;
+  text-align: center;
+}
+
+.best-card,
+.compare-card {
+  margin-bottom: 20rpx;
+  padding: 24rpx;
+  border-radius: 12rpx;
+  background: #ffffff;
+  border: 1rpx solid #dfe6df;
+  box-shadow: 0 12rpx 28rpx rgba(26, 52, 45, 0.06);
+}
+
+.best-card {
+  background: #fff9ef;
+  border-color: #efd7ae;
+}
+
+.best-label {
+  color: #a25713;
+  font-size: 22rpx;
+  font-weight: 850;
+}
+
+.best-title {
+  margin-top: 8rpx;
+  color: #15231f;
+  font-size: 31rpx;
+  font-weight: 900;
+  line-height: 1.35;
+}
+
+.best-meta {
+  margin-top: 8rpx;
+  color: #71562b;
+  font-size: 23rpx;
+  line-height: 1.5;
+}
+
+.summary-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18rpx;
+  margin: 26rpx 0 16rpx;
+}
+
+.summary-title {
+  color: #15231f;
+  font-size: 30rpx;
+  font-weight: 900;
+}
+
+.mini-action {
+  width: 154rpx;
+  height: 58rpx;
+  border-radius: 8rpx;
+  font-size: 22rpx;
+}
+
+.compare-head {
+  display: flex;
+  align-items: center;
+  gap: 18rpx;
+}
+
+.score-box {
+  flex: 0 0 104rpx;
+  width: 104rpx;
+  min-height: 88rpx;
+  border-radius: 10rpx;
+  background: #e7f1ee;
+  color: #14604f;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.score-num {
+  font-size: 34rpx;
+  font-weight: 950;
+  line-height: 1.1;
+}
+
+.score-label {
+  margin-top: 4rpx;
+  font-size: 19rpx;
+  font-weight: 800;
+}
+
+.compare-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.compare-title {
+  color: #15231f;
+  font-size: 29rpx;
+  font-weight: 900;
+  line-height: 1.35;
+}
+
+.compare-meta {
+  margin-top: 7rpx;
+  color: #66736d;
+  font-size: 23rpx;
+  line-height: 1.45;
+}
+
+.field-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10rpx;
+  margin-top: 20rpx;
+}
+
+.field {
+  min-width: 0;
+  padding: 14rpx 12rpx;
+  border-radius: 10rpx;
+  background: #f6faf7;
+  border: 1rpx solid #e4ebe5;
+}
+
+.field-label {
+  color: #708079;
+  font-size: 20rpx;
+}
+
+.field-value {
+  margin-top: 5rpx;
+  color: #15231f;
+  font-size: 24rpx;
+  font-weight: 850;
+  line-height: 1.25;
+}
+
+.risk-row {
+  display: flex;
+  align-items: center;
+  gap: 10rpx;
+  margin-top: 18rpx;
+}
+
+.source-dot {
+  flex: 0 0 14rpx;
+  width: 14rpx;
+  height: 14rpx;
+  border-radius: 50%;
+  background: #9aa6a0;
+}
+
+.source-dot.ok {
+  background: #176238;
+}
+
+.source-dot.pending {
+  background: #c5681c;
+}
+
+.source-dot.missing {
+  background: #9aa6a0;
+}
+
+.risk-text {
+  flex: 1;
+  min-width: 0;
+  color: #66736d;
+  font-size: 22rpx;
+  line-height: 1.45;
+}

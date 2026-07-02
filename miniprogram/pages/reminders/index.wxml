@@ -1,0 +1,38 @@
+<view class="page">
+  <view class="hero-card reminder-hero">
+    <view class="hero-kicker">提醒中心</view>
+    <view class="hero-title">今天先处理什么</view>
+    <view class="hero-subtitle">把截止日、待投递和资料缺口集中到一处，减少漏看。</view>
+    <view class="alert-badge {{urgentCount > 0 ? 'hot' : ''}}">{{urgentCount > 0 ? urgentCount + ' 个紧急' : '节奏正常'}}</view>
+  </view>
+
+  <view class="summary-grid">
+    <view class="summary-card">
+      <view class="summary-num">{{deadlineCount}}</view>
+      <view class="summary-label">快截止</view>
+    </view>
+    <view class="summary-card">
+      <view class="summary-num">{{pendingCount}}</view>
+      <view class="summary-label">待跟进</view>
+    </view>
+    <view class="summary-card">
+      <view class="summary-num">{{profileCount}}</view>
+      <view class="summary-label">资料项</view>
+    </view>
+  </view>
+
+  <view class="preference-line">{{preferenceText}}</view>
+
+  <view class="task-list">
+    <view wx:for="{{tasks}}" wx:key="id" class="task-card {{item.level}}" data-id="{{item.id}}" bindtap="openTask">
+      <view class="task-mark"></view>
+      <view class="task-main">
+        <view class="task-title">{{item.title}}</view>
+        <view class="task-desc">{{item.desc}}</view>
+      </view>
+      <view class="task-action">{{item.action}}</view>
+    </view>
+  </view>
+
+  <view wx:if="{{!loading && tasks.length === 0}}" class="empty">{{emptyText}}</view>
+</view>

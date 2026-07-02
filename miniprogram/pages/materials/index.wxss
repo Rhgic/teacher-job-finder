@@ -1,0 +1,115 @@
+.materials-hero {
+  padding-right: 120rpx;
+}
+
+.progress-badge {
+  position: absolute;
+  right: 24rpx;
+  top: 28rpx;
+  z-index: 1;
+  width: 72rpx;
+  height: 72rpx;
+  line-height: 72rpx;
+  border-radius: 50%;
+  background: #14604f;
+  color: #ffffff;
+  font-size: 23rpx;
+  font-weight: 900;
+  text-align: center;
+}
+
+.progress-card,
+.material-section {
+  margin-bottom: 22rpx;
+  padding: 24rpx;
+  border-radius: 12rpx;
+  background: #ffffff;
+  border: 1rpx solid #dfe6df;
+  box-shadow: 0 12rpx 28rpx rgba(26, 52, 45, 0.06);
+}
+
+.progress-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18rpx;
+}
+
+.progress-title {
+  color: #15231f;
+  font-size: 28rpx;
+  font-weight: 850;
+}
+
+.mini-btn {
+  width: 112rpx;
+  height: 58rpx;
+  line-height: 58rpx;
+  margin: 0;
+  padding: 0;
+  border-radius: 8rpx;
+  background: #e7f1ee;
+  color: #14604f;
+  font-size: 23rpx;
+  font-weight: 850;
+}
+
+.ready-bar {
+  height: 12rpx;
+  margin-top: 18rpx;
+  border-radius: 999rpx;
+  background: #edf1ef;
+  overflow: hidden;
+}
+
+.ready-fill {
+  height: 12rpx;
+  border-radius: 999rpx;
+  background: #14604f;
+}
+
+.section-name {
+  margin-bottom: 10rpx;
+  color: #15231f;
+  font-size: 28rpx;
+  font-weight: 850;
+}
+
+.material-row {
+  display: flex;
+  align-items: center;
+  gap: 14rpx;
+  min-height: 66rpx;
+  border-top: 1rpx solid #edf1ee;
+}
+
+.material-row:first-of-type {
+  border-top: 0;
+}
+
+.check-box {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34rpx;
+  height: 34rpx;
+  border-radius: 8rpx;
+  border: 2rpx solid #c8d3cd;
+  color: #ffffff;
+  font-size: 23rpx;
+  font-weight: 900;
+  flex: 0 0 34rpx;
+}
+
+.check-box.checked {
+  border-color: #14604f;
+  background: #14604f;
+}
+
+.material-name {
+  flex: 1;
+  min-width: 0;
+  color: #24342f;
+  font-size: 25rpx;
+  line-height: 1.45;
+}

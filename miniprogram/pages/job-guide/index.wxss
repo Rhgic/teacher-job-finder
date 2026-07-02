@@ -1,0 +1,79 @@
+.flow-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16rpx;
+}
+
+.flow-card {
+  display: flex;
+  gap: 18rpx;
+  padding: 24rpx;
+  border-radius: 12rpx;
+  background: #ffffff;
+  border: 1rpx solid #dfe6df;
+  box-shadow: 0 12rpx 28rpx rgba(26, 52, 45, 0.05);
+}
+
+.step-index {
+  flex: 0 0 48rpx;
+  width: 48rpx;
+  height: 48rpx;
+  border-radius: 10rpx;
+  background: #14604f;
+  color: #ffffff;
+  font-size: 24rpx;
+  font-weight: 900;
+  line-height: 48rpx;
+  text-align: center;
+}
+
+.flow-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.flow-title {
+  color: #15231f;
+  font-size: 29rpx;
+  font-weight: 900;
+  line-height: 1.35;
+}
+
+.flow-desc {
+  margin-top: 8rpx;
+  color: #66736d;
+  font-size: 23rpx;
+  line-height: 1.55;
+}
+
+.flow-action {
+  display: inline-flex;
+  margin-top: 14rpx;
+  padding: 8rpx 12rpx;
+  border-radius: 8rpx;
+  background: #e7f1ee;
+  color: #14604f;
+  font-size: 22rpx;
+  font-weight: 850;
+}
+
+.guide-note {
+  margin-top: 24rpx;
+  padding: 24rpx;
+  border-radius: 12rpx;
+  background: #fff8ee;
+  border: 1rpx solid #f4ddb9;
+}
+
+.note-title {
+  color: #a25713;
+  font-size: 27rpx;
+  font-weight: 900;
+}
+
+.note-text {
+  margin-top: 8rpx;
+  color: #87591f;
+  font-size: 24rpx;
+  line-height: 1.6;
+}

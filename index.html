@@ -1,0 +1,824 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>教师求职小程序 API</title>
+  <style>
+    :root {
+      --ink: #17211b;
+      --muted: #66736c;
+      --line: #dbe5de;
+      --paper: #f7faf7;
+      --panel: #ffffff;
+      --brand: #0c8f68;
+      --brand-dark: #076447;
+      --accent: #e6b84a;
+      --danger: #b84c3d;
+      --shadow: 0 20px 50px rgba(20, 50, 36, 0.12);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--ink);
+      background:
+        linear-gradient(135deg, rgba(12, 143, 104, 0.08), transparent 34%),
+        linear-gradient(315deg, rgba(230, 184, 74, 0.15), transparent 28%),
+        var(--paper);
+      font-family: "Avenir Next", "PingFang SC", "Microsoft YaHei", sans-serif;
+    }
+
+    button, input, select {
+      font: inherit;
+    }
+
+    .shell {
+      width: min(1160px, calc(100% - 32px));
+      margin: 0 auto;
+      padding: 28px 0 40px;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 22px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      min-width: 0;
+    }
+
+    .mark {
+      width: 42px;
+      height: 42px;
+      display: grid;
+      place-items: center;
+      border-radius: 12px;
+      color: #fff;
+      background: var(--brand);
+      box-shadow: 0 10px 22px rgba(12, 143, 104, 0.28);
+      font-weight: 800;
+    }
+
+    .brand h1 {
+      margin: 0;
+      font-size: 22px;
+      line-height: 1.2;
+      letter-spacing: 0;
+    }
+
+    .brand p {
+      margin: 4px 0 0;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .doc-link {
+      color: var(--brand-dark);
+      border: 1px solid var(--line);
+      background: rgba(255, 255, 255, 0.72);
+      text-decoration: none;
+      padding: 9px 12px;
+      border-radius: 8px;
+      white-space: nowrap;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 330px;
+      gap: 18px;
+      align-items: start;
+    }
+
+    .toolbar {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+      padding: 14px;
+      margin-bottom: 14px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.82);
+      box-shadow: var(--shadow);
+    }
+
+    label {
+      display: grid;
+      gap: 6px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    select, input {
+      width: 100%;
+      height: 40px;
+      padding: 0 10px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      color: var(--ink);
+      background: #fff;
+      outline: none;
+    }
+
+    select:focus, input:focus {
+      border-color: var(--brand);
+      box-shadow: 0 0 0 3px rgba(12, 143, 104, 0.12);
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+
+    .stat {
+      min-height: 88px;
+      padding: 14px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel);
+    }
+
+    .stat strong {
+      display: block;
+      font-size: 26px;
+      line-height: 1.1;
+    }
+
+    .stat span {
+      display: block;
+      margin-top: 8px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .job-list {
+      display: grid;
+      gap: 12px;
+    }
+
+    .job-card {
+      padding: 16px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel);
+      box-shadow: 0 12px 26px rgba(20, 50, 36, 0.08);
+    }
+
+    .job-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: start;
+    }
+
+    .job-title {
+      margin: 0;
+      font-size: 18px;
+      line-height: 1.35;
+    }
+
+    .badge {
+      flex: 0 0 auto;
+      padding: 5px 8px;
+      border-radius: 999px;
+      color: var(--brand-dark);
+      background: rgba(12, 143, 104, 0.1);
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin: 12px 0;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .meta span {
+      padding: 5px 8px;
+      border-radius: 8px;
+      background: #f2f6f3;
+    }
+
+    .jd {
+      margin: 0 0 14px;
+      color: #334139;
+      font-size: 14px;
+      line-height: 1.7;
+    }
+
+    .actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      min-height: 38px;
+      border: 0;
+      border-radius: 8px;
+      padding: 0 12px;
+      cursor: pointer;
+      color: #fff;
+      background: var(--brand);
+    }
+
+    .btn.secondary {
+      color: var(--brand-dark);
+      background: rgba(12, 143, 104, 0.1);
+    }
+
+    .side {
+      position: sticky;
+      top: 18px;
+      display: grid;
+      gap: 14px;
+    }
+
+    .panel {
+      padding: 16px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.9);
+      box-shadow: var(--shadow);
+    }
+
+    .panel h2 {
+      margin: 0 0 12px;
+      font-size: 16px;
+    }
+
+    .profile-grid {
+      display: grid;
+      gap: 9px;
+      font-size: 14px;
+      color: #324139;
+    }
+
+    .profile-grid span {
+      color: var(--muted);
+    }
+
+    .todo {
+      display: grid;
+      gap: 10px;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .todo li {
+      padding: 10px;
+      border-left: 3px solid var(--accent);
+      border-radius: 6px;
+      background: #fff8e4;
+      font-size: 14px;
+      line-height: 1.55;
+    }
+
+    dialog {
+      width: min(720px, calc(100% - 26px));
+      border: 0;
+      border-radius: 10px;
+      padding: 0;
+      box-shadow: 0 26px 80px rgba(0, 0, 0, 0.28);
+    }
+
+    dialog::backdrop {
+      background: rgba(12, 20, 17, 0.46);
+    }
+
+    .modal {
+      padding: 18px;
+      background: var(--panel);
+    }
+
+    .modal h2 {
+      margin: 0 0 10px;
+      font-size: 20px;
+    }
+
+    .modal p {
+      color: #334139;
+      line-height: 1.75;
+    }
+
+    .modal-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      margin-top: 16px;
+    }
+
+    .empty {
+      padding: 36px 16px;
+      border: 1px dashed var(--line);
+      border-radius: 8px;
+      text-align: center;
+      color: var(--muted);
+      background: rgba(255, 255, 255, 0.72);
+    }
+
+    .deerflow {
+      position: fixed;
+      right: 14px;
+      bottom: 12px;
+      color: rgba(23, 33, 27, 0.48);
+      text-decoration: none;
+      font-size: 12px;
+    }
+
+    @media (max-width: 860px) {
+      .shell {
+        width: min(100% - 22px, 560px);
+        padding-top: 18px;
+      }
+
+      .topbar {
+        align-items: flex-start;
+      }
+
+      .layout {
+        grid-template-columns: 1fr;
+      }
+
+      .side {
+        position: static;
+      }
+
+      .toolbar {
+        grid-template-columns: 1fr 1fr;
+      }
+
+      .stats {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 520px) {
+      .topbar {
+        display: grid;
+      }
+
+      .toolbar {
+        grid-template-columns: 1fr;
+      }
+
+      .job-head {
+        display: grid;
+      }
+
+      .doc-link {
+        width: fit-content;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <header class="topbar">
+      <div class="brand">
+        <div class="mark">师</div>
+        <div>
+          <h1>深圳教师求职雷达</h1>
+          <p>岗位浏览、条件筛选、材料配置的 API 演示界面</p>
+        </div>
+      </div>
+      <a class="doc-link" href="/docs" target="_blank">接口文档</a>
+    </header>
+
+    <section class="layout">
+      <div>
+        <section class="toolbar" aria-label="岗位筛选">
+          <label>
+            区域
+            <select id="district">
+              <option value="">全部区域</option>
+            </select>
+          </label>
+          <label>
+            学段
+            <select id="stage">
+              <option value="">全部学段</option>
+            </select>
+          </label>
+          <label>
+            学科
+            <select id="subject">
+              <option value="">全部学科</option>
+            </select>
+          </label>
+          <label>
+            关键词
+            <input id="keyword" placeholder="学校 / 岗位" />
+          </label>
+        </section>
+
+        <section class="stats">
+          <div class="stat"><strong id="total">0</strong><span>当前岗位</span></div>
+          <div class="stat"><strong id="bianzhi">0</strong><span>含编制岗位</span></div>
+          <div class="stat"><strong id="avgSalary">-</strong><span>平均薪资上限</span></div>
+        </section>
+
+        <section id="jobs" class="job-list" aria-label="岗位列表"></section>
+      </div>
+
+      <aside class="side">
+        <section class="panel">
+          <h2>求职画像</h2>
+          <div id="profile" class="profile-grid">加载中...</div>
+        </section>
+        <section class="panel">
+          <h2>今日待办</h2>
+          <ul class="todo">
+            <li>检查高匹配岗位截止时间，优先处理快截止公告。</li>
+            <li>确认默认简历和求职信模板，投递前人工预览。</li>
+            <li>下一阶段接入匹配管道后，这里会展示推荐结果。</li>
+          </ul>
+        </section>
+      </aside>
+    </section>
+  </main>
+
+  <dialog id="detailDialog">
+    <div class="modal">
+      <h2 id="modalTitle"></h2>
+      <div id="modalBody"></div>
+      <div class="modal-actions">
+        <button class="btn secondary" id="closeDialog">关闭</button>
+        <button class="btn" id="confirmApply">预览投递</button>
+      </div>
+    </div>
+  </dialog>
+
+  <a class="deerflow" href="https://deerflow.tech" target="_blank" rel="noreferrer">Created By Deerflow</a>
+
+  <script>
+    const state = {
+      allJobs: [],
+      jobs: [],
+      profile: null,
+      activeJob: null,
+    };
+
+    const FALLBACK_JOBS = [
+      {
+        id: "demo-001",
+        title: "南山区实验学校小学语文教师招聘",
+        school_name: "南山区实验学校",
+        district: "南山区",
+        stage: "小学",
+        subject: "语文",
+        headcount: 2,
+        salary_min: 15000,
+        salary_max: 23000,
+        has_bianzhi: true,
+        jd: "面向深圳招聘小学语文教师2名，班主任经验优先，普通话二甲及以上。",
+        apply_email: "hr1@example.edu.cn"
+      },
+      {
+        id: "demo-002",
+        title: "深圳湾学校初中数学教师招聘",
+        school_name: "深圳湾学校",
+        district: "南山区",
+        stage: "初中",
+        subject: "数学",
+        headcount: 1,
+        salary_min: 17000,
+        salary_max: 26000,
+        has_bianzhi: true,
+        jd: "熟悉新课标，有竞赛辅导经验优先。",
+        apply_email: "hr2@example.edu.cn"
+      },
+      {
+        id: "demo-003",
+        title: "育才中学高中英语教师招聘",
+        school_name: "育才中学",
+        district: "南山区",
+        stage: "高中",
+        subject: "英语",
+        headcount: 1,
+        salary_min: 18000,
+        salary_max: 28000,
+        has_bianzhi: true,
+        jd: "英语专业八级，能承担高中英语教学。",
+        apply_email: "hr3@example.edu.cn"
+      },
+      {
+        id: "demo-004",
+        title: "福田外国语小学英语教师招聘",
+        school_name: "福田外国语小学",
+        district: "福田区",
+        stage: "小学",
+        subject: "英语",
+        headcount: 3,
+        salary_min: 13000,
+        salary_max: 21000,
+        has_bianzhi: false,
+        jd: "具备小学英语教学经验，擅长课堂活动设计。",
+        apply_email: "hr4@example.edu.cn"
+      },
+      {
+        id: "demo-005",
+        title: "红岭教育集团高中物理教师招聘",
+        school_name: "红岭教育集团",
+        district: "福田区",
+        stage: "高中",
+        subject: "物理",
+        headcount: 2,
+        salary_min: 19000,
+        salary_max: 30000,
+        has_bianzhi: true,
+        jd: "有高三毕业班教学经验优先。",
+        apply_email: "hr5@example.edu.cn"
+      },
+      {
+        id: "demo-006",
+        title: "莲花中学初中语文教师招聘",
+        school_name: "莲花中学",
+        district: "福田区",
+        stage: "初中",
+        subject: "语文",
+        headcount: 1,
+        salary_min: 14000,
+        salary_max: 22000,
+        has_bianzhi: false,
+        jd: "热爱阅读推广，能承担社团指导。",
+        apply_email: "hr6@example.edu.cn"
+      },
+      {
+        id: "demo-007",
+        title: "翠园东晓中学初中化学教师招聘",
+        school_name: "翠园东晓中学",
+        district: "罗湖区",
+        stage: "初中",
+        subject: "化学",
+        headcount: 1,
+        salary_min: 16000,
+        salary_max: 25000,
+        has_bianzhi: true,
+        jd: "实验教学能力强，安全意识好。",
+        apply_email: "hr7@example.edu.cn"
+      },
+      {
+        id: "demo-008",
+        title: "螺岭外国语实验学校小学数学教师招聘",
+        school_name: "螺岭外国语实验学校",
+        district: "罗湖区",
+        stage: "小学",
+        subject: "数学",
+        headcount: 2,
+        salary_min: 12000,
+        salary_max: 20000,
+        has_bianzhi: false,
+        jd: "低年段教学经验优先。",
+        apply_email: "hr8@example.edu.cn"
+      },
+      {
+        id: "demo-009",
+        title: "宝安中学集团高中体育教师招聘",
+        school_name: "宝安中学集团",
+        district: "宝安区",
+        stage: "高中",
+        subject: "体育",
+        headcount: 1,
+        salary_min: 17000,
+        salary_max: 27000,
+        has_bianzhi: true,
+        jd: "足球或田径专项，能组织校队训练。",
+        apply_email: "hr9@example.edu.cn"
+      },
+      {
+        id: "demo-010",
+        title: "新安湖小学美术教师招聘",
+        school_name: "新安湖小学",
+        district: "宝安区",
+        stage: "小学",
+        subject: "美术",
+        headcount: 1,
+        salary_min: 11000,
+        salary_max: 18000,
+        has_bianzhi: false,
+        jd: "擅长儿童创意美术与校园活动。",
+        apply_email: "hr10@example.edu.cn"
+      },
+      {
+        id: "demo-011",
+        title: "龙岗外国语学校初中英语教师招聘",
+        school_name: "龙岗外国语学校",
+        district: "龙岗区",
+        stage: "初中",
+        subject: "英语",
+        headcount: 2,
+        salary_min: 15000,
+        salary_max: 24000,
+        has_bianzhi: true,
+        jd: "口语表达优秀，有班主任经历优先。",
+        apply_email: "hr11@example.edu.cn"
+      },
+      {
+        id: "demo-012",
+        title: "平湖实验学校小学体育教师招聘",
+        school_name: "平湖实验学校",
+        district: "龙岗区",
+        stage: "小学",
+        subject: "体育",
+        headcount: 2,
+        salary_min: 12000,
+        salary_max: 19000,
+        has_bianzhi: false,
+        jd: "篮球专项优先，能承担课后服务。",
+        apply_email: "hr12@example.edu.cn"
+      }
+    ];
+
+    const FALLBACK_PROFILE = {
+      real_name: "王老师",
+      email: "teacher@example.com",
+      target_districts: ["南山区", "宝安区"],
+      target_stages: ["小学", "初中"],
+      target_subjects: ["体育", "语文"]
+    };
+
+    const districtEl = document.querySelector("#district");
+    const stageEl = document.querySelector("#stage");
+    const subjectEl = document.querySelector("#subject");
+    const keywordEl = document.querySelector("#keyword");
+    const jobsEl = document.querySelector("#jobs");
+    const dialogEl = document.querySelector("#detailDialog");
+    const modalTitleEl = document.querySelector("#modalTitle");
+    const modalBodyEl = document.querySelector("#modalBody");
+
+    function money(value) {
+      if (!value) return "面议";
+      return `${Math.round(value / 1000)}k`;
+    }
+
+    function unique(items, key) {
+      return [...new Set(items.map((item) => item[key]).filter(Boolean))].sort();
+    }
+
+    function fillSelect(el, values) {
+      const first = el.options[0];
+      el.replaceChildren(first);
+      values.forEach((value) => {
+        const option = document.createElement("option");
+        option.value = value;
+        option.textContent = value;
+        el.appendChild(option);
+      });
+    }
+
+    function renderStats() {
+      const total = state.jobs.length;
+      const bianzhi = state.jobs.filter((job) => job.has_bianzhi).length;
+      const salaryJobs = state.jobs.filter((job) => job.salary_max);
+      const avg = salaryJobs.length
+        ? Math.round(salaryJobs.reduce((sum, job) => sum + job.salary_max, 0) / salaryJobs.length / 1000)
+        : 0;
+
+      document.querySelector("#total").textContent = total;
+      document.querySelector("#bianzhi").textContent = bianzhi;
+      document.querySelector("#avgSalary").textContent = avg ? `${avg}k` : "-";
+    }
+
+    function renderProfile() {
+      const p = state.profile;
+      if (!p) {
+        document.querySelector("#profile").textContent = "暂无求职画像";
+        return;
+      }
+
+      document.querySelector("#profile").innerHTML = `
+        <div><span>姓名</span> ${p.real_name || "未填写"}</div>
+        <div><span>邮箱</span> ${p.email || "未填写"}</div>
+        <div><span>目标区域</span> ${(p.target_districts || []).join("、") || "不限"}</div>
+        <div><span>目标学段</span> ${(p.target_stages || []).join("、") || "不限"}</div>
+        <div><span>目标学科</span> ${(p.target_subjects || []).join("、") || "不限"}</div>
+      `;
+    }
+
+    function renderJobs() {
+      renderStats();
+      if (!state.jobs.length) {
+        jobsEl.innerHTML = `<div class="empty">当前筛选条件下没有岗位，换个条件试试。</div>`;
+        return;
+      }
+
+      jobsEl.innerHTML = state.jobs.map((job) => `
+        <article class="job-card">
+          <div class="job-head">
+            <h2 class="job-title">${job.title}</h2>
+            <span class="badge">${job.has_bianzhi ? "编制" : "合同制"}</span>
+          </div>
+          <div class="meta">
+            <span>${job.school_name}</span>
+            <span>${job.district}</span>
+            <span>${job.stage} · ${job.subject}</span>
+            <span>${money(job.salary_min)}-${money(job.salary_max)}</span>
+            <span>${job.headcount || 1} 人</span>
+          </div>
+          <p class="jd">${job.jd}</p>
+          <div class="actions">
+            <button class="btn" data-action="detail" data-id="${job.id}">查看 JD</button>
+            <button class="btn secondary" data-action="apply" data-id="${job.id}">一键投递预览</button>
+          </div>
+        </article>
+      `).join("");
+    }
+
+    function applyFilters() {
+      const district = districtEl.value;
+      const stage = stageEl.value;
+      const subject = subjectEl.value;
+      const keyword = keywordEl.value.trim().toLowerCase();
+
+      state.jobs = state.allJobs.filter((job) => {
+        if (district && job.district !== district) return false;
+        if (stage && job.stage !== stage) return false;
+        if (subject && job.subject !== subject) return false;
+        if (keyword) {
+          const haystack = `${job.title} ${job.school_name} ${job.jd}`.toLowerCase();
+          if (!haystack.includes(keyword)) return false;
+        }
+        return true;
+      });
+      renderJobs();
+    }
+
+    function openJob(job, mode = "detail") {
+      state.activeJob = job;
+      modalTitleEl.textContent = job.title;
+      modalBodyEl.innerHTML = `
+        <p><strong>学校：</strong>${job.school_name}</p>
+        <p><strong>条件：</strong>${job.district} · ${job.stage} · ${job.subject} · ${job.has_bianzhi ? "编制" : "合同制"}</p>
+        <p><strong>薪资：</strong>${money(job.salary_min)}-${money(job.salary_max)} / 月</p>
+        <p><strong>招聘邮箱：</strong>${job.apply_email || "公告原文查看"}</p>
+        <p><strong>JD：</strong>${job.jd}</p>
+        ${mode === "apply" ? "<p><strong>投递预览：</strong>下一阶段会在这里选择简历和模板，确认后才发送。</p>" : ""}
+      `;
+      dialogEl.showModal();
+    }
+
+    jobsEl.addEventListener("click", (event) => {
+      const button = event.target.closest("button[data-action]");
+      if (!button) return;
+      const job = state.allJobs.find((item) => item.id === button.dataset.id);
+      if (job) openJob(job, button.dataset.action === "apply" ? "apply" : "detail");
+    });
+
+    document.querySelector("#closeDialog").addEventListener("click", () => dialogEl.close());
+    document.querySelector("#confirmApply").addEventListener("click", () => {
+      alert("阶段 1 仅提供投递预览。阶段 5 会接入真实发信服务，并且必须人工确认。");
+    });
+
+    [districtEl, stageEl, subjectEl, keywordEl].forEach((el) => {
+      el.addEventListener("input", applyFilters);
+      el.addEventListener("change", applyFilters);
+    });
+
+    async function boot() {
+      try {
+        const [jobsRes, profileRes] = await Promise.all([
+          fetch("/jobs?page_size=100"),
+          fetch("/profile"),
+        ]);
+        if (!jobsRes.ok || !profileRes.ok) throw new Error("API unavailable");
+        const jobsData = await jobsRes.json();
+        state.allJobs = jobsData.items || [];
+        state.jobs = state.allJobs;
+        state.profile = await profileRes.json();
+
+        fillSelect(districtEl, unique(state.allJobs, "district"));
+        fillSelect(stageEl, unique(state.allJobs, "stage"));
+        fillSelect(subjectEl, unique(state.allJobs, "subject"));
+        renderProfile();
+        renderJobs();
+      } catch (error) {
+        state.allJobs = FALLBACK_JOBS;
+        state.jobs = state.allJobs;
+        state.profile = FALLBACK_PROFILE;
+        fillSelect(districtEl, unique(state.allJobs, "district"));
+        fillSelect(stageEl, unique(state.allJobs, "stage"));
+        fillSelect(subjectEl, unique(state.allJobs, "subject"));
+        renderProfile();
+        renderJobs();
+      }
+    }
+
+    boot();
+  </script>
+</body>
+</html>

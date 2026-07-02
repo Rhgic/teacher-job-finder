@@ -1,0 +1,72 @@
+{
+  "pages": [
+    "pages/jobs/index",
+    "pages/recommend/index",
+    "pages/applications/index",
+    "pages/me/index",
+    "pages/job-detail/index",
+    "pages/apply-confirm/index",
+    "pages/resumes/index",
+    "pages/favorites/index",
+    "pages/subscriptions/index",
+    "pages/profile-edit/index",
+    "pages/about/index",
+    "pages/interview-prep/index",
+    "pages/calendar/index",
+    "pages/reminders/index",
+    "pages/materials/index",
+    "pages/source-guide/index",
+    "pages/rag-ask/index",
+    "pages/school-profile/index",
+    "pages/notification-settings/index",
+    "pages/job-compare/index",
+    "pages/job-guide/index",
+    "pages/server-status/index"
+  ],
+  "window": {
+    "navigationBarTitleText": "教师求职",
+    "navigationBarBackgroundColor": "#ffffff",
+    "navigationBarTextStyle": "black",
+    "backgroundColor": "#f4f6f8"
+  },
+  "tabBar": {
+    "color": "#667085",
+    "selectedColor": "#14604f",
+    "backgroundColor": "#ffffff",
+    "borderStyle": "black",
+    "list": [
+      {
+        "pagePath": "pages/jobs/index",
+        "text": "岗位",
+        "iconPath": "assets/tabbar/jobs.png",
+        "selectedIconPath": "assets/tabbar/jobs-active.png"
+      },
+      {
+        "pagePath": "pages/recommend/index",
+        "text": "推荐",
+        "iconPath": "assets/tabbar/recommend.png",
+        "selectedIconPath": "assets/tabbar/recommend-active.png"
+      },
+      {
+        "pagePath": "pages/rag-ask/index",
+        "text": "问答",
+        "iconPath": "assets/tabbar/recommend.png",
+        "selectedIconPath": "assets/tabbar/recommend-active.png"
+      },
+      {
+        "pagePath": "pages/applications/index",
+        "text": "投递",
+        "iconPath": "assets/tabbar/apply.png",
+        "selectedIconPath": "assets/tabbar/apply-active.png"
+      },
+      {
+        "pagePath": "pages/me/index",
+        "text": "我的",
+        "iconPath": "assets/tabbar/me.png",
+        "selectedIconPath": "assets/tabbar/me-active.png"
+      }
+    ]
+  },
+  "style": "v2",
+  "sitemapLocation": "sitemap.json"
+}

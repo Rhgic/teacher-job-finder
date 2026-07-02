@@ -1,0 +1,67 @@
+.source-badge {
+  position: absolute;
+  right: 24rpx;
+  top: 28rpx;
+  z-index: 1;
+  padding: 8rpx 12rpx;
+  border-radius: 8rpx;
+  background: #e7f1ee;
+  color: #14604f;
+  font-size: 21rpx;
+  font-weight: 850;
+}
+
+.form-card {
+  margin-bottom: 22rpx;
+  padding: 8rpx 26rpx 6rpx;
+  border-radius: 12rpx;
+  background: #ffffff;
+  border: 1rpx solid #dfe6df;
+  box-shadow: 0 12rpx 28rpx rgba(26, 52, 45, 0.06);
+}
+
+.field {
+  padding: 22rpx 0;
+  border-top: 1rpx solid #edf1ee;
+}
+
+.field:first-child {
+  border-top: 0;
+}
+
+.label {
+  margin-bottom: 12rpx;
+  color: #66736d;
+  font-size: 23rpx;
+}
+
+input {
+  height: 62rpx;
+  color: #15231f;
+  font-size: 28rpx;
+  font-weight: 700;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.preset-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10rpx;
+  margin-top: 12rpx;
+}
+
+.preset-chip {
+  padding: 8rpx 14rpx;
+  border-radius: 999rpx;
+  background: #eef5f1;
+  color: #14604f;
+  font-size: 22rpx;
+  font-weight: 800;
+}
+
+.save-btn {
+  width: 100%;
+  margin: 0;
+}

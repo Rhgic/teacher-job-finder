@@ -1,0 +1,51 @@
+<view class="page">
+  <view class="hero-card applications-hero">
+    <view class="hero-kicker">投递跟进</view>
+    <view class="hero-title">投递进度台</view>
+    <view class="hero-subtitle">每一次确认投递都会留在这里，方便后面补状态、查进度。</view>
+    <view class="rail-label">follow up</view>
+  </view>
+
+  <view class="status-strip">
+    <view>
+      <view class="strip-num">{{records.length}}</view>
+      <view class="strip-label">已记录</view>
+    </view>
+    <view class="strip-divider"></view>
+    <view>
+      <view class="strip-num small-num">{{confirmedCount}}</view>
+      <view class="strip-label">已确认</view>
+    </view>
+    <view class="strip-divider"></view>
+    <view>
+      <view class="strip-num small-num">{{pendingCount}}</view>
+      <view class="strip-label">待处理</view>
+    </view>
+  </view>
+
+  <view class="tip-card">
+    <view class="strip-copy">建议投递后 3-5 天主动查看公告或邮件回复。</view>
+  </view>
+
+  <view class="timeline">
+    <view class="timeline-line"></view>
+    <view class="record" wx:for="{{records}}" wx:key="id">
+      <view class="timeline-dot"></view>
+      <view class="record-head">
+        <view class="record-email">{{item.school_name || item.recipient_email}}</view>
+        <view class="pill {{item.statusClass}}">{{item.statusText}}</view>
+      </view>
+      <view wx:if="{{item.job_title}}" class="record-title">{{item.job_title}}</view>
+      <view class="record-meta">投递时间：{{item.sent_at || "待发送"}}</view>
+      <view wx:if="{{item.recipient_email}}" class="record-meta">邮箱：{{item.recipient_email}}</view>
+      <view wx:if="{{item.notes && item.notes.length}}" class="note-list">
+        <view wx:for="{{item.notes}}" wx:for-item="note" wx:key="created_at" class="note-item">{{note.content}}</view>
+      </view>
+      <view class="record-actions">
+        <button class="status-btn" data-id="{{item.id}}" bindtap="changeStatus">更新状态</button>
+        <button class="status-btn note-btn" data-id="{{item.id}}" bindtap="addNote">加跟进</button>
+      </view>
+    </view>
+  </view>
+  <view wx:if="{{isEmpty}}" class="empty">还没有投递记录，先从推荐岗位里挑一个看看</view>
+</view>

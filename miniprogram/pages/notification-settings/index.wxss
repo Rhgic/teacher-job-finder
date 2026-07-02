@@ -1,0 +1,150 @@
+.notify-hero {
+  padding-right: 120rpx;
+}
+
+.source-badge {
+  position: absolute;
+  right: 24rpx;
+  top: 28rpx;
+  z-index: 1;
+  padding: 8rpx 12rpx;
+  border-radius: 8rpx;
+  background: #e7f1ee;
+  color: #14604f;
+  font-size: 21rpx;
+  font-weight: 850;
+}
+
+.settings-card {
+  margin-bottom: 22rpx;
+  padding: 24rpx;
+  border-radius: 12rpx;
+  background: #ffffff;
+  border: 1rpx solid #dfe6df;
+  box-shadow: 0 12rpx 28rpx rgba(26, 52, 45, 0.06);
+}
+
+.compact {
+  margin: 0 0 14rpx;
+}
+
+.switch-row,
+.pick-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18rpx;
+  min-height: 92rpx;
+  border-top: 1rpx solid #edf1ee;
+}
+
+.switch-row:first-of-type,
+.pick-row:first-of-type {
+  border-top: 0;
+}
+
+.switch-row > view,
+.pick-row > view:first-child {
+  flex: 1;
+  min-width: 0;
+}
+
+.switch-title {
+  color: #15231f;
+  font-size: 27rpx;
+  font-weight: 850;
+  line-height: 1.35;
+}
+
+.switch-desc {
+  margin-top: 6rpx;
+  color: #66736d;
+  font-size: 22rpx;
+  line-height: 1.45;
+}
+
+.pick-value {
+  flex: 0 0 auto;
+  min-width: 84rpx;
+  padding: 9rpx 12rpx;
+  border-radius: 8rpx;
+  background: #e7f1ee;
+  color: #14604f;
+  font-size: 23rpx;
+  font-weight: 850;
+  text-align: center;
+}
+
+.time-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14rpx;
+  margin-top: 18rpx;
+}
+
+.time-field {
+  min-width: 0;
+  padding: 18rpx;
+  border-radius: 10rpx;
+  background: #f6faf7;
+  border: 1rpx solid #e4ebe5;
+}
+
+.time-field input {
+  height: 54rpx;
+  margin-top: 6rpx;
+  color: #15231f;
+  font-size: 28rpx;
+  font-weight: 850;
+}
+
+.auth-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18rpx;
+  min-height: 94rpx;
+}
+
+.auth-row > view {
+  flex: 1;
+  min-width: 0;
+}
+
+.auth-button {
+  flex: 0 0 154rpx;
+  min-width: 154rpx;
+  height: 62rpx;
+  margin: 0;
+  padding: 0 14rpx;
+  border-radius: 8rpx;
+  background: #14604f;
+  color: #ffffff;
+  font-size: 23rpx;
+  font-weight: 850;
+  line-height: 62rpx;
+}
+
+.auth-button::after {
+  border: 0;
+}
+
+.notice-card {
+  padding: 24rpx;
+  border-radius: 12rpx;
+  background: #fff8ee;
+  border: 1rpx solid #f4ddb9;
+}
+
+.notice-title {
+  color: #a25713;
+  font-size: 27rpx;
+  font-weight: 850;
+}
+
+.notice-text {
+  margin-top: 8rpx;
+  color: #87591f;
+  font-size: 24rpx;
+  line-height: 1.6;
+}
