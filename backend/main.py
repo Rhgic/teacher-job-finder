@@ -4,25 +4,90 @@
     pip install -r requirements.txt
     python seed.py            # 建表 + 种子数据
     uvicorn main:app --reload # 启动后访问 http://127.0.0.1:8000/docs
+
+可观测性：
+    每个请求分配 request_id，写入 JSON 日志并通过 X-Request-ID 响应头回传；
+    5xx 响应体也带上该 ID，用户报错时凭这个 ID 就能在日志里捞到完整堆栈。
+    指标见 GET /metrics（Prometheus 文本格式）。
 """
-from fastapi import FastAPI
+import logging
+import os
+from contextlib import asynccontextmanager
+
+from fastapi import FastAPI, Request
+from fastapi.responses import JSONResponse
 
 from database import init_db
+from observability import (
+    ObservabilityMiddleware,
+    metrics_endpoint,
+    request_id_ctx,
+    setup_logging,
+)
 from routers import jobs, profile, rules, matches, applications, auth, crawl, meta, settings, rag
 
-app = FastAPI(title="教师求职小程序 API", version="0.1.0")
+setup_logging(os.getenv("LOG_LEVEL", "INFO"))
+logger = logging.getLogger("app")
 
 
-@app.on_event("startup")
-def _startup():
+@asynccontextmanager
+async def lifespan(_: FastAPI):
+    # 再接管一次日志：uvicorn 在模块导入之后才装自己的 handler，
+    # 不重新配置的话它会用原生格式把多行堆栈打进来，冲掉 JSON 结构。
+    setup_logging(os.getenv("LOG_LEVEL", "INFO"))
     # 开发期自动建表；生产请改用 Alembic 迁移，移除此调用。
     init_db()
+    logger.info("startup", extra={"extra_fields": {"event": "app_started"}})
+    yield
+    logger.info("shutdown", extra={"extra_fields": {"event": "app_stopped"}})
+
+
+app = FastAPI(title="教师求职小程序 API", version="0.1.0", lifespan=lifespan)
+
+app.add_middleware(ObservabilityMiddleware)
+
+
+@app.exception_handler(Exception)
+async def unhandled_exception_handler(request: Request, exc: Exception):
+    """兜底异常处理。
+
+    默认行为是返回一句无上下文的 "Internal Server Error"，排查时只能去翻日志、
+    还未必对得上是哪一次请求。这里把完整堆栈按 request_id 记进日志，
+    响应体只回该 ID —— 既不泄露内部细节，又能让报障用户提供可定位的线索。
+    """
+    # 必须显式带上 request_id，不能依赖 ContextVar：
+    # 处理 Exception 的 ServerErrorMiddleware 在本应用中间件的更外层，
+    # 异常先穿过 ObservabilityMiddleware（其 finally 已 reset 掉 ContextVar），
+    # 才会到达这里 —— 此时 request_id_ctx 取到的是默认值 "-"，
+    # 日志就与请求对不上号，排障时凭用户报的 ID 反而查不到堆栈。
+    request_id = getattr(request.state, "request_id", request_id_ctx.get())
+    logger.exception(
+        "unhandled_exception",
+        extra={
+            "extra_fields": {
+                "request_id": request_id,
+                "path": request.url.path,
+                "method": request.method,
+                "exc_type": type(exc).__name__,
+            }
+        },
+    )
+    return JSONResponse(
+        status_code=500,
+        content={
+            "detail": "服务器内部错误，请稍后重试。",
+            "request_id": request_id,
+        },
+        headers={"X-Request-ID": request_id},
+    )
 
 
 @app.get("/health", tags=["meta"])
 def health():
     return {"status": "ok"}
 
+
+app.add_route("/metrics", metrics_endpoint, methods=["GET"])
 
 app.include_router(auth.router)
 app.include_router(jobs.router)
