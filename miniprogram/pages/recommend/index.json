@@ -1,0 +1,6 @@
+{
+  "navigationBarTitleText": "推荐",
+  "usingComponents": {
+    "job-card": "../../components/job-card/job-card"
+  }
+}

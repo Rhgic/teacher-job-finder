@@ -1,0 +1,121 @@
+<view class="page">
+  <view class="hero-card job-hero">
+    <view class="hero-copy">
+      <view class="hero-kicker">深圳教师求职助手</view>
+      <view class="hero-title">深圳教师招聘</view>
+      <view class="hero-subtitle">先按区域、学段、学科缩小范围，再核对公告和材料。</view>
+    </view>
+    <view class="hero-count">
+      <view class="hero-count-num">{{filteredCount}}</view>
+      <view class="hero-count-label">个岗位</view>
+    </view>
+    <view class="hero-route">
+      <text>南山</text>
+      <text>福田</text>
+      <text>宝安</text>
+      <text>龙岗</text>
+    </view>
+  </view>
+
+  <view class="filter-panel">
+    <view class="search-box">
+      <input value="{{keyword}}" placeholder="搜学校、区域、学科或岗位名" bindinput="onKeywordInput" />
+      <view wx:if="{{keyword}}" class="clear" bindtap="clearKeyword">清除</view>
+    </view>
+    <view class="filter-head" bindtap="toggleFilters">
+      <view class="filter-head-main">
+        <view class="filter-title">筛选条件</view>
+        <view class="muted">{{filterSummary}}</view>
+      </view>
+      <view class="filter-toggle">{{filtersOpen ? '收起 ▲' : '展开 ▼'}}</view>
+    </view>
+
+    <view wx:if="{{filtersOpen}}" class="filter-body">
+      <view class="chips">
+        <picker range="{{districts}}" bindchange="onDistrictChange">
+          <view class="chip"><text class="chip-label">区域</text>{{districtText}}</view>
+        </picker>
+        <picker range="{{stages}}" bindchange="onStageChange">
+          <view class="chip"><text class="chip-label">学段</text>{{stageText}}</view>
+        </picker>
+        <picker range="{{subjects}}" bindchange="onSubjectChange">
+          <view class="chip"><text class="chip-label">学科</text>{{subjectText}}</view>
+        </picker>
+        <view class="chip {{bianzhiClass}}" bindtap="toggleBianzhi"><text class="chip-label">性质</text>{{onlyBianzhi ? '只看编制' : '不限编制'}}</view>
+      </view>
+      <view class="range-toggle">
+        <view class="range-copy">
+          <view class="range-title">岗位范围</view>
+          <view class="muted">{{includeExpired ? '会把已截止公告也放进列表，适合回看来源。' : '默认只看还没过截止日的岗位。'}}</view>
+        </view>
+        <view class="range-control" bindtap="toggleExpiredMode">
+          <view class="range-option {{!includeExpired ? 'active' : ''}}">当前可投</view>
+          <view class="range-option {{includeExpired ? 'active' : ''}}">含已截止</view>
+        </view>
+      </view>
+      <view wx:if="{{savedSearches.length}}" class="saved-searches">
+        <view class="saved-title">常用搜索</view>
+        <view class="saved-list">
+          <view wx:for="{{savedSearches}}" wx:key="id" class="saved-chip" data-id="{{item.id}}" bindtap="applySavedSearch">{{item.label}}</view>
+        </view>
+      </view>
+      <view class="filter-actions-row">
+        <button class="ghost-btn mini-btn" bindtap="resetFilters">重置</button>
+        <button class="ghost-btn mini-btn" bindtap="saveCurrentSearch">保存搜索</button>
+        <button class="ghost-btn mini-btn" bindtap="refreshJobs">刷新列表</button>
+      </view>
+    </view>
+  </view>
+
+  <view class="summary-bar">
+    <view>
+      <view class="summary-title">岗位清单</view>
+      <view class="muted">优先看学校、截止和是否要核对公告</view>
+    </view>
+    <view class="summary-badge">{{filteredCount}} 条</view>
+  </view>
+
+  <view
+    wx:for="{{filteredJobs}}"
+    wx:key="id"
+    class="job-card {{item.cardClass}}"
+    data-id="{{item.id}}"
+    bindtap="openJob"
+  >
+    <view class="card-head">
+      <view class="school-wrap">
+        <view class="school">{{item.school_name}}</view>
+        <view class="job-meta">{{item.district || '深圳'}} · {{item.stage || '学段待确认'}} · {{item.subject || '学科待确认'}}</view>
+      </view>
+      <view class="pill {{item.isExpired ? 'warn' : item.is_establishment ? 'green' : 'gray'}}">{{item.isExpired ? '已截止' : item.is_establishment ? '有编制' : '待确认'}}</view>
+    </view>
+    <view class="job-title">{{item.title}}</view>
+    <view class="job-tags">
+      <view class="soft-tag">{{item.subject || '学科待确认'}}</view>
+      <view class="soft-tag">{{item.stage || '学段待确认'}}</view>
+      <view class="soft-tag {{item.isExpired ? 'expired-tag' : 'warn'}}">{{item.deadlineTagText}}</view>
+      <view class="soft-tag source {{item.sourceStatusClass}}">{{item.sourceStatusText}}</view>
+    </view>
+    <view wx:if="{{item.isExpired}}" class="expired-hint">这个岗位已过截止日期，建议只作历史参考，投递前必须回公告确认是否延期。</view>
+    <view class="job-footer">
+      <view class="job-stats">
+        <view class="stat">
+          <view class="stat-label">薪资</view>
+          <view class="stat-value">{{item.salaryText}}</view>
+        </view>
+        <view class="stat">
+          <view class="stat-label">截止</view>
+          <view class="stat-value">{{item.deadlineShort}}</view>
+        </view>
+        <view class="stat">
+          <view class="stat-label">状态</view>
+          <view class="stat-value">{{item.statusText}}</view>
+        </view>
+      </view>
+      <view class="action-stat">
+        <button class="primary-btn small-btn" catchtap="openJob" data-id="{{item.id}}">查看</button>
+      </view>
+    </view>
+  </view>
+  <view wx:if="{{isEmpty}}" class="empty">暂无符合条件的岗位</view>
+</view>

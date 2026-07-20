@@ -1,0 +1,36 @@
+# 本地开发环境：一条命令起 MySQL。
+#   docker compose up -d db
+#   docker compose ps          # 等 db 变成 healthy
+# 连接串（写进 .env）：
+#   DATABASE_URL=mysql+pymysql://teacher:teacher_dev_pwd@127.0.0.1:3306/teacher_jobs?charset=utf8mb4
+services:
+  db:
+    image: mysql:8.0
+    container_name: teacher-jobs-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: root_dev_pwd
+      MYSQL_DATABASE: teacher_jobs
+      MYSQL_USER: teacher
+      MYSQL_PASSWORD: teacher_dev_pwd
+      TZ: Asia/Shanghai
+    # 建库即 utf8mb4，避免中文/emoji 落库出错；
+    # MYSQL_DATABASE 自动建的库会继承这里的服务端默认字符集。
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_0900_ai_ci
+      - --default-time-zone=+08:00
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      # 用真实登录探活，而不是只看端口，避免"端口通了但还没初始化完"
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-uteacher", "-pteacher_dev_pwd"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 30s
+
+volumes:
+  mysql_data:

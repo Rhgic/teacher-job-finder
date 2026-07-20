@@ -1,0 +1,46 @@
+<view class="page">
+  <view class="hero-card">
+    <view class="hero-kicker">求职档案</view>
+    <view class="hero-title">让推荐更像你</view>
+    <view class="hero-subtitle">区域、学段、学科、证书这些信息越准，岗位筛选越省力。</view>
+    <view class="source-badge">{{sourceText}}</view>
+  </view>
+
+  <view class="form-card">
+    <view class="field">
+      <view class="label">目标区域</view>
+      <input value="{{form.districts}}" data-key="districts" bindinput="onInput" />
+      <view class="preset-row">
+        <view wx:for="{{districtPresets}}" wx:key="label" class="preset-chip" data-key="districts" data-value="{{item.value}}" bindtap="applyPreset">{{item.label}}</view>
+      </view>
+    </view>
+    <view class="field">
+      <view class="label">目标学段</view>
+      <input value="{{form.stages}}" data-key="stages" bindinput="onInput" />
+      <view class="preset-row">
+        <view wx:for="{{stagePresets}}" wx:key="label" class="preset-chip" data-key="stages" data-value="{{item.value}}" bindtap="applyPreset">{{item.label}}</view>
+      </view>
+    </view>
+    <view class="field">
+      <view class="label">目标学科</view>
+      <input value="{{form.subjects}}" data-key="subjects" bindinput="onInput" />
+      <view class="preset-row">
+        <view wx:for="{{subjectPresets}}" wx:key="label" class="preset-chip" data-key="subjects" data-value="{{item.value}}" bindtap="applyPreset">{{item.label}}</view>
+      </view>
+    </view>
+    <view class="field">
+      <view class="label">证书情况</view>
+      <input value="{{form.certificate}}" data-key="certificate" bindinput="onInput" />
+    </view>
+    <view class="field">
+      <view class="label">教学年限</view>
+      <input value="{{form.years}}" data-key="years" bindinput="onInput" />
+    </view>
+    <view class="field">
+      <view class="label">学校偏好</view>
+      <input value="{{form.schoolType}}" data-key="schoolType" bindinput="onInput" />
+    </view>
+  </view>
+
+  <button class="primary-btn save-btn" bindtap="save">保存档案</button>
+</view>

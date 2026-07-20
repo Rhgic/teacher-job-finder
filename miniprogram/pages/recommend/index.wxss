@@ -1,0 +1,96 @@
+.top-card {
+  display: flex;
+  justify-content: space-between;
+  gap: 20rpx;
+  align-items: center;
+}
+
+.recommend-copy {
+  position: relative;
+  z-index: 1;
+  min-width: 0;
+}
+
+.run-btn {
+  position: relative;
+  z-index: 1;
+  width: 182rpx;
+  flex: 0 0 auto;
+  margin: 0;
+  padding: 0;
+}
+
+.recommend-note {
+  display: flex;
+  gap: 16rpx;
+  align-items: flex-start;
+  margin: 0 2rpx 22rpx;
+  padding: 22rpx;
+  border-radius: 20rpx;
+  background: #fff8ee;
+  border: 1rpx solid #f4ddb9;
+}
+
+.note-mark {
+  width: 42rpx;
+  height: 42rpx;
+  line-height: 42rpx;
+  border-radius: 12rpx;
+  background: #b4590b;
+  color: #ffffff;
+  text-align: center;
+  font-size: 22rpx;
+  font-weight: 900;
+}
+
+.note-title {
+  margin-bottom: 4rpx;
+  color: #b4590b;
+  font-size: 25rpx;
+  font-weight: 800;
+}
+
+.list-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 18rpx;
+  margin: 24rpx 2rpx 16rpx;
+}
+
+.list-title {
+  color: #1c2030;
+  font-size: 30rpx;
+  font-weight: 850;
+}
+
+.list-count {
+  padding: 10rpx 18rpx;
+  border-radius: 999rpx;
+  background: #eaedfb;
+  color: #4653f0;
+  font-size: 22rpx;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.empty-card {
+  padding: 54rpx 26rpx;
+  border-radius: 24rpx;
+  background: #ffffff;
+  box-shadow: 0 10rpx 30rpx rgba(70, 83, 240, 0.06);
+  text-align: center;
+}
+
+.empty-title {
+  color: #1c2030;
+  font-size: 30rpx;
+  font-weight: 850;
+}
+
+.empty-btn {
+  width: 220rpx;
+  height: 62rpx;
+  margin: 24rpx auto 0;
+  font-size: 24rpx;
+}

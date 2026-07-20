@@ -1,0 +1,35 @@
+<view class="page">
+  <view class="hero-card top-card">
+    <view class="recommend-copy">
+      <view class="hero-kicker">推荐给你先看的岗位</view>
+      <view class="hero-title">先判断，再投递</view>
+      <view class="hero-subtitle">系统只帮你排优先级，材料和投递必须由你确认。</view>
+    </view>
+    <button class="ghost-btn run-btn" bindtap="refreshRecommendations">刷新列表</button>
+  </view>
+
+  <view class="recommend-note">
+    <view class="note-mark">核</view>
+    <view>
+      <view class="note-title">投递前留一手</view>
+      <view class="muted">推荐理由可以参考，公告原文、证书条件、简历改写仍要你亲自核对。</view>
+    </view>
+  </view>
+
+  <view class="list-head">
+    <view>
+      <view class="list-title">推荐队列</view>
+      <view class="muted">适合先处理的岗位会排在这里</view>
+    </view>
+    <view class="list-count">{{matches.length || 0}} 个</view>
+  </view>
+
+  <block wx:for="{{matches}}" wx:key="id">
+    <job-card job="{{item.job}}" score="{{item.llm_score}}" reason="{{item.reason}}" apply-text="确认投递" />
+  </block>
+  <view wx:if="{{isEmpty}}" class="empty-card">
+    <view class="empty-title">暂无推荐</view>
+    <view class="muted">先完善求职档案，或者稍后刷新列表看看。</view>
+    <button class="ghost-btn empty-btn" bindtap="openProfile">完善档案</button>
+  </view>
+</view>

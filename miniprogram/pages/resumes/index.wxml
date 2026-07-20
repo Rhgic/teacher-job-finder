@@ -1,0 +1,27 @@
+<view class="page">
+  <view class="hero-card">
+    <view class="hero-kicker">简历中心</view>
+    <view class="hero-title">先把材料管起来</view>
+    <view class="hero-subtitle">后续每个岗位都会基于真实简历生成求职信和投递材料。</view>
+    <view class="source-pill">{{sourceText}}</view>
+  </view>
+
+  <view class="actions-row">
+    <button class="primary-btn action" bindtap="addDemoResume">新建简历</button>
+    <button class="ghost-btn action" bindtap="showUploadTip">上传文件</button>
+  </view>
+
+  <view class="resume-card" wx:for="{{resumes}}" wx:key="id">
+    <view class="resume-head">
+      <view>
+        <view class="resume-name">{{item.name}}</view>
+        <view class="muted">更新：{{item.updated_at}}</view>
+      </view>
+      <view class="score">{{item.completeness}}%</view>
+    </view>
+    <view class="progress"><view class="progress-inner" style="width: {{item.completeness}}%;"></view></view>
+    <view class="tag-row">
+      <view class="soft-tag" wx:for="{{item.highlights}}" wx:key="*this">{{item}}</view>
+    </view>
+  </view>
+</view>

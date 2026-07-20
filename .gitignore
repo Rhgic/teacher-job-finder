@@ -1,0 +1,44 @@
+# ---- 机密：绝不入库 ----
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# ---- Python ----
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+*.egg-info/
+
+# ---- 数据库与备份（本地数据，不进仓库）----
+*.db
+*.db-wal
+*.db-shm
+*.sqlite3
+backups/
+backend/generated_resumes/
+
+# ---- 前端 ----
+node_modules/
+dist/
+miniprogram/project.private.config.json
+
+# ---- AI 协作过程文档（本地保留，不入仓库）----
+AGENTS.md
+CLAUDE_运行说明.md
+Codex完成清单.md
+给Claude审查_*.md
+给Codex的方案_*.md
+.claude/
+backend/CODEX_PROMPT.md
+
+# ---- 编辑器 / 系统 ----
+.DS_Store
+.idea/
+.vscode/
+*.swp

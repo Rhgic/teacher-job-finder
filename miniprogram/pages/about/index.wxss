@@ -1,0 +1,40 @@
+.info-card {
+  margin-bottom: 22rpx;
+  padding: 26rpx;
+  border-radius: 20rpx;
+  background: #ffffff;
+  border: 1rpx solid #e5e7f4;
+  box-shadow: 0 12rpx 28rpx rgba(70, 83, 240, 0.06);
+}
+
+.info-card.warn {
+  background: #fff8ee;
+  border-color: #f4ddb9;
+}
+
+.card-title {
+  margin-bottom: 16rpx;
+  color: #1c2030;
+  font-size: 30rpx;
+  font-weight: 850;
+}
+
+.info-item {
+  position: relative;
+  margin-top: 14rpx;
+  padding-left: 22rpx;
+  color: #59617d;
+  font-size: 25rpx;
+  line-height: 1.65;
+}
+
+.info-item::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 18rpx;
+  width: 8rpx;
+  height: 8rpx;
+  border-radius: 50%;
+  background: #4653f0;
+}

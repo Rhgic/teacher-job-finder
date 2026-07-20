@@ -1,0 +1,29 @@
+<view class="page">
+  <view class="hero-card">
+    <view class="hero-kicker">关于小程序</view>
+    <view class="hero-title">深圳教师求职助手</view>
+    <view class="hero-subtitle">这是一个帮助教师整理深圳岗位、管理材料和跟进投递的求职工具。</view>
+  </view>
+
+  <view class="info-card">
+    <view class="card-title">我们会做什么</view>
+    <view class="info-item">聚合并整理深圳教师招聘岗位。</view>
+    <view class="info-item">帮助你按区域、学段、学科和编制偏好筛选岗位。</view>
+    <view class="info-item">保存你的收藏、订阅、简历档案和投递记录。</view>
+    <view class="info-item">在你确认后记录投递动作和材料使用情况。</view>
+  </view>
+
+  <view class="info-card warn">
+    <view class="card-title">明确不会做什么</view>
+    <view class="info-item">不会绕过你自动投递。</view>
+    <view class="info-item">不会编造学历、证书、年限、获奖或工作经历。</view>
+    <view class="info-item">不会把你的简历信息用于教师求职以外的用途。</view>
+  </view>
+
+  <view class="info-card">
+    <view class="card-title">信息使用说明</view>
+    <view class="info-item">微信登录标识用于识别当前用户。</view>
+    <view class="info-item">求职档案和简历资料用于岗位匹配、材料整理和投递确认。</view>
+    <view class="info-item">收藏、订阅和投递记录用于帮你持续跟进求职进度。</view>
+  </view>
+</view>

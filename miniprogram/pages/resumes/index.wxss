@@ -1,0 +1,83 @@
+.actions-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14rpx;
+  margin-bottom: 22rpx;
+}
+
+.source-pill {
+  position: absolute;
+  right: 24rpx;
+  top: 28rpx;
+  z-index: 1;
+  padding: 8rpx 16rpx;
+  border-radius: 999rpx;
+  background: rgba(255, 255, 255, 0.16);
+  border: 1rpx solid rgba(255, 255, 255, 0.22);
+  color: #ffffff;
+  font-size: 21rpx;
+  font-weight: 800;
+}
+
+.action {
+  width: 100%;
+  margin: 0;
+  font-size: 25rpx;
+}
+
+.resume-card {
+  margin-bottom: 22rpx;
+  padding: 26rpx;
+  border-radius: 20rpx;
+  background: #ffffff;
+  border: 1rpx solid #e5e7f4;
+  box-shadow: 0 12rpx 28rpx rgba(70, 83, 240, 0.06);
+}
+
+.resume-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 18rpx;
+  align-items: center;
+}
+
+.resume-name {
+  color: #1c2030;
+  font-size: 30rpx;
+  font-weight: 850;
+}
+
+.score {
+  color: #4653f0;
+  font-size: 34rpx;
+  font-weight: 900;
+}
+
+.progress {
+  height: 12rpx;
+  margin-top: 20rpx;
+  border-radius: 999rpx;
+  background: #eceef7;
+  overflow: hidden;
+}
+
+.progress-inner {
+  height: 100%;
+  border-radius: 999rpx;
+  background: #4653f0;
+}
+
+.tag-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10rpx;
+  margin-top: 18rpx;
+}
+
+.soft-tag {
+  padding: 8rpx 12rpx;
+  border-radius: 14rpx;
+  background: #f2f3fa;
+  color: #59617d;
+  font-size: 21rpx;
+}

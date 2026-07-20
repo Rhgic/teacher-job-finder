@@ -1,0 +1,10 @@
+[Unit]
+Description=Run Teacher Job Finder crawler daily
+
+[Timer]
+OnCalendar=*-*-* 07:10:00
+RandomizedDelaySec=45m
+Persistent=true
+
+[Install]
+WantedBy=timers.target

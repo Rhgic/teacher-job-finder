@@ -1,0 +1,76 @@
+{
+  "description": "深圳教师求职小程序",
+  "packOptions": {
+    "ignore": [
+      {
+        "type": "folder",
+        "value": "scripts"
+      },
+      {
+        "type": "file",
+        "value": "上线前必读.md"
+      },
+      {
+        "type": "file",
+        "value": "微信后台填写清单.md"
+      },
+      {
+        "type": "file",
+        "value": "审核前验收清单.md"
+      },
+      {
+        "type": "file",
+        "value": "醒来后上线待办.md"
+      },
+      {
+        "type": "file",
+        "value": "preview-qrcode.png"
+      },
+      {
+        "type": "file",
+        "value": "preview-info.json"
+      },
+      {
+        "type": "file",
+        "value": "project.private.config.json"
+      },
+      {
+        "type": "file",
+        "value": ".DS_Store"
+      }
+    ],
+    "include": []
+  },
+  "setting": {
+    "urlCheck": false,
+    "es6": true,
+    "enhance": true,
+    "postcss": true,
+    "minified": true,
+    "compileWorklet": false,
+    "uglifyFileName": false,
+    "uploadWithSourceMap": true,
+    "packNpmManually": false,
+    "packNpmRelationList": [],
+    "minifyWXSS": true,
+    "minifyWXML": true,
+    "localPlugins": false,
+    "disableUseStrict": false,
+    "useCompilerPlugins": false,
+    "condition": false,
+    "swc": false,
+    "disableSWC": true,
+    "babelSetting": {
+      "ignore": [],
+      "disablePlugins": [],
+      "outputPath": ""
+    }
+  },
+  "compileType": "miniprogram",
+  "libVersion": "3.8.10",
+  "appid": "wx2dcd7d67c642d4cb",
+  "projectname": "teacher-job-finder",
+  "condition": {},
+  "simulatorPluginLibVersion": {},
+  "editorSetting": {}
+}

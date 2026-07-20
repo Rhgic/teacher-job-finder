@@ -1,0 +1,10 @@
+[Unit]
+Description=Teacher Job Finder scheduled crawler
+After=network-online.target teacher-job-api.service
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+WorkingDirectory=/opt/teacher-job-api
+EnvironmentFile=/opt/teacher-job-api/.env
+ExecStart=/opt/teacher-job-api/.venv/bin/python scripts/run_scheduled_crawl.py --source all --max-detail-pages 12

@@ -1,0 +1,68 @@
+.school-hero {
+}
+
+.school-metrics {
+  margin-bottom: 22rpx;
+}
+
+.profile-card,
+.job-card {
+  margin-bottom: 20rpx;
+  padding: 24rpx;
+  border-radius: 20rpx;
+  background: #ffffff;
+  border: 1rpx solid #e5e7f4;
+  box-shadow: 0 12rpx 28rpx rgba(70, 83, 240, 0.06);
+}
+
+.compact {
+  margin: 0 0 12rpx;
+}
+
+.row {
+  display: flex;
+  justify-content: space-between;
+  gap: 20rpx;
+  padding: 18rpx 0;
+  border-top: 1rpx solid #eceef7;
+  color: #1c2030;
+  line-height: 1.45;
+}
+
+.row text:first-child {
+  color: #667089;
+  flex: 0 0 130rpx;
+}
+
+.row text:last-child {
+  flex: 1;
+  min-width: 0;
+  text-align: right;
+  font-weight: 750;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.job-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14rpx;
+}
+
+.job-title {
+  flex: 1;
+  min-width: 0;
+  color: #1c2030;
+  font-size: 28rpx;
+  font-weight: 850;
+  line-height: 1.35;
+}
+
+.job-meta {
+  margin-top: 12rpx;
+  color: #667089;
+  font-size: 23rpx;
+  line-height: 1.45;
+}

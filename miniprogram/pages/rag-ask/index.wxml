@@ -1,0 +1,56 @@
+<view class="page qa-page">
+  <view class="hero-card qa-hero">
+    <view class="hero-kicker">公告问答</view>
+    <view class="hero-title">问问招聘公告</view>
+    <view class="hero-subtitle">围绕已收录的招聘公告提问，答案会尽量带出处，投递前仍请核对原文。</view>
+  </view>
+
+  <view class="ask-card">
+    <view class="field-label">你的问题</view>
+    <textarea
+      class="question-input"
+      value="{{question}}"
+      maxlength="120"
+      auto-height
+      placeholder="输入你的问题，如：报名需要哪些材料？"
+      placeholder-class="input-placeholder"
+      bindinput="onQuestionInput"
+    />
+    <button class="primary-btn ask-btn {{loading ? 'disabled' : ''}}" loading="{{loading}}" bindtap="submitQuestion">
+      {{loading ? '正在查询公告…' : '提问'}}
+    </button>
+  </view>
+
+  <view wx:if="{{!hasAsked}}" class="empty-card">
+    <view class="empty-title">可以问我这些问题</view>
+    <view class="empty-desc">报名要什么材料？这个岗位有编制吗？截止到几号？</view>
+    <view class="example-list">
+      <view wx:for="{{examples}}" wx:key="*this" class="example-chip" data-text="{{item}}" bindtap="useExample">{{item}}</view>
+    </view>
+  </view>
+
+  <view wx:elif="{{errorText}}" class="error-card">
+    <view class="error-title">查询失败</view>
+    <view class="error-text">{{errorText}}</view>
+  </view>
+
+  <view wx:elif="{{answer}}" class="answer-card {{found ? '' : 'not-found'}}">
+    <view class="answer-head">
+      <view class="answer-title">{{found ? '回答' : '公告未提及'}}</view>
+      <view class="pill {{found ? 'green' : 'warn'}}">{{found ? '有出处' : '需核对'}}</view>
+    </view>
+    <view class="answer-text">{{answer}}</view>
+    <view class="answer-note">信息由 AI 依据公告整理，请以公告原文为准。</view>
+  </view>
+
+  <view wx:if="{{found && sources.length}}" class="sources-card">
+    <view class="section-title compact">依据以下公告</view>
+    <view wx:for="{{sources}}" wx:key="id" class="source-item" data-id="{{item.id}}" bindtap="toggleSource">
+      <view class="source-head">
+        <view class="source-title">{{item.title}}</view>
+        <view class="source-action">{{item.expanded ? '收起' : '查看'}}</view>
+      </view>
+      <view wx:if="{{item.expanded}}" class="source-snippet">{{item.snippet}}</view>
+    </view>
+  </view>
+</view>

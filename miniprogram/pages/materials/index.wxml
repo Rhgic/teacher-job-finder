@@ -1,0 +1,29 @@
+<view class="page">
+  <view class="hero-card materials-hero">
+    <view class="hero-kicker">材料清单</view>
+    <view class="hero-title">投递前逐项核对</view>
+    <view class="hero-subtitle">按深圳教师招聘常见材料整理，避免临近截止才发现缺附件。</view>
+    <view class="progress-badge">{{percent}}%</view>
+  </view>
+
+  <view class="progress-card">
+    <view class="progress-head">
+      <view>
+        <view class="progress-title">已准备 {{doneCount}} / {{totalCount}}</view>
+        <view class="muted">勾选状态会保存在本机</view>
+      </view>
+      <button class="mini-btn" bindtap="resetList">重置</button>
+    </view>
+    <view class="ready-bar">
+      <view class="ready-fill" style="width: {{percent}}%;"></view>
+    </view>
+  </view>
+
+  <view wx:for="{{groups}}" wx:key="id" class="material-section">
+    <view class="section-name">{{item.title}}</view>
+    <view class="material-row" wx:for="{{item.items}}" wx:for-item="material" wx:key="id" data-group-id="{{item.id}}" data-item-id="{{material.id}}" bindtap="toggleItem">
+      <view class="check-box {{material.checked ? 'checked' : ''}}">{{material.checked ? '✓' : ''}}</view>
+      <view class="material-name">{{material.name}}</view>
+    </view>
+  </view>
+</view>

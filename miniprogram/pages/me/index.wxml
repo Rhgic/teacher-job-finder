@@ -1,0 +1,181 @@
+<view class="page">
+  <view class="hero-card profile">
+    <view class="avatar">师</view>
+    <view class="profile-copy">
+      <view class="hero-kicker">求职档案</view>
+      <view class="name">{{nameText}}</view>
+      <view class="hero-subtitle">{{emailText}}</view>
+    </view>
+    <view class="login-badge {{isLoggedIn ? 'on' : ''}}">{{isLoggedIn ? '已登录' : '未登录'}}</view>
+  </view>
+
+  <view class="login-card">
+    <view>
+      <view class="login-title">{{isLoggedIn ? '微信登录已启用' : '使用微信快速登录'}}</view>
+      <view class="login-desc">{{isLoggedIn ? '后续会用这个登录态保存你的目标、简历和投递记录。' : '和常见小程序一样，点一下就能绑定当前微信身份。'}}</view>
+    </view>
+    <button wx:if="{{!isLoggedIn}}" class="primary-btn login-btn" loading="{{loginLoading}}" bindtap="handleWechatLogin">微信登录</button>
+    <button wx:else class="ghost-btn login-btn" bindtap="handleLogout">退出</button>
+  </view>
+
+  <view wx:if="{{!onboardingHidden && onboardingProgress < onboardingTotal}}" class="onboarding-card">
+    <view class="onboarding-head">
+      <view>
+        <view class="onboarding-title">新手求职准备</view>
+        <view class="onboarding-desc">先完成这几步，后面推荐、公告核对和投递会顺很多。</view>
+      </view>
+      <button class="onboarding-hide" bindtap="hideOnboarding">收起</button>
+    </view>
+    <view class="onboarding-progress">
+      <view class="onboarding-count">{{onboardingProgress}}/{{onboardingTotal}}</view>
+      <view class="onboarding-track">
+        <view class="onboarding-fill" style="width: {{onboardingProgressPercent}}%;"></view>
+      </view>
+    </view>
+    <view class="onboarding-list">
+      <view wx:for="{{onboardingItems}}" wx:key="label" class="onboarding-step {{item.done ? 'done' : ''}}" data-url="{{item.url}}" bindtap="openOnboardingStep">
+        <view class="step-mark">{{item.done ? '✓' : index + 1}}</view>
+        <view class="step-copy">
+          <view class="step-title">{{item.label}}</view>
+          <view class="step-desc">{{item.desc}}</view>
+        </view>
+      </view>
+    </view>
+    <button class="primary-btn onboarding-btn" bindtap="openOnboardingNext">{{onboardingNextText}}</button>
+  </view>
+
+  <view class="quick-grid">
+    <view class="quick-card">
+      <view class="quick-value">深圳</view>
+      <view class="quick-label">求职城市</view>
+    </view>
+    <view class="quick-card">
+      <view class="quick-value">教师</view>
+      <view class="quick-label">岗位方向</view>
+    </view>
+    <view class="quick-card">
+      <view class="quick-value">确认制</view>
+      <view class="quick-label">投递方式</view>
+    </view>
+  </view>
+
+  <view class="ready-card">
+    <view class="ready-head">
+      <view>
+        <view class="section-title compact">资料准备度</view>
+        <view class="ready-desc">上线后这些内容会影响推荐和投递体验</view>
+      </view>
+      <view class="ready-score">{{readyScore}}%</view>
+    </view>
+    <view class="ready-bar">
+      <view class="ready-fill" style="width: {{readyScore}}%;"></view>
+    </view>
+    <view class="ready-list">
+      <view wx:for="{{readyItems}}" wx:key="label" class="ready-item">
+        <view class="ready-dot {{item.done ? 'done' : ''}}"></view>
+        <view class="ready-label">{{item.label}}</view>
+        <view class="ready-text">{{item.text}}</view>
+      </view>
+    </view>
+  </view>
+
+  <view class="feature-grid">
+    <view class="feature-card feature-wide" data-url="/pages/reminders/index" bindtap="openFeature">
+      <view class="feature-icon">醒</view>
+      <view>
+        <view class="feature-title">提醒中心</view>
+        <view class="feature-desc">快截止、待投递、资料缺口</view>
+      </view>
+    </view>
+    <view class="feature-card feature-wide" data-url="/pages/notification-settings/index" bindtap="openFeature">
+      <view class="feature-icon">铃</view>
+      <view>
+        <view class="feature-title">提醒设置</view>
+        <view class="feature-desc">截止、投递、材料、每日汇总</view>
+      </view>
+    </view>
+    <view class="feature-card feature-wide" data-url="/pages/job-guide/index" bindtap="openFeature">
+      <view class="feature-icon">路</view>
+      <view>
+        <view class="feature-title">求职流程</view>
+        <view class="feature-desc">从筛岗位到跟进进度</view>
+      </view>
+    </view>
+    <view class="feature-card feature-wide" data-url="/pages/rag-ask/index" bindtap="openFeature">
+      <view class="feature-icon">问</view>
+      <view>
+        <view class="feature-title">公告问答</view>
+        <view class="feature-desc">按公告回答材料、编制、截止时间</view>
+      </view>
+    </view>
+    <view class="feature-card" data-url="/pages/profile-edit/index" bindtap="openFeature">
+      <view class="feature-icon">档</view>
+      <view class="feature-title">求职档案</view>
+      <view class="feature-desc">区域学段学科</view>
+    </view>
+    <view class="feature-card" data-url="/pages/resumes/index" bindtap="openFeature">
+      <view class="feature-icon">历</view>
+      <view class="feature-title">简历中心</view>
+      <view class="feature-desc">多份材料管理</view>
+    </view>
+    <view class="feature-card" data-url="/pages/materials/index" bindtap="openFeature">
+      <view class="feature-icon">材</view>
+      <view class="feature-title">材料清单</view>
+      <view class="feature-desc">证书附件核对</view>
+    </view>
+    <view class="feature-card" data-url="/pages/source-guide/index" bindtap="openFeature">
+      <view class="feature-icon">验</view>
+      <view class="feature-title">来源核验</view>
+      <view class="feature-desc">先确认再投递</view>
+    </view>
+    <view class="feature-card" data-url="/pages/favorites/index" bindtap="openFeature">
+      <view class="feature-icon">藏</view>
+      <view class="feature-title">收藏岗位</view>
+      <view class="feature-desc">先比较再决定</view>
+    </view>
+    <view class="feature-card" data-url="/pages/job-compare/index" bindtap="openFeature">
+      <view class="feature-icon">比</view>
+      <view class="feature-title">岗位对比</view>
+      <view class="feature-desc">排投递顺序</view>
+    </view>
+    <view class="feature-card" data-url="/pages/subscriptions/index" bindtap="openFeature">
+      <view class="feature-icon">订</view>
+      <view class="feature-title">岗位订阅</view>
+      <view class="feature-desc">新机会提醒</view>
+    </view>
+    <view class="feature-card" data-url="/pages/calendar/index" bindtap="openFeature">
+      <view class="feature-icon">期</view>
+      <view class="feature-title">求职日历</view>
+      <view class="feature-desc">截止提醒</view>
+    </view>
+    <view class="feature-card" data-url="/pages/about/index" bindtap="openFeature">
+      <view class="feature-icon">规</view>
+      <view class="feature-title">关于与隐私</view>
+      <view class="feature-desc">规则说明</view>
+    </view>
+    <view wx:if="{{isDev}}" class="feature-card" data-url="/pages/server-status/index" bindtap="openFeature">
+      <view class="feature-icon">服</view>
+      <view class="feature-title">服务器状态</view>
+      <view class="feature-desc">上线检查</view>
+    </view>
+  </view>
+
+  <view class="card">
+    <view class="section-title compact">我的目标</view>
+    <view class="row"><text>区域</text><text>{{districts}}</text></view>
+    <view class="row"><text>学段</text><text>{{stages}}</text></view>
+    <view class="row"><text>学科</text><text>{{subjects}}</text></view>
+  </view>
+
+  <view class="card">
+    <view class="section-title compact">简历与求职信</view>
+    <view class="row"><text>默认简历</text><text>深圳教师求职简历</text></view>
+    <view class="row"><text>求职信模板</text><text>标准求职信</text></view>
+    <button class="ghost-btn full" bindtap="showUploadTip">更新简历</button>
+  </view>
+
+  <view class="safety-card">
+    <view class="safety-title">投递规则</view>
+    <view class="safety-text">简历改写只允许重组和突出真实经历；每一次投递都需要你确认。</view>
+  </view>
+</view>

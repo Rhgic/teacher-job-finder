@@ -1,0 +1,9 @@
+[Unit]
+Description=Teacher Job Finder SQLite backup
+After=teacher-job-api.service
+
+[Service]
+Type=oneshot
+WorkingDirectory=/opt/teacher-job-api
+EnvironmentFile=/opt/teacher-job-api/.env
+ExecStart=/opt/teacher-job-api/.venv/bin/python scripts/backup_sqlite.py --output-dir /opt/teacher-job-api/backups --keep 14
