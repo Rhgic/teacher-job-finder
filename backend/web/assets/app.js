@@ -68,13 +68,94 @@ const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => (
 const SCHOOL_TYPE_ZH = { public: "公办", private: "民办", training: "培训机构" };
 const schoolTypeZh = (t) => SCHOOL_TYPE_ZH[t] || t;
 
+/* 下拉多选面板：把成排的选项收进一个触发器里，避免平铺成墙。
+   触发器显示已选数量，面板内多选，面板外点击/Esc 关闭。
+   counts 可选：岗位页要展示每个选项有多少岗位，「我的」页设求职意向则不需要。 */
+function createPicker(host, { key, label, options, selected, onChange, counts }) {
+  const badge = (o) => (counts && counts[o] != null
+    ? `<span class="pi-n num">${counts[o]}</span>` : "");
+  host.insertAdjacentHTML("beforeend", `
+    <div class="picker" data-key="${key}">
+      <button type="button" class="picker-trigger" aria-expanded="false" aria-haspopup="true">
+        <span class="label">${esc(label)}</span>
+        <span class="summary"></span>
+        <span class="caret">▼</span>
+      </button>
+      <div class="picker-panel" hidden role="group" aria-label="${esc(label)}选项">
+        <div class="picker-grid">
+          ${options.map((o) => `
+            <button type="button" class="picker-item" data-v="${esc(o)}" aria-pressed="false">${esc(o)}${badge(o)}</button>`).join("")}
+        </div>
+        <div class="picker-foot">
+          <button type="button" class="clear">清空</button>
+          <button type="button" class="done">完成</button>
+        </div>
+      </div>
+    </div>`);
+
+  const root = host.lastElementChild;
+  const trigger = root.querySelector(".picker-trigger");
+  const panel = root.querySelector(".picker-panel");
+  const summary = root.querySelector(".summary");
+
+  function paint() {
+    root.querySelectorAll(".picker-item").forEach((item) => {
+      const on = selected.has(item.dataset.v);
+      item.classList.toggle("on", on);
+      item.setAttribute("aria-pressed", String(on));
+    });
+    const n = selected.size;
+    summary.innerHTML = n
+      ? `<span class="count num">${n}</span>`
+      : "不限";
+    onChange();
+  }
+
+  function close() {
+    root.classList.remove("open");
+    panel.hidden = true;
+    trigger.setAttribute("aria-expanded", "false");
+  }
+  function open() {
+    document.querySelectorAll(".picker.open").forEach((p) => {
+      p.classList.remove("open");
+      p.querySelector(".picker-panel").hidden = true;
+      p.querySelector(".picker-trigger").setAttribute("aria-expanded", "false");
+    });
+    root.classList.add("open");
+    panel.hidden = false;
+    trigger.setAttribute("aria-expanded", "true");
+  }
+
+  trigger.addEventListener("click", () => (root.classList.contains("open") ? close() : open()));
+  panel.addEventListener("click", (ev) => {
+    const item = ev.target.closest(".picker-item");
+    if (item) {
+      const v = item.dataset.v;
+      selected.has(v) ? selected.delete(v) : selected.add(v);
+      paint();
+      return;
+    }
+    if (ev.target.closest(".clear")) { selected.clear(); paint(); return; }
+    if (ev.target.closest(".done")) close();
+  });
+  root.addEventListener("keydown", (ev) => { if (ev.key === "Escape") { close(); trigger.focus(); } });
+
+  paint();
+  return { close, paint };
+}
+
 /* ---------- 岗位页 ---------- */
 async function initJobsPage() {
   const grid = document.getElementById("grid");
   const statsEl = document.getElementById("stats");
   const filtersEl = document.getElementById("filters");
+  const countEl = document.getElementById("resultCount");
   let jobs = [];
-  const active = { district: null, stage: null, bianzhi: false };
+  // 多选：可同时看南山区 + 福田区，比单选实用
+  const active = {
+    district: new Set(), stage: new Set(), subject: new Set(), bianzhi: false,
+  };
 
   try {
     jobs = await api("/jobs?size=100");
@@ -96,42 +177,70 @@ async function initJobsPage() {
     <div class="stat"><div class="v num">${jobs.filter((j) => j.is_establishment).length}</div><div class="k">带编制</div></div>
     <a class="stat ai" href="recommend.html"><div class="v num" id="aiStat">AI</div><div class="k">智能推荐 →</div></a>`;
 
-  const chipRow = (label, key, values) => `
-    <div class="chip-row" data-key="${key}">
-      <span class="label">${label}</span>
-      <button class="chip on" data-v="">全部</button>
-      ${values.map((v) => `<button class="chip" data-v="${esc(v)}">${esc(v)}<span class="n num">${count(key, v)}</span></button>`).join("")}
-    </div>`;
+  // 选项与计数都从当前数据推导：筛一个 0 结果的条件没有意义。
+  // （「我的」页设求职意向则相反，用后端标准表——两处语义不同，别混用。）
+  const countsOf = (key) => Object.fromEntries(
+    uniq(key).map((v) => [v, count(key, v)]));
+  const byCountDesc = (key) => uniq(key).sort((a, b) => count(key, b) - count(key, a));
 
-  filtersEl.innerHTML =
-    chipRow("区域", "district", uniq("district").sort()) +
-    chipRow("学段", "stage", uniq("stage").sort()) +
-    `<div class="chip-row" data-key="bianzhi">
-      <span class="label">编制</span>
-      <button class="chip" data-v="1">只看带编制</button>
-    </div>`;
+  filtersEl.innerHTML = "";
+  const pickers = [];
+  [["district", "区域"], ["stage", "学段"], ["subject", "学科"]].forEach(([key, label]) => {
+    pickers.push(createPicker(filtersEl, {
+      key, label,
+      options: byCountDesc(key),
+      counts: countsOf(key),
+      selected: active[key],
+      onChange: render,
+    }));
+  });
 
-  filtersEl.addEventListener("click", (ev) => {
-    const chip = ev.target.closest(".chip");
-    if (!chip) return;
-    const row = chip.closest(".chip-row");
-    const key = row.dataset.key;
-    if (key === "bianzhi") {
-      active.bianzhi = !active.bianzhi;
-      chip.classList.toggle("on", active.bianzhi);
-    } else {
-      row.querySelectorAll(".chip").forEach((c) => c.classList.remove("on"));
-      chip.classList.add("on");
-      active[key] = chip.dataset.v || null;
-    }
+  // 编制是布尔项，用同样外观的开关而非下拉
+  filtersEl.insertAdjacentHTML("beforeend", `
+    <div class="picker" data-key="bianzhi">
+      <button type="button" class="picker-trigger" id="jobBianzhi" aria-pressed="false">
+        <span class="label">只看带编制</span>
+        <span class="pi-n num">${jobs.filter((j) => j.is_establishment).length}</span>
+      </button>
+    </div>`);
+  const bz = document.getElementById("jobBianzhi");
+  bz.addEventListener("click", () => {
+    active.bianzhi = !active.bianzhi;
+    bz.classList.toggle("on", active.bianzhi);
+    bz.setAttribute("aria-pressed", String(active.bianzhi));
     render();
   });
 
+  document.addEventListener("click", (ev) => {
+    if (!ev.target.closest(".picker")) pickers.forEach((p) => p.close());
+  });
+
   function render() {
+    const hit = (set, value) => set.size === 0 || set.has(value);
     const list = jobs.filter((j) =>
-      (!active.district || j.district === active.district) &&
-      (!active.stage || j.stage === active.stage) &&
+      hit(active.district, j.district) &&
+      hit(active.stage, j.stage) &&
+      hit(active.subject, j.subject) &&
       (!active.bianzhi || j.is_establishment));
+
+    const chosen = active.district.size + active.stage.size + active.subject.size
+      + (active.bianzhi ? 1 : 0);
+    countEl.innerHTML = chosen
+      ? `筛出 <span class="num">${list.length}</span> / ${jobs.length} 个岗位
+         <button type="button" class="reset" id="resetFilters">清除筛选</button>`
+      : `共 <span class="num">${jobs.length}</span> 个在招岗位`;
+    const reset = document.getElementById("resetFilters");
+    if (reset) {
+      reset.addEventListener("click", () => {
+        active.district.clear(); active.stage.clear(); active.subject.clear();
+        active.bianzhi = false;
+        bz.classList.remove("on");
+        bz.setAttribute("aria-pressed", "false");
+        pickers.forEach((p) => p.paint());
+        render();
+      });
+    }
+
     if (!list.length) {
       grid.innerHTML = `<div class="state"><div class="big">没有符合筛选的岗位</div><div>换个条件试试</div></div>`;
       return;
@@ -448,80 +557,6 @@ async function initApplicationsPage() {
 }
 
 /* ---------- 我的页（体验身份） ---------- */
-
-/* 下拉多选面板：把 34 个选项从平铺墙收进三个下拉里。
-   触发器显示已选数量，面板内多选，面板外点击/Esc 关闭。 */
-function createPicker(host, { key, label, options, selected, onChange }) {
-  host.insertAdjacentHTML("beforeend", `
-    <div class="picker" data-key="${key}">
-      <button type="button" class="picker-trigger" aria-expanded="false" aria-haspopup="true">
-        <span class="label">${esc(label)}</span>
-        <span class="summary"></span>
-        <span class="caret">▼</span>
-      </button>
-      <div class="picker-panel" hidden role="group" aria-label="${esc(label)}选项">
-        <div class="picker-grid">
-          ${options.map((o) => `
-            <button type="button" class="picker-item" data-v="${esc(o)}" aria-pressed="false">${esc(o)}</button>`).join("")}
-        </div>
-        <div class="picker-foot">
-          <button type="button" class="clear">清空</button>
-          <button type="button" class="done">完成</button>
-        </div>
-      </div>
-    </div>`);
-
-  const root = host.lastElementChild;
-  const trigger = root.querySelector(".picker-trigger");
-  const panel = root.querySelector(".picker-panel");
-  const summary = root.querySelector(".summary");
-
-  function paint() {
-    root.querySelectorAll(".picker-item").forEach((item) => {
-      const on = selected.has(item.dataset.v);
-      item.classList.toggle("on", on);
-      item.setAttribute("aria-pressed", String(on));
-    });
-    const n = selected.size;
-    summary.innerHTML = n
-      ? `<span class="count num">${n}</span>`
-      : "不限";
-    onChange();
-  }
-
-  function close() {
-    root.classList.remove("open");
-    panel.hidden = true;
-    trigger.setAttribute("aria-expanded", "false");
-  }
-  function open() {
-    document.querySelectorAll(".picker.open").forEach((p) => {
-      p.classList.remove("open");
-      p.querySelector(".picker-panel").hidden = true;
-      p.querySelector(".picker-trigger").setAttribute("aria-expanded", "false");
-    });
-    root.classList.add("open");
-    panel.hidden = false;
-    trigger.setAttribute("aria-expanded", "true");
-  }
-
-  trigger.addEventListener("click", () => (root.classList.contains("open") ? close() : open()));
-  panel.addEventListener("click", (ev) => {
-    const item = ev.target.closest(".picker-item");
-    if (item) {
-      const v = item.dataset.v;
-      selected.has(v) ? selected.delete(v) : selected.add(v);
-      paint();
-      return;
-    }
-    if (ev.target.closest(".clear")) { selected.clear(); paint(); return; }
-    if (ev.target.closest(".done")) close();
-  });
-  root.addEventListener("keydown", (ev) => { if (ev.key === "Escape") { close(); trigger.focus(); } });
-
-  paint();
-  return { close, paint };
-}
 
 async function initMePage() {
   const guestArea = document.getElementById("guestArea");

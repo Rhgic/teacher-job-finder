@@ -515,3 +515,20 @@ button { font: inherit; cursor: pointer; border: 0; background: none; color: inh
 }
 .picker-trigger.on .label { color: #fff; }
 .picker-trigger.on:hover { background: var(--brand-deep); border-color: var(--brand-deep); color: #fff; }
+
+/* 选项内的数量角标（岗位页筛选用；「我的」页设意向不显示数量） */
+.picker-item .pi-n { font-size: 11px; opacity: .55; margin-left: 5px; }
+.picker-item.on .pi-n { opacity: .8; }
+.picker-trigger .pi-n { font-size: 11px; opacity: .5; }
+.picker-trigger.on .pi-n { color: #fff; opacity: .75; }
+
+/* 筛选结果计数 */
+.result-count {
+  font-size: 13px; color: var(--ink-2); margin: 14px 0 16px;
+  display: flex; align-items: center; gap: 12px;
+}
+.result-count .num { font-weight: 700; color: var(--ink); }
+.result-count .reset {
+  font-size: 12.5px; color: var(--brand); font-weight: 600;
+}
+.result-count .reset:hover { text-decoration: underline; }
