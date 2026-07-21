@@ -279,3 +279,151 @@ async function initRecommendPage() {
     }
   });
 }
+
+/* ---------- 问答页 ---------- */
+
+/* 极简 markdown 渲染：只支持加粗、无序列表、段落/换行。
+   先整体转义再做替换，模型输出不会注入 HTML。 */
+function renderAnswer(text) {
+  const safe = esc(text);
+  const blocks = safe.split(/\n{2,}/).map((block) => {
+    const lines = block.split("\n");
+    const isList = lines.every((l) => /^\s*[-•]\s+/.test(l) || !l.trim());
+    if (isList && lines.some((l) => l.trim())) {
+      const items = lines.filter((l) => l.trim())
+        .map((l) => `<li>${l.replace(/^\s*[-•]\s+/, "")}</li>`).join("");
+      return `<ul>${items}</ul>`;
+    }
+    return `<p>${block.replace(/\n/g, "<br>")}</p>`;
+  }).join("");
+  return blocks.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
+}
+
+const NOT_FOUND_TEXT = "公告未提及";
+
+function qaItemHtml(question, resp) {
+  const notFound = !resp.found || (resp.answer || "").includes(NOT_FOUND_TEXT);
+  const cites = (resp.sources || []).map((s, i) => `
+    <details class="cite">
+      <summary><span class="no num">${i + 1}</span>${esc(s.title || "公告片段")}</summary>
+      <div class="snippet">${esc(s.snippet || "")}</div>
+    </details>`).join("");
+  return `
+  <section class="qa-item rise">
+    <div class="qa-q">${esc(question)}</div>
+    <div class="qa-a">
+      ${notFound ? `
+        <div class="qa-notfound">
+          <span class="mark">⊘</span>
+          <div>${esc(resp.answer || "提供的公告未提及该信息，建议查看公告原文。")}
+            <small>检索不到依据时不做推测——这是刻意设计，不是检索失败。</small></div>
+        </div>` : `
+        <div class="answer">${renderAnswer(resp.answer || "")}</div>`}
+      ${cites ? `<div class="cites"><div class="cites-label">依据的公告片段</div>${cites}</div>` : ""}
+    </div>
+  </section>`;
+}
+
+async function initAskPage() {
+  const form = document.getElementById("askForm");
+  const input = document.getElementById("askInput");
+  const list = document.getElementById("qaList");
+  const sugg = document.getElementById("sugg");
+
+  const SUGGESTIONS = [
+    "资格复审后按什么比例确定入围面试人员？",
+    "报名需要提交哪些材料？",
+    "考察和体检怎么安排？",
+    "岗位提供住宿吗？",
+  ];
+  sugg.innerHTML = SUGGESTIONS.map((q) => `<button class="chip" type="button">${esc(q)}</button>`).join("");
+  sugg.addEventListener("click", (ev) => {
+    const chip = ev.target.closest(".chip");
+    if (!chip) return;
+    input.value = chip.textContent;
+    form.requestSubmit();
+  });
+
+  let busy = false;
+  form.addEventListener("submit", async (ev) => {
+    ev.preventDefault();
+    const q = input.value.trim();
+    if (!q || busy) return;
+    busy = true;
+    input.value = "";
+    const thinking = document.createElement("div");
+    thinking.className = "thinking";
+    thinking.innerHTML = `<span class="dot"></span>检索公告片段，AI 组织回答中…（需要几秒）`;
+    list.prepend(thinking);
+    try {
+      const resp = await api("/rag/ask", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ question: q }),
+      });
+      thinking.outerHTML = qaItemHtml(q, resp);
+    } catch (e) {
+      thinking.outerHTML = `
+      <section class="qa-item">
+        <div class="qa-q">${esc(q)}</div>
+        <div class="qa-a"><div class="qa-notfound"><span class="mark">!</span>
+          <div>提问失败：${esc(e.message)}<small>确认后端已启动，或稍后重试。</small></div></div></div>
+      </section>`;
+    } finally {
+      busy = false;
+      input.focus();
+    }
+  });
+  input.focus();
+}
+
+/* ---------- 投递记录页 ---------- */
+const APP_STATUS = {
+  SENT: { text: "已发送", cls: "sent" },
+  PENDING: { text: "待发送", cls: "pending" },
+  FAILED: { text: "发送失败", cls: "failed" },
+};
+
+async function initApplicationsPage() {
+  const box = document.getElementById("appList");
+  let apps = [];
+  let jobs = [];
+  try {
+    [apps, jobs] = await Promise.all([
+      api("/applications"),
+      api("/jobs?include_expired=true&size=100"),
+    ]);
+  } catch (e) {
+    box.innerHTML = `<div class="state">
+      <div class="big">连不上后端接口</div><div>${esc(e.message)}</div>
+      <div>本地演示请先启动：<code>uvicorn main:app --port 8000</code></div></div>`;
+    return;
+  }
+  if (!apps.length) {
+    box.innerHTML = `<div class="state">
+      <div class="big">还没有投递记录</div>
+      <div>去<a href="recommend.html" style="color:var(--brand)">推荐页</a>确认一条投递试试</div></div>`;
+    return;
+  }
+  const jobById = Object.fromEntries(jobs.map((j) => [j.id, j]));
+  // sent_at 落库是 UTC 朴素时间（无时区标记），补 Z 后按本地时区显示
+  const fmtTime = (t) => {
+    if (!t) return "—";
+    const d = new Date(t.endsWith("Z") ? t : `${t}Z`);
+    const p = (n) => String(n).padStart(2, "0");
+    return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
+  };
+  box.innerHTML = apps.map((a, i) => {
+    const st = APP_STATUS[(a.status || "").toUpperCase()] || { text: a.status, cls: "pending" };
+    const job = jobById[a.job_id];
+    return `
+    <div class="app-row rise" style="animation-delay:${Math.min(i * 40, 300)}ms">
+      <div class="app-main">
+        <div class="app-title">${esc(job ? buildJobTitle(job) : "岗位已下架")}</div>
+        <div class="app-sub">投递至 <span class="num">${esc(a.recipient_email)}</span> · <span class="num">${fmtTime(a.sent_at)}</span></div>
+      </div>
+      <span class="badge ${st.cls}">${st.text}</span>
+      ${a.error_msg ? `<div class="app-err">${esc(a.error_msg)}</div>` : ""}
+    </div>`;
+  }).join("");
+}
