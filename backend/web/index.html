@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>岗位 · 深圳教师求职助手</title>
+<link rel="stylesheet" href="assets/app.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='24' fill='%234653f0'/><text x='50' y='68' font-size='52' text-anchor='middle' fill='white' font-family='sans-serif' font-weight='bold'>师</text></svg>">
+</head>
+<body>
+
+<header class="topbar">
+  <div class="topbar-inner">
+    <a class="logo" href="index.html">
+      <span class="logo-mark">师</span>
+      <span class="logo-text">深圳教师求职助手</span>
+    </a>
+    <nav class="nav">
+      <a href="index.html" aria-current="page">岗位</a>
+      <a href="recommend.html">推荐</a>
+      <a class="soon" title="建设中">问答</a>
+      <a class="soon" title="建设中">投递</a>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap">
+  <div class="console">
+    <div>
+      <h1>在招教师岗位</h1>
+      <div class="sub">数据来自公开招聘公告<span class="pipe">·</span>规则粗筛 → AI 精排两阶段匹配</div>
+    </div>
+    <div class="stats" id="stats"></div>
+  </div>
+
+  <div class="filters" id="filters"></div>
+
+  <div class="grid" id="grid">
+    <div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div>
+    <div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div>
+  </div>
+</main>
+
+<footer class="foot">
+  技术演示项目 · 岗位数据来源于各区教育局与学校公开发布的招聘公告，点击卡片可回溯公告原文<br>
+  投递需人工确认，系统不做全自动投递 · 简历改写严格基于真实经历，不虚构内容
+</footer>
+
+<script src="assets/app.js"></script>
+<script>initJobsPage();</script>
+</body>
+</html>

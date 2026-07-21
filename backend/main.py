@@ -13,9 +13,11 @@
 import logging
 import os
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 from fastapi import FastAPI, Request
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, RedirectResponse
+from fastapi.staticfiles import StaticFiles
 
 from database import init_db
 from observability import (
@@ -99,3 +101,12 @@ app.include_router(crawl.router)
 app.include_router(meta.router)
 app.include_router(settings.router)
 app.include_router(rag.router)
+
+# Web 演示前端：静态文件与 API 同源同端口，免配 CORS。
+# 用 __file__ 定位目录，uvicorn 从任意 cwd 启动都能找到。
+app.mount("/web", StaticFiles(directory=Path(__file__).parent / "web", html=True), name="web")
+
+
+@app.get("/", include_in_schema=False)
+def root_to_web():
+    return RedirectResponse("/web/")
