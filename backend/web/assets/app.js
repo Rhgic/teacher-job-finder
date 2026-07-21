@@ -452,7 +452,6 @@ async function initApplicationsPage() {
 /* 下拉多选面板：把 34 个选项从平铺墙收进三个下拉里。
    触发器显示已选数量，面板内多选，面板外点击/Esc 关闭。 */
 function createPicker(host, { key, label, options, selected, onChange }) {
-  const wide = options.some((o) => o.length > 4);
   host.insertAdjacentHTML("beforeend", `
     <div class="picker" data-key="${key}">
       <button type="button" class="picker-trigger" aria-expanded="false" aria-haspopup="true">
@@ -461,11 +460,9 @@ function createPicker(host, { key, label, options, selected, onChange }) {
         <span class="caret">▼</span>
       </button>
       <div class="picker-panel" hidden role="group" aria-label="${esc(label)}选项">
-        <div class="picker-grid${wide ? " wide" : ""}">
+        <div class="picker-grid">
           ${options.map((o) => `
-            <button type="button" class="picker-item" data-v="${esc(o)}" aria-pressed="false">
-              <span class="box">✓</span><span>${esc(o)}</span>
-            </button>`).join("")}
+            <button type="button" class="picker-item" data-v="${esc(o)}" aria-pressed="false">${esc(o)}</button>`).join("")}
         </div>
         <div class="picker-foot">
           <button type="button" class="clear">清空</button>
