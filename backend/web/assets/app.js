@@ -448,19 +448,98 @@ async function initApplicationsPage() {
 }
 
 /* ---------- 我的页（体验身份） ---------- */
+
+/* 下拉多选面板：把 34 个选项从平铺墙收进三个下拉里。
+   触发器显示已选数量，面板内多选，面板外点击/Esc 关闭。 */
+function createPicker(host, { key, label, options, selected, onChange }) {
+  const wide = options.some((o) => o.length > 4);
+  host.insertAdjacentHTML("beforeend", `
+    <div class="picker" data-key="${key}">
+      <button type="button" class="picker-trigger" aria-expanded="false" aria-haspopup="true">
+        <span class="label">${esc(label)}</span>
+        <span class="summary"></span>
+        <span class="caret">▼</span>
+      </button>
+      <div class="picker-panel" hidden role="group" aria-label="${esc(label)}选项">
+        <div class="picker-grid${wide ? " wide" : ""}">
+          ${options.map((o) => `
+            <button type="button" class="picker-item" data-v="${esc(o)}" aria-pressed="false">
+              <span class="box">✓</span><span>${esc(o)}</span>
+            </button>`).join("")}
+        </div>
+        <div class="picker-foot">
+          <button type="button" class="clear">清空</button>
+          <button type="button" class="done">完成</button>
+        </div>
+      </div>
+    </div>`);
+
+  const root = host.lastElementChild;
+  const trigger = root.querySelector(".picker-trigger");
+  const panel = root.querySelector(".picker-panel");
+  const summary = root.querySelector(".summary");
+
+  function paint() {
+    root.querySelectorAll(".picker-item").forEach((item) => {
+      const on = selected.has(item.dataset.v);
+      item.classList.toggle("on", on);
+      item.setAttribute("aria-pressed", String(on));
+    });
+    const n = selected.size;
+    summary.innerHTML = n
+      ? `<span class="count num">${n}</span>`
+      : "不限";
+    onChange();
+  }
+
+  function close() {
+    root.classList.remove("open");
+    panel.hidden = true;
+    trigger.setAttribute("aria-expanded", "false");
+  }
+  function open() {
+    document.querySelectorAll(".picker.open").forEach((p) => {
+      p.classList.remove("open");
+      p.querySelector(".picker-panel").hidden = true;
+      p.querySelector(".picker-trigger").setAttribute("aria-expanded", "false");
+    });
+    root.classList.add("open");
+    panel.hidden = false;
+    trigger.setAttribute("aria-expanded", "true");
+  }
+
+  trigger.addEventListener("click", () => (root.classList.contains("open") ? close() : open()));
+  panel.addEventListener("click", (ev) => {
+    const item = ev.target.closest(".picker-item");
+    if (item) {
+      const v = item.dataset.v;
+      selected.has(v) ? selected.delete(v) : selected.add(v);
+      paint();
+      return;
+    }
+    if (ev.target.closest(".clear")) { selected.clear(); paint(); return; }
+    if (ev.target.closest(".done")) close();
+  });
+  root.addEventListener("keydown", (ev) => { if (ev.key === "Escape") { close(); trigger.focus(); } });
+
+  paint();
+  return { close, paint };
+}
+
 async function initMePage() {
   const guestArea = document.getElementById("guestArea");
   const form = document.getElementById("meForm");
   const note = document.getElementById("runNote");
   const sel = { stages: new Set(), subjects: new Set(), districts: new Set(), bianzhi: false };
+  const pickers = [];
   let existingRuleId = null;
   let loadedResumeText = "";
+  let uploadedResume = null;   // 本次通过上传创建的简历，提交时不再重复写入
+  let mode = "paste";
 
   document.getElementById("startBtn").addEventListener("click", async () => {
-    try {
-      await ensureGuest();
-      await showForm();
-    } catch (e) { alert(`创建体验身份失败：${e.message}`); }
+    try { await ensureGuest(); await showForm(); }
+    catch (e) { alert(`创建体验身份失败：${e.message}`); }
   });
 
   document.getElementById("quitBtn").addEventListener("click", () => {
@@ -470,9 +549,84 @@ async function initMePage() {
     }
   });
 
-  document.getElementById("fBianzhi").addEventListener("click", (ev) => {
-    sel.bianzhi = !sel.bianzhi;
-    ev.target.classList.toggle("on", sel.bianzhi);
+  // 面板外点击时收起所有下拉
+  document.addEventListener("click", (ev) => {
+    if (!ev.target.closest(".picker")) pickers.forEach((p) => p.close());
+  });
+
+  /* ---- 简历：粘贴 / 上传 双入口 ---- */
+  const pasteMode = document.getElementById("pasteMode");
+  const uploadMode = document.getElementById("uploadMode");
+  document.querySelectorAll(".tab").forEach((tab) => {
+    tab.addEventListener("click", () => {
+      mode = tab.dataset.mode;
+      document.querySelectorAll(".tab").forEach((t) => t.classList.toggle("on", t === tab));
+      pasteMode.hidden = mode !== "paste";
+      uploadMode.hidden = mode !== "upload";
+    });
+  });
+
+  const dropZone = document.getElementById("dropZone");
+  const fileInput = document.getElementById("fFile");
+  const uploadResult = document.getElementById("uploadResult");
+
+  async function sendFile(file) {
+    if (!file) return;
+    uploadResult.innerHTML = `<div class="upload-state">解析「${esc(file.name)}」…</div>`;
+    const body = new FormData();
+    body.append("file", file);
+    try {
+      const resume = await api("/resumes/upload", { method: "POST", body });
+      uploadedResume = resume;
+      const text = resume.structured_content?.["简历全文"] || "";
+      loadedResumeText = text;
+      document.getElementById("fResume").value = text;   // 同步到粘贴框，可继续手改
+      uploadResult.innerHTML = `
+        <div class="upload-file">
+          <span class="name">✓ ${esc(resume.file_name)}</span>
+          <span class="meta">已读出 <span class="num">${text.length}</span> 字</span>
+          <button type="button" class="relink" id="reUpload">换一个文件</button>
+        </div>`;
+      document.getElementById("reUpload").addEventListener("click", () => fileInput.click());
+    } catch (e) {
+      uploadResult.innerHTML = `<div class="upload-state err">✕ ${esc(e.message)}</div>`;
+    }
+  }
+
+  fileInput.addEventListener("change", () => sendFile(fileInput.files[0]));
+  ["dragenter", "dragover"].forEach((t) => dropZone.addEventListener(t, (ev) => {
+    ev.preventDefault(); dropZone.classList.add("over");
+  }));
+  ["dragleave", "drop"].forEach((t) => dropZone.addEventListener(t, (ev) => {
+    ev.preventDefault(); dropZone.classList.remove("over");
+  }));
+  dropZone.addEventListener("drop", (ev) => sendFile(ev.dataTransfer?.files?.[0]));
+
+  /* ---- 求职范围 ---- */
+  function renderPicked() {
+    const box = document.getElementById("pickedTags");
+    const all = [
+      ...[...sel.stages].map((v) => ["stages", v]),
+      ...[...sel.subjects].map((v) => ["subjects", v]),
+      ...[...sel.districts].map((v) => ["districts", v]),
+    ];
+    if (sel.bianzhi) all.push(["bianzhi", "只要带编制"]);
+    box.innerHTML = all.length
+      ? all.map(([k, v]) => `<span class="tag">${esc(v)}<button type="button" data-k="${k}" data-v="${esc(v)}" aria-label="移除 ${esc(v)}">✕</button></span>`).join("")
+      : `<span class="none">未限定范围——将对全部在招岗位做 AI 精排</span>`;
+  }
+
+  document.getElementById("pickedTags").addEventListener("click", (ev) => {
+    const btn = ev.target.closest("button");
+    if (!btn) return;
+    if (btn.dataset.k === "bianzhi") {
+      sel.bianzhi = false;
+      document.querySelector('.picker[data-key="bianzhi"] .picker-trigger')?.classList.remove("on");
+    } else {
+      sel[btn.dataset.k].delete(btn.dataset.v);
+    }
+    pickers.forEach((p) => p.paint());
+    renderPicked();
   });
 
   async function showForm() {
@@ -491,26 +645,46 @@ async function initMePage() {
         .filter((v) => !(canonical || []).includes(v)).sort();
       return [...(canonical || []), ...extra];
     };
-    const rows = [
-      ["学段", "stages", merge(tax.stages, "stage")],
-      ["学科", "subjects", merge(tax.subjects, "subject")],
-      ["区域", "districts", merge(tax.districts, "district")],
-    ];
-    document.getElementById("ruleChips").innerHTML = rows.map(([label, key, values]) => `
-      <div class="chip-row" data-key="${key}">
-        <span class="label">${label}</span>
-        ${values.map((v) => `<button type="button" class="chip" data-v="${esc(v)}">${esc(v)}</button>`).join("")}
-      </div>`).join("");
-    document.getElementById("ruleChips").addEventListener("click", (ev) => {
-      const chip = ev.target.closest(".chip");
-      if (!chip) return;
-      const key = chip.closest(".chip-row").dataset.key;
-      const v = chip.dataset.v;
-      if (sel[key].has(v)) { sel[key].delete(v); chip.classList.remove("on"); }
-      else { sel[key].add(v); chip.classList.add("on"); }
+
+    // 先回填已有规则，再建面板，这样面板初始就带上已选态
+    try {
+      const rules = await api("/rules");
+      if (rules.length) {
+        const r = rules[0];
+        existingRuleId = r.id;
+        (r.stages || []).forEach((v) => sel.stages.add(v));
+        (r.subjects || []).forEach((v) => sel.subjects.add(v));
+        (r.districts || []).forEach((v) => sel.districts.add(v));
+        sel.bianzhi = Boolean(r.need_establishment);
+      }
+    } catch (_) { /* 新身份还没有规则 */ }
+
+    const host = document.getElementById("pickers");
+    host.innerHTML = "";
+    [["stages", "学段", merge(tax.stages, "stage")],
+     ["subjects", "学科", merge(tax.subjects, "subject")],
+     ["districts", "区域", merge(tax.districts, "district")],
+    ].forEach(([key, label, options]) => {
+      pickers.push(createPicker(host, { key, label, options, selected: sel[key], onChange: renderPicked }));
     });
 
-    // 回填已有数据（重复访问时）
+    // 编制是布尔项，用同样外观的开关而非下拉
+    host.insertAdjacentHTML("beforeend", `
+      <div class="picker" data-key="bianzhi">
+        <button type="button" class="picker-trigger${sel.bianzhi ? " on" : ""}" id="fBianzhi" aria-pressed="${sel.bianzhi}">
+          <span class="label">只要带编制</span>
+        </button>
+      </div>`);
+    const bz = document.getElementById("fBianzhi");
+    bz.addEventListener("click", () => {
+      sel.bianzhi = !sel.bianzhi;
+      bz.classList.toggle("on", sel.bianzhi);
+      bz.setAttribute("aria-pressed", String(sel.bianzhi));
+      renderPicked();
+    });
+    renderPicked();
+
+    // 回填档案与简历
     try {
       const p = await api("/profile");
       document.getElementById("fName").value = p.real_name || "";
@@ -524,22 +698,6 @@ async function initMePage() {
       loadedResumeText = base?.structured_content?.["简历全文"] || "";
       document.getElementById("fResume").value = loadedResumeText;
     } catch (_) { /* 忽略 */ }
-    try {
-      const rules = await api("/rules");
-      if (rules.length) {
-        const r = rules[0];
-        existingRuleId = r.id;
-        (r.stages || []).forEach((v) => sel.stages.add(v));
-        (r.subjects || []).forEach((v) => sel.subjects.add(v));
-        (r.districts || []).forEach((v) => sel.districts.add(v));
-        sel.bianzhi = Boolean(r.need_establishment);
-        document.getElementById("fBianzhi").classList.toggle("on", sel.bianzhi);
-        document.querySelectorAll("#ruleChips .chip").forEach((chip) => {
-          const key = chip.closest(".chip-row").dataset.key;
-          if (sel[key].has(chip.dataset.v)) chip.classList.add("on");
-        });
-      }
-    } catch (_) { /* 忽略 */ }
   }
 
   form.addEventListener("submit", async (ev) => {
@@ -549,7 +707,6 @@ async function initMePage() {
     note.className = "run-note";
     try {
       note.textContent = "保存资料…";
-      const subject = document.getElementById("fSubject").value.trim();
       await api("/profile", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
@@ -557,7 +714,7 @@ async function initMePage() {
           real_name: document.getElementById("fName").value.trim() || null,
           education: document.getElementById("fEdu").value || null,
           major: document.getElementById("fMajor").value.trim() || null,
-          subject: subject || null,
+          subject: document.getElementById("fSubject").value.trim() || null,
           intent: {
             学段: [...sel.stages], 学科: [...sel.subjects],
             区域: [...sel.districts], 要求编制: sel.bianzhi,
@@ -565,6 +722,7 @@ async function initMePage() {
         }),
       });
 
+      // 上传入口已经落库了，这里只处理粘贴框里的手工改动
       const resumeText = document.getElementById("fResume").value.trim();
       if (resumeText && resumeText !== loadedResumeText) {
         note.textContent = "保存简历…";
@@ -572,7 +730,7 @@ async function initMePage() {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            file_name: "网页粘贴简历",
+            file_name: uploadedResume ? `${uploadedResume.file_name}（已编辑）` : "网页粘贴简历",
             file_url: "",
             is_default: true,
             structured_content: { "简历全文": resumeText },
@@ -591,13 +749,11 @@ async function initMePage() {
       };
       if (existingRuleId) {
         await api(`/rules/${existingRuleId}`, {
-          method: "PUT", headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(rule),
+          method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(rule),
         });
       } else {
         const created = await api("/rules", {
-          method: "POST", headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(rule),
+          method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(rule),
         });
         existingRuleId = created.id;
       }

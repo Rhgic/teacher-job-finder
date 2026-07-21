@@ -1,5 +1,5 @@
 """用户配置 / 简历 / 模板 接口（已实现 CRUD）。"""
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 from sqlalchemy.orm import Session
 
 from database import get_db
@@ -8,7 +8,8 @@ from models import User, UserProfile, Resume, Template
 from schemas import (
     ProfileIn, ProfileOut, ResumeIn, ResumeOut, TemplateIn, TemplateOut,
 )
-from services.resume_parser import parse_resume_pdf
+from services import resume_extract
+from services.resume_parser import parse_resume_pdf, structure_resume_text
 
 router = APIRouter(tags=["profile"])
 
@@ -52,6 +53,43 @@ def create_resume(
     if data.get("structured_content") is None:
         data["structured_content"] = parse_resume_pdf(data.get("file_url") or "")
     resume = Resume(user_id=user.id, **data)
+    db.add(resume)
+    db.commit()
+    db.refresh(resume)
+    return resume
+
+
+@router.post("/resumes/upload", response_model=ResumeOut)
+async def upload_resume(
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
+    """上传简历文件，抽取文本并结构化。支持 PDF / Word(.docx) / Markdown / txt。
+
+    只做文本抽取与栏目切分，不调用 LLM——上传本身不该产生模型费用。
+    抽取失败时把可读原因返回给用户（如"扫描件读不出文字，请改用粘贴"）。
+    """
+    data = await file.read()
+    try:
+        text = resume_extract.extract_text(file.filename or "", data)
+    except resume_extract.ExtractError as exc:
+        raise HTTPException(400, str(exc)) from exc
+
+    structured = structure_resume_text(text)
+    structured["简历全文"] = text  # 与网页粘贴入口保持同一字段，便于回填编辑
+
+    # 新上传的作为默认简历，其余取消默认，避免多份都标默认时取哪份不确定
+    for existing in user.resumes:
+        existing.is_default = False
+    resume = Resume(
+        user_id=user.id,
+        file_name=file.filename or "上传简历",
+        file_url="",
+        file_size=len(data),
+        is_default=True,
+        structured_content=structured,
+    )
     db.add(resume)
     db.commit()
     db.refresh(resume)

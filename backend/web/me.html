@@ -78,21 +78,34 @@
 
     <div class="card">
       <h2>简历</h2>
-      <div class="desc">直接粘贴文本即可。AI 只会依据这里写的内容评估，不会替你编造经历</div>
-      <div class="field full">
+      <div class="desc">AI 只会依据这里的内容评估，不会替你编造经历</div>
+
+      <div class="tabs" role="tablist">
+        <button type="button" class="tab on" data-mode="paste" role="tab">粘贴文本</button>
+        <button type="button" class="tab" data-mode="upload" role="tab">上传文件</button>
+      </div>
+
+      <div class="field full" id="pasteMode">
         <textarea id="fResume" placeholder="粘贴你的简历正文：教育背景、证书、实习/工作经历、技能……"></textarea>
         <span class="hint">留空也能跑匹配，但 AI 会如实告诉你"简历为空，无法评估"</span>
+      </div>
+
+      <div id="uploadMode" hidden>
+        <label class="drop" id="dropZone">
+          <div class="icon">📄</div>
+          <div class="main">把文件拖到这里，或<span class="link">点击选择</span></div>
+          <div class="types">支持 PDF、Word(.docx)、Markdown、txt · 最大 5MB</div>
+          <input type="file" id="fFile" accept=".pdf,.docx,.md,.markdown,.txt,.text">
+        </label>
+        <div id="uploadResult"></div>
       </div>
     </div>
 
     <div class="card">
       <h2>求职范围</h2>
       <div class="desc">硬条件先由规则层确定性过滤，只有命中的岗位才会进入 AI 精排</div>
-      <div class="filters" id="ruleChips"></div>
-      <div class="chip-row">
-        <span class="label">编制</span>
-        <button type="button" class="chip" id="fBianzhi">只要带编制的岗位</button>
-      </div>
+      <div class="pickers" id="pickers"></div>
+      <div class="picked" id="pickedTags"></div>
     </div>
 
     <div class="run-bar">
