@@ -1,8 +1,16 @@
 /* 教师求职 Demo · 共享脚本
    同源部署（FastAPI StaticFiles 挂载），fetch 直接打相对路径，无 CORS。 */
 
-const api = async (path, options) => {
-  const resp = await fetch(path, options);
+/* 体验身份令牌：存在则所有请求自动携带；不存在时后端(dev 模式)回退 demo 用户 */
+const TOKEN_KEY = "tjf_guest_token";
+const getToken = () => localStorage.getItem(TOKEN_KEY);
+const clearToken = () => localStorage.removeItem(TOKEN_KEY);
+
+const api = async (path, options = {}) => {
+  const headers = { ...(options.headers || {}) };
+  const token = getToken();
+  if (token) headers.Authorization = `Bearer ${token}`;
+  const resp = await fetch(path, { ...options, headers });
   if (!resp.ok) {
     let detail = `HTTP ${resp.status}`;
     try { detail = (await resp.json()).detail || detail; } catch (_) { /* 非 JSON 响应 */ }
@@ -10,6 +18,13 @@ const api = async (path, options) => {
   }
   return resp.json();
 };
+
+async function ensureGuest() {
+  if (getToken()) return getToken();
+  const d = await api("/auth/guest", { method: "POST" });
+  localStorage.setItem(TOKEN_KEY, d.token);
+  return d.token;
+}
 
 /* 与 miniprogram/utils/api.js 的 buildJobTitle 同一逻辑：
    学校名已含学段时不重复拼接，避免"小学小学"。 */
@@ -196,9 +211,13 @@ async function initRecommendPage() {
     return;
   }
   if (!items.length) {
-    box.innerHTML = `<div class="state">
-      <div class="big">还没有推荐结果</div>
-      <div>先在「订阅规则」里设定求职意向，再运行匹配管道：<code>POST /pipeline/run</code></div></div>`;
+    box.innerHTML = getToken()
+      ? `<div class="state">
+          <div class="big">你的体验身份还没有匹配结果</div>
+          <div>去<a href="me.html" style="color:var(--brand)">「我的」</a>粘贴简历、圈定求职范围，然后运行 AI 匹配</div></div>`
+      : `<div class="state">
+          <div class="big">还没有推荐结果</div>
+          <div>想看 AI 怎么匹配你自己？去<a href="me.html" style="color:var(--brand)">「我的」</a>开始体验</div></div>`;
     return;
   }
 
@@ -426,4 +445,166 @@ async function initApplicationsPage() {
       ${a.error_msg ? `<div class="app-err">${esc(a.error_msg)}</div>` : ""}
     </div>`;
   }).join("");
+}
+
+/* ---------- 我的页（体验身份） ---------- */
+async function initMePage() {
+  const guestArea = document.getElementById("guestArea");
+  const form = document.getElementById("meForm");
+  const note = document.getElementById("runNote");
+  const sel = { stages: new Set(), subjects: new Set(), districts: new Set(), bianzhi: false };
+  let existingRuleId = null;
+  let loadedResumeText = "";
+
+  document.getElementById("startBtn").addEventListener("click", async () => {
+    try {
+      await ensureGuest();
+      await showForm();
+    } catch (e) { alert(`创建体验身份失败：${e.message}`); }
+  });
+
+  document.getElementById("quitBtn").addEventListener("click", () => {
+    if (confirm("退出后该身份与其中的简历、规则、匹配结果都将作废，确定？")) {
+      clearToken();
+      location.reload();
+    }
+  });
+
+  document.getElementById("fBianzhi").addEventListener("click", (ev) => {
+    sel.bianzhi = !sel.bianzhi;
+    ev.target.classList.toggle("on", sel.bianzhi);
+  });
+
+  async function showForm() {
+    guestArea.hidden = true;
+    form.hidden = false;
+
+    // 选项来自真实岗位数据，保证规则值与库里的字段能精确对上
+    const jobs = await api("/jobs?size=100").catch(() => []);
+    const uniq = (k) => [...new Set(jobs.map((j) => j[k]).filter(Boolean))].sort();
+    const rows = [["学段", "stages", uniq("stage")], ["学科", "subjects", uniq("subject")], ["区域", "districts", uniq("district")]];
+    document.getElementById("ruleChips").innerHTML = rows.map(([label, key, values]) => `
+      <div class="chip-row" data-key="${key}">
+        <span class="label">${label}</span>
+        ${values.map((v) => `<button type="button" class="chip" data-v="${esc(v)}">${esc(v)}</button>`).join("")}
+      </div>`).join("");
+    document.getElementById("ruleChips").addEventListener("click", (ev) => {
+      const chip = ev.target.closest(".chip");
+      if (!chip) return;
+      const key = chip.closest(".chip-row").dataset.key;
+      const v = chip.dataset.v;
+      if (sel[key].has(v)) { sel[key].delete(v); chip.classList.remove("on"); }
+      else { sel[key].add(v); chip.classList.add("on"); }
+    });
+
+    // 回填已有数据（重复访问时）
+    try {
+      const p = await api("/profile");
+      document.getElementById("fName").value = p.real_name || "";
+      document.getElementById("fEdu").value = p.education || "";
+      document.getElementById("fMajor").value = p.major || "";
+      document.getElementById("fSubject").value = p.subject || "";
+    } catch (_) { /* 新身份还没有档案 */ }
+    try {
+      const resumes = await api("/resumes");
+      const base = resumes.find((r) => r.is_default) || resumes[0];
+      loadedResumeText = base?.structured_content?.["简历全文"] || "";
+      document.getElementById("fResume").value = loadedResumeText;
+    } catch (_) { /* 忽略 */ }
+    try {
+      const rules = await api("/rules");
+      if (rules.length) {
+        const r = rules[0];
+        existingRuleId = r.id;
+        (r.stages || []).forEach((v) => sel.stages.add(v));
+        (r.subjects || []).forEach((v) => sel.subjects.add(v));
+        (r.districts || []).forEach((v) => sel.districts.add(v));
+        sel.bianzhi = Boolean(r.need_establishment);
+        document.getElementById("fBianzhi").classList.toggle("on", sel.bianzhi);
+        document.querySelectorAll("#ruleChips .chip").forEach((chip) => {
+          const key = chip.closest(".chip-row").dataset.key;
+          if (sel[key].has(chip.dataset.v)) chip.classList.add("on");
+        });
+      }
+    } catch (_) { /* 忽略 */ }
+  }
+
+  form.addEventListener("submit", async (ev) => {
+    ev.preventDefault();
+    const btn = document.getElementById("runBtn");
+    btn.disabled = true;
+    note.className = "run-note";
+    try {
+      note.textContent = "保存资料…";
+      const subject = document.getElementById("fSubject").value.trim();
+      await api("/profile", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          real_name: document.getElementById("fName").value.trim() || null,
+          education: document.getElementById("fEdu").value || null,
+          major: document.getElementById("fMajor").value.trim() || null,
+          subject: subject || null,
+          intent: {
+            学段: [...sel.stages], 学科: [...sel.subjects],
+            区域: [...sel.districts], 要求编制: sel.bianzhi,
+          },
+        }),
+      });
+
+      const resumeText = document.getElementById("fResume").value.trim();
+      if (resumeText && resumeText !== loadedResumeText) {
+        note.textContent = "保存简历…";
+        await api("/resumes", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            file_name: "网页粘贴简历",
+            file_url: "",
+            is_default: true,
+            structured_content: { "简历全文": resumeText },
+          }),
+        });
+        loadedResumeText = resumeText;
+      }
+
+      note.textContent = "保存求职范围…";
+      const rule = {
+        name: "我的求职规则",
+        stages: sel.stages.size ? [...sel.stages] : null,
+        subjects: sel.subjects.size ? [...sel.subjects] : null,
+        districts: sel.districts.size ? [...sel.districts] : null,
+        need_establishment: sel.bianzhi || null,
+      };
+      if (existingRuleId) {
+        await api(`/rules/${existingRuleId}`, {
+          method: "PUT", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(rule),
+        });
+      } else {
+        const created = await api("/rules", {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(rule),
+        });
+        existingRuleId = created.id;
+      }
+
+      note.textContent = "AI 逐岗评分中…（几秒）";
+      const stats = await api("/matches/refresh", { method: "POST" });
+      note.className = "run-note ok";
+      if (stats.new_matches > 0) {
+        note.textContent = `完成：规则命中并新评了 ${stats.new_matches} 个岗位，正在跳转推荐页…`;
+        setTimeout(() => { location.href = "recommend.html"; }, 1200);
+      } else {
+        note.textContent = "规则没有命中新的岗位——试着放宽学段/学科/区域，或此前已评过的岗位可直接去推荐页看。";
+      }
+    } catch (e) {
+      note.className = "run-note err";
+      note.textContent = `失败：${e.message}`;
+    } finally {
+      btn.disabled = false;
+    }
+  });
+
+  if (getToken()) await showForm();
 }

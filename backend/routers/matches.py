@@ -14,6 +14,19 @@ from services import pipeline
 router = APIRouter(tags=["matches"])
 
 
+@router.post("/matches/refresh")
+def refresh_my_matches(
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
+    """只对当前用户的规则跑一遍匹配管道（规则粗筛 + LLM 精排）。
+
+    与 /crawl/run 的全量管道分开：这里不触发爬虫、不碰别人的规则，
+    因此可以放心暴露给已登录（含体验身份）的普通用户。
+    """
+    return pipeline.run_pipeline(db, user_id=user.id)
+
+
 @router.get("/recommendations", response_model=list[MatchOut])
 def recommendations(
     db: Session = Depends(get_db),

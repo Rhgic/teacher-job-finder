@@ -33,9 +33,17 @@ def _resume_summary_for(rule: SubRule) -> str:
     return " | ".join(p for p in parts if p.strip())
 
 
-def run_pipeline(db: Session, job_ids: list[str] | None = None) -> dict:
-    """对(可选指定的)岗位跑全部 active 规则。返回统计。"""
-    rules = db.scalars(select(SubRule).where(SubRule.is_active.is_(True))).all()
+def run_pipeline(db: Session, job_ids: list[str] | None = None,
+                 user_id: str | None = None) -> dict:
+    """对(可选指定的)岗位跑 active 规则。返回统计。
+
+    user_id 给定时只跑该用户的规则——Web 体验用户"运行匹配"走这里，
+    不给普通访客触发全量管道的能力。
+    """
+    rule_q = select(SubRule).where(SubRule.is_active.is_(True))
+    if user_id:
+        rule_q = rule_q.where(SubRule.user_id == user_id)
+    rules = db.scalars(rule_q).all()
 
     job_q = select(Job)
     if job_ids:
