@@ -2,7 +2,9 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    # v2 在这里的原因：workflow_dispatch 只认默认分支上的 workflow 文件，
+    # 默认分支切到 v2 之前，推 v2 是触发 CI 的唯一方式。
+    branches: [main, v2]
   pull_request:
   workflow_dispatch:
 
