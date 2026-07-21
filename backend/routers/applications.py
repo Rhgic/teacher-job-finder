@@ -1,5 +1,5 @@
 """投递接口。所有发送都要用户确认（单条或批量），不做全自动投递。"""
-from datetime import date, datetime
+from datetime import date, datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
@@ -58,7 +58,8 @@ def _send_one(db: Session, user: User, job: Job, body) -> Application:
     result = mailer.send_resume(app.recipient_email, app.email_subject or "", "", attach)
     if result["ok"]:
         app.status = ApplicationStatus.SENT
-        app.sent_at = datetime.utcnow()
+        # 存朴素 UTC，与 models.py 里其余 server_default=func.now() 的时间列保持一致
+        app.sent_at = datetime.now(timezone.utc).replace(tzinfo=None)
     else:
         app.status = ApplicationStatus.FAILED
         app.error_msg = result.get("error")
