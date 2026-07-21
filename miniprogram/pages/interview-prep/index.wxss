@@ -1,10 +1,10 @@
 .prep-card {
   margin-bottom: 22rpx;
   padding: 26rpx;
-  border-radius: 12rpx;
+  border-radius: 20rpx;
   background: #ffffff;
-  border: 1rpx solid #dfe6df;
-  box-shadow: 0 12rpx 28rpx rgba(26, 52, 45, 0.06);
+  border: 1rpx solid #e5e7f4;
+  box-shadow: 0 12rpx 28rpx rgba(70, 83, 240, 0.06);
 }
 
 .prep-card.warn {
@@ -14,7 +14,7 @@
 
 .card-title {
   margin-bottom: 18rpx;
-  color: #15231f;
+  color: #1c2030;
   font-size: 30rpx;
   font-weight: 850;
 }
@@ -24,7 +24,7 @@
   gap: 14rpx;
   align-items: flex-start;
   padding: 16rpx 0;
-  border-top: 1rpx solid #edf1ee;
+  border-top: 1rpx solid #eceef7;
 }
 
 .prep-item:first-of-type {
@@ -39,8 +39,8 @@
   height: 42rpx;
   flex: 0 0 42rpx;
   border-radius: 9rpx;
-  background: #e4f3e9;
-  color: #176238;
+  background: #e1f6ec;
+  color: #0e8a5f;
   font-size: 21rpx;
   font-weight: 900;
 }
@@ -48,7 +48,7 @@
 .item-text {
   flex: 1;
   min-width: 0;
-  color: #40524b;
+  color: #454c66;
   font-size: 25rpx;
   line-height: 1.6;
 }

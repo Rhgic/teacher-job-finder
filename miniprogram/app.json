@@ -25,15 +25,15 @@
   ],
   "window": {
     "navigationBarTitleText": "教师求职",
-    "navigationBarBackgroundColor": "#ffffff",
+    "navigationBarBackgroundColor": "#f4f5fb",
     "navigationBarTextStyle": "black",
-    "backgroundColor": "#f4f6f8"
+    "backgroundColor": "#f4f5fb"
   },
   "tabBar": {
-    "color": "#667085",
-    "selectedColor": "#14604f",
+    "color": "#9aa2b8",
+    "selectedColor": "#4653f0",
     "backgroundColor": "#ffffff",
-    "borderStyle": "black",
+    "borderStyle": "white",
     "list": [
       {
         "pagePath": "pages/jobs/index",
@@ -50,8 +50,8 @@
       {
         "pagePath": "pages/rag-ask/index",
         "text": "问答",
-        "iconPath": "assets/tabbar/recommend.png",
-        "selectedIconPath": "assets/tabbar/recommend-active.png"
+        "iconPath": "assets/tabbar/qa.png",
+        "selectedIconPath": "assets/tabbar/qa-active.png"
       },
       {
         "pagePath": "pages/applications/index",

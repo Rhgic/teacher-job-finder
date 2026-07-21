@@ -4,7 +4,7 @@ const ENV = "dev"
 
 const CONFIG = {
   dev: {
-    apiBase: "http://127.0.0.1:8000",
+    apiBase: "http://192.168.31.76:8000",
     subscribeTemplates: {
       deadline: "",
       application: "",

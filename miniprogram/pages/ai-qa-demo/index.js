@@ -1,5 +1,5 @@
 const DEMO_QUESTION = "这个岗位有编制吗？"
-const API_BASE = "http://127.0.0.1:8000"
+const API_BASE = "http://192.168.31.76:8000"
 
 function normalizeSources(sources = []) {
   if (!Array.isArray(sources)) return []

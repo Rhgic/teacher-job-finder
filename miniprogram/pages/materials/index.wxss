@@ -11,8 +11,9 @@
   height: 72rpx;
   line-height: 72rpx;
   border-radius: 50%;
-  background: #14604f;
-  color: #ffffff;
+  background: #ffffff;
+  color: #4653f0;
+  box-shadow: 0 8rpx 20rpx rgba(28, 32, 90, 0.25);
   font-size: 23rpx;
   font-weight: 900;
   text-align: center;
@@ -22,10 +23,10 @@
 .material-section {
   margin-bottom: 22rpx;
   padding: 24rpx;
-  border-radius: 12rpx;
+  border-radius: 20rpx;
   background: #ffffff;
-  border: 1rpx solid #dfe6df;
-  box-shadow: 0 12rpx 28rpx rgba(26, 52, 45, 0.06);
+  border: 1rpx solid #e5e7f4;
+  box-shadow: 0 12rpx 28rpx rgba(70, 83, 240, 0.06);
 }
 
 .progress-head {
@@ -36,7 +37,7 @@
 }
 
 .progress-title {
-  color: #15231f;
+  color: #1c2030;
   font-size: 28rpx;
   font-weight: 850;
 }
@@ -47,9 +48,9 @@
   line-height: 58rpx;
   margin: 0;
   padding: 0;
-  border-radius: 8rpx;
-  background: #e7f1ee;
-  color: #14604f;
+  border-radius: 14rpx;
+  background: #eaedfb;
+  color: #4653f0;
   font-size: 23rpx;
   font-weight: 850;
 }
@@ -58,19 +59,19 @@
   height: 12rpx;
   margin-top: 18rpx;
   border-radius: 999rpx;
-  background: #edf1ef;
+  background: #eceef7;
   overflow: hidden;
 }
 
 .ready-fill {
   height: 12rpx;
   border-radius: 999rpx;
-  background: #14604f;
+  background: #4653f0;
 }
 
 .section-name {
   margin-bottom: 10rpx;
-  color: #15231f;
+  color: #1c2030;
   font-size: 28rpx;
   font-weight: 850;
 }
@@ -80,7 +81,7 @@
   align-items: center;
   gap: 14rpx;
   min-height: 66rpx;
-  border-top: 1rpx solid #edf1ee;
+  border-top: 1rpx solid #eceef7;
 }
 
 .material-row:first-of-type {
@@ -93,8 +94,8 @@
   justify-content: center;
   width: 34rpx;
   height: 34rpx;
-  border-radius: 8rpx;
-  border: 2rpx solid #c8d3cd;
+  border-radius: 14rpx;
+  border: 2rpx solid #cbd1e6;
   color: #ffffff;
   font-size: 23rpx;
   font-weight: 900;
@@ -102,14 +103,14 @@
 }
 
 .check-box.checked {
-  border-color: #14604f;
-  background: #14604f;
+  border-color: #4653f0;
+  background: #4653f0;
 }
 
 .material-name {
   flex: 1;
   min-width: 0;
-  color: #24342f;
+  color: #2a2f45;
   font-size: 25rpx;
   line-height: 1.45;
 }

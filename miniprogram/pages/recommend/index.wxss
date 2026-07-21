@@ -19,13 +19,13 @@
 
 .hero-metric {
   padding: 18rpx;
-  border-radius: 10rpx;
+  border-radius: 16rpx;
   background: rgba(255, 255, 255, 0.84);
-  border: 1rpx solid rgba(20, 96, 79, 0.1);
+  border: 1rpx solid rgba(70, 83, 240, 0.1);
 }
 
 .hero-metric-value {
-  color: #14604f;
+  color: #4653f0;
   font-size: 36rpx;
   font-weight: 900;
   line-height: 1;
@@ -33,7 +33,7 @@
 
 .hero-metric-label {
   margin-top: 8rpx;
-  color: #66736d;
+  color: #667089;
   font-size: 21rpx;
   font-weight: 750;
 }
@@ -52,14 +52,14 @@
 .flow-card {
   margin-bottom: 22rpx;
   padding: 24rpx;
-  border-radius: 12rpx;
+  border-radius: 20rpx;
   background: #ffffff;
-  border: 1rpx solid #dfe6df;
-  box-shadow: 0 12rpx 28rpx rgba(26, 52, 45, 0.06);
+  border: 1rpx solid #e5e7f4;
+  box-shadow: 0 12rpx 28rpx rgba(70, 83, 240, 0.06);
 }
 
 .flow-title {
-  color: #15231f;
+  color: #1c2030;
   font-size: 28rpx;
   font-weight: 850;
 }
@@ -74,17 +74,17 @@
 .flow-step {
   min-width: 0;
   padding: 16rpx 12rpx;
-  border-radius: 10rpx;
-  background: #f6faf7;
-  border: 1rpx solid #e0ebe4;
+  border-radius: 16rpx;
+  background: #f6f7fd;
+  border: 1rpx solid #e0e0eb;
 }
 
 .flow-num {
   width: 34rpx;
   height: 34rpx;
   line-height: 34rpx;
-  border-radius: 8rpx;
-  background: #14604f;
+  border-radius: 14rpx;
+  background: #4653f0;
   color: #ffffff;
   font-size: 20rpx;
   font-weight: 900;
@@ -93,14 +93,14 @@
 
 .flow-name {
   margin-top: 12rpx;
-  color: #15231f;
+  color: #1c2030;
   font-size: 24rpx;
   font-weight: 850;
 }
 
 .flow-desc {
   margin-top: 6rpx;
-  color: #66736d;
+  color: #667089;
   font-size: 20rpx;
   line-height: 1.35;
 }
@@ -114,7 +114,7 @@
 }
 
 .list-title {
-  color: #15231f;
+  color: #1c2030;
   font-size: 30rpx;
   font-weight: 850;
 }
@@ -122,10 +122,10 @@
 .match-card {
   margin-bottom: 22rpx;
   padding: 26rpx;
-  border-radius: 12rpx;
+  border-radius: 20rpx;
   background: #ffffff;
-  border: 1rpx solid #dfe6df;
-  box-shadow: 0 12rpx 28rpx rgba(26, 52, 45, 0.06);
+  border: 1rpx solid #e5e7f4;
+  box-shadow: 0 12rpx 28rpx rgba(70, 83, 240, 0.06);
 }
 
 .match-head {
@@ -138,14 +138,14 @@
   width: 116rpx;
   flex: 0 0 116rpx;
   padding: 18rpx 10rpx;
-  border-radius: 10rpx;
-  background: #e7f1ee;
+  border-radius: 16rpx;
+  background: #eaedfb;
   text-align: center;
   box-sizing: border-box;
 }
 
 .score-value {
-  color: #14604f;
+  color: #4653f0;
   font-size: 40rpx;
   font-weight: 900;
   line-height: 1;
@@ -153,7 +153,7 @@
 
 .score-label {
   margin-top: 8rpx;
-  color: #52645d;
+  color: #59617d;
   font-size: 20rpx;
   font-weight: 800;
 }
@@ -164,7 +164,7 @@
 }
 
 .match-school {
-  color: #15231f;
+  color: #1c2030;
   font-size: 29rpx;
   font-weight: 850;
   line-height: 1.35;
@@ -172,7 +172,7 @@
 
 .match-title {
   margin-top: 8rpx;
-  color: #15231f;
+  color: #1c2030;
   font-size: 27rpx;
   font-weight: 750;
   line-height: 1.45;
@@ -180,27 +180,27 @@
 
 .match-meta {
   margin-top: 8rpx;
-  color: #66736d;
+  color: #667089;
   font-size: 23rpx;
 }
 
 .reason-panel {
   margin-top: 20rpx;
   padding: 18rpx;
-  border-radius: 10rpx;
-  background: #f6faf7;
-  border: 1rpx solid #e0ebe4;
+  border-radius: 16rpx;
+  background: #f6f7fd;
+  border: 1rpx solid #e0e0eb;
 }
 
 .panel-label {
-  color: #14604f;
+  color: #4653f0;
   font-size: 22rpx;
   font-weight: 850;
 }
 
 .reason-text {
   margin-top: 8rpx;
-  color: #30413a;
+  color: #3a4056;
   font-size: 25rpx;
   line-height: 1.55;
 }
@@ -215,9 +215,9 @@
 .point-chip {
   max-width: 100%;
   padding: 10rpx 14rpx;
-  border-radius: 8rpx;
-  background: #e7f1ee;
-  color: #14604f;
+  border-radius: 14rpx;
+  background: #eaedfb;
+  color: #4653f0;
   font-size: 22rpx;
   font-weight: 750;
   line-height: 1.35;
@@ -230,9 +230,9 @@
 .gap-box {
   margin-top: 12rpx;
   padding: 16rpx;
-  border-radius: 10rpx;
-  background: #f4f8f5;
-  border: 1rpx solid #dfe9e2;
+  border-radius: 16rpx;
+  background: #f4f4f8;
+  border: 1rpx solid #dfdfe9;
 }
 
 .gap-box.warn {
@@ -241,12 +241,12 @@
 }
 
 .gap-box.green {
-  background: #f4f8f5;
-  border-color: #dfe9e2;
+  background: #f4f4f8;
+  border-color: #dfdfe9;
 }
 
 .gap-text {
-  color: #52645d;
+  color: #59617d;
   font-size: 23rpx;
   line-height: 1.5;
 }
@@ -254,12 +254,12 @@
 .cover-box {
   margin-top: 20rpx;
   padding-top: 18rpx;
-  border-top: 1rpx solid #edf1ee;
+  border-top: 1rpx solid #eceef7;
 }
 
 .cover-text {
   margin-top: 8rpx;
-  color: #52645d;
+  color: #59617d;
   font-size: 23rpx;
   line-height: 1.55;
   display: -webkit-box;
@@ -285,14 +285,14 @@
 
 .empty-card {
   padding: 54rpx 26rpx;
-  border-radius: 12rpx;
+  border-radius: 20rpx;
   background: #ffffff;
-  border: 1rpx solid #dfe6df;
+  border: 1rpx solid #e5e7f4;
   text-align: center;
 }
 
 .empty-title {
-  color: #15231f;
+  color: #1c2030;
   font-size: 30rpx;
   font-weight: 850;
 }

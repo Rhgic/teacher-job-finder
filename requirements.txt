@@ -6,3 +6,4 @@ email-validator>=2.2,<2.3
 httpx>=0.28,<0.29
 python-multipart>=0.0.9,<0.0.21
 pypdf>=4,<6
+pytest>=8,<9

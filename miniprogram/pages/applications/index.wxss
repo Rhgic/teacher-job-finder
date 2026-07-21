@@ -6,7 +6,7 @@
   position: absolute;
   right: 28rpx;
   bottom: 24rpx;
-  color: rgba(20, 96, 79, 0.26);
+  color: rgba(255, 255, 255, 0.35);
   font-size: 20rpx;
   font-weight: 900;
   letter-spacing: 2rpx;
@@ -19,8 +19,8 @@
   gap: 22rpx;
   margin-bottom: 16rpx;
   padding: 22rpx 24rpx;
-  border-radius: 12rpx;
-  background: #123d34;
+  border-radius: 20rpx;
+  background: #2c34a3;
   color: #ffffff;
 }
 
@@ -48,7 +48,7 @@
 
 .strip-copy {
   flex: 1;
-  color: #66736d;
+  color: #667089;
   font-size: 24rpx;
   line-height: 1.5;
 }
@@ -56,7 +56,7 @@
 .tip-card {
   margin-bottom: 24rpx;
   padding: 20rpx 22rpx;
-  border-radius: 12rpx;
+  border-radius: 20rpx;
   background: #fff8ee;
   border: 1rpx solid #f4ddb9;
 }
@@ -69,7 +69,7 @@
   margin-bottom: 12rpx;
   font-size: 28rpx;
   font-weight: 800;
-  color: #15231f;
+  color: #1c2030;
 }
 
 .timeline {
@@ -84,17 +84,17 @@
   top: 8rpx;
   bottom: 26rpx;
   width: 2rpx;
-  background: #dbe6df;
+  background: #dde1f1;
 }
 
 .record {
   position: relative;
   margin-bottom: 22rpx;
   padding: 26rpx;
-  border-radius: 12rpx;
+  border-radius: 20rpx;
   background: #ffffff;
-  border: 1rpx solid #dfe6df;
-  box-shadow: 0 12rpx 28rpx rgba(26, 52, 45, 0.06);
+  border: 1rpx solid #e5e7f4;
+  box-shadow: 0 12rpx 28rpx rgba(70, 83, 240, 0.06);
 }
 
 .timeline-dot {
@@ -104,8 +104,8 @@
   width: 16rpx;
   height: 16rpx;
   border-radius: 50%;
-  background: #14604f;
-  border: 6rpx solid #f5f7f3;
+  background: #4653f0;
+  border: 6rpx solid #f4f5fb;
 }
 
 .record-email {
@@ -118,14 +118,14 @@
 
 .record-title {
   margin-bottom: 10rpx;
-  color: #15231f;
+  color: #1c2030;
   font-size: 26rpx;
   font-weight: 750;
   line-height: 1.45;
 }
 
 .record-meta {
-  color: #66736d;
+  color: #667089;
   font-size: 24rpx;
   line-height: 1.5;
 }
@@ -142,8 +142,8 @@
   margin: 0;
   padding: 0;
   border-radius: 9rpx;
-  background: #e7f1ee;
-  color: #14604f;
+  background: #eaedfb;
+  color: #4653f0;
   font-size: 23rpx;
   font-weight: 850;
   line-height: 58rpx;
@@ -167,9 +167,9 @@
 
 .note-item {
   padding: 12rpx 14rpx;
-  border-radius: 8rpx;
-  background: #f6faf7;
-  color: #4f5f58;
+  border-radius: 14rpx;
+  background: #f6f7fd;
+  color: #565e7a;
   font-size: 22rpx;
   line-height: 1.45;
 }

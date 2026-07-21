@@ -1,9 +1,8 @@
 .confirm-hero {
-  background: linear-gradient(135deg, #ffffff 0%, #f2f8f5 54%, #fff8ee 100%);
 }
 
 .target-card {
-  border-left: 8rpx solid #14604f;
+  border-left: 8rpx solid #4653f0;
 }
 
 .compact {
@@ -15,7 +14,7 @@
   font-size: 30rpx;
   font-weight: 800;
   line-height: 1.45;
-  color: #15231f;
+  color: #1c2030;
 }
 
 .verify-card {
@@ -32,8 +31,8 @@
   min-height: 44rpx;
   padding: 8rpx 16rpx;
   border-radius: 999rpx;
-  background: #eef5f1;
-  color: #31544b;
+  background: #eff1fc;
+  color: #3a44c9;
   font-size: 22rpx;
   line-height: 28rpx;
   box-sizing: border-box;
@@ -42,7 +41,7 @@
 .expired-notice {
   margin-bottom: 22rpx;
   padding: 22rpx;
-  border-radius: 12rpx;
+  border-radius: 20rpx;
   background: #fff4e7;
   border: 1rpx solid #f3d2a8;
   color: #9a4d10;
@@ -63,12 +62,12 @@
   justify-content: space-between;
   gap: 20rpx;
   padding: 22rpx 0;
-  border-top: 1rpx solid #edf1ee;
+  border-top: 1rpx solid #eceef7;
   line-height: 1.45;
 }
 
 .select-row text:first-child {
-  color: #66736d;
+  color: #667089;
   flex: 0 0 100rpx;
 }
 
@@ -76,7 +75,7 @@
   flex: 1;
   min-width: 0;
   text-align: right;
-  color: #15231f;
+  color: #1c2030;
   font-weight: 700;
   overflow: hidden;
   white-space: nowrap;
@@ -85,7 +84,7 @@
 
 .arrow {
   flex: 0 0 auto;
-  color: #9aa69f;
+  color: #9aa2b8;
   font-size: 34rpx;
   line-height: 1;
 }
@@ -100,14 +99,14 @@
 textarea {
   width: 100%;
   min-height: 260rpx;
-  color: #30413a;
+  color: #3a4056;
   font-size: 26rpx;
   line-height: 1.7;
   padding: 18rpx;
   box-sizing: border-box;
-  border-radius: 10rpx;
-  background: #f7faf6;
-  border: 1rpx solid #dfe6df;
+  border-radius: 16rpx;
+  background: #f7f8fd;
+  border: 1rpx solid #e5e7f4;
 }
 
 .checklist-card {
@@ -119,7 +118,7 @@ textarea {
   align-items: flex-start;
   gap: 16rpx;
   padding: 20rpx 0;
-  border-top: 1rpx solid #edf1ee;
+  border-top: 1rpx solid #eceef7;
 }
 
 .check-row:first-of-type {
@@ -131,8 +130,8 @@ textarea {
   width: 40rpx;
   height: 40rpx;
   margin-top: 4rpx;
-  border-radius: 8rpx;
-  border: 2rpx solid #b8c5bf;
+  border-radius: 14rpx;
+  border: 2rpx solid #b7bdd1;
   color: #ffffff;
   font-size: 25rpx;
   font-weight: 900;
@@ -142,12 +141,12 @@ textarea {
 }
 
 .check-row.done .check-box {
-  background: #14604f;
-  border-color: #14604f;
+  background: #4653f0;
+  border-color: #4653f0;
 }
 
 .check-title-text {
-  color: #15231f;
+  color: #1c2030;
   font-size: 26rpx;
   font-weight: 850;
   line-height: 1.4;
@@ -155,7 +154,7 @@ textarea {
 
 .check-desc {
   margin-top: 5rpx;
-  color: #66736d;
+  color: #667089;
   font-size: 22rpx;
   line-height: 1.45;
 }
@@ -163,7 +162,7 @@ textarea {
 .notice {
   margin: 12rpx 0 24rpx;
   padding: 22rpx;
-  border-radius: 12rpx;
+  border-radius: 20rpx;
   background: #fff7ec;
   border: 1rpx solid #f6dfbd;
   color: #a25713;
@@ -178,6 +177,6 @@ textarea {
 }
 
 .primary-btn.disabled {
-  background: #aab6b1;
+  background: #a8afc4;
   box-shadow: none;
 }

@@ -10,29 +10,30 @@
 
 .hero-route {
   position: absolute;
-  left: 28rpx;
-  bottom: 22rpx;
+  left: 32rpx;
+  bottom: 26rpx;
   display: flex;
-  gap: 8rpx;
-  color: rgba(20, 96, 79, 0.78);
+  gap: 10rpx;
+  color: #ffffff;
   font-size: 19rpx;
   font-weight: 900;
+  z-index: 1;
 }
 
 .hero-route text {
-  padding: 6rpx 10rpx;
-  border-radius: 8rpx;
-  background: rgba(255, 255, 255, 0.72);
-  border: 1rpx solid rgba(20, 96, 79, 0.1);
+  padding: 6rpx 14rpx;
+  border-radius: 999rpx;
+  background: rgba(255, 255, 255, 0.16);
+  border: 1rpx solid rgba(255, 255, 255, 0.22);
 }
 
 .filter-panel {
   margin-bottom: 24rpx;
   padding: 24rpx;
-  border-radius: 12rpx;
+  border-radius: 20rpx;
   background: #ffffff;
-  border: 1rpx solid #dfe6df;
-  box-shadow: 0 10rpx 26rpx rgba(26, 52, 45, 0.05);
+  border: 1rpx solid #e5e7f4;
+  box-shadow: 0 10rpx 26rpx rgba(70, 83, 240, 0.05);
 }
 
 .filter-head {
@@ -51,9 +52,9 @@
 .filter-toggle {
   flex: 0 0 auto;
   padding: 8rpx 16rpx;
-  border-radius: 8rpx;
-  background: #f4f7f3;
-  color: #14604f;
+  border-radius: 14rpx;
+  background: #f2f3fa;
+  color: #4653f0;
   font-size: 22rpx;
   font-weight: 800;
 }
@@ -74,7 +75,7 @@
 }
 
 .filter-title {
-  color: #15231f;
+  color: #1c2030;
   font-size: 29rpx;
   font-weight: 850;
 }
@@ -91,29 +92,29 @@
   height: 70rpx;
   line-height: 70rpx;
   padding: 0 16rpx;
-  border-radius: 10rpx;
-  background: #f4f7f3;
-  color: #40524b;
+  border-radius: 16rpx;
+  background: #f2f3fa;
+  color: #454c66;
   font-size: 23rpx;
   text-align: left;
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
-  border: 1rpx solid #e4ebe5;
+  border: 1rpx solid #e4e7f3;
   box-sizing: border-box;
 }
 
 .chip-label {
   margin-right: 10rpx;
-  color: #829089;
+  color: #828ca3;
   font-size: 20rpx;
 }
 
 .chip.active {
-  color: #176238;
-  background: #e4f3e9;
+  color: #0e8a5f;
+  background: #e1f6ec;
   font-weight: 700;
-  border-color: #b9dec6;
+  border-color: #b5e6ce;
 }
 
 .range-toggle {
@@ -123,9 +124,9 @@
   gap: 18rpx;
   margin-top: 18rpx;
   padding: 16rpx;
-  border-radius: 10rpx;
-  background: #fbfcfa;
-  border: 1rpx solid #edf1ee;
+  border-radius: 16rpx;
+  background: #fbfcfe;
+  border: 1rpx solid #eceef7;
 }
 
 .range-copy {
@@ -134,7 +135,7 @@
 }
 
 .range-title {
-  color: #15231f;
+  color: #1c2030;
   font-size: 24rpx;
   font-weight: 850;
 }
@@ -144,16 +145,16 @@
   grid-template-columns: repeat(2, 1fr);
   width: 236rpx;
   padding: 4rpx;
-  border-radius: 9rpx;
-  background: #edf1ee;
+  border-radius: 999rpx;
+  background: #eceef7;
   box-sizing: border-box;
 }
 
 .range-option {
   height: 48rpx;
   line-height: 48rpx;
-  border-radius: 7rpx;
-  color: #61706a;
+  border-radius: 999rpx;
+  color: #626c86;
   font-size: 20rpx;
   font-weight: 800;
   text-align: center;
@@ -162,21 +163,26 @@
 }
 
 .range-option.active {
-  color: #14604f;
+  color: #4653f0;
   background: #ffffff;
-  box-shadow: 0 4rpx 10rpx rgba(26, 52, 45, 0.08);
+  box-shadow: 0 4rpx 10rpx rgba(70, 83, 240, 0.08);
 }
 
 .hero-count {
   position: absolute;
-  top: 30rpx;
-  right: 24rpx;
-  width: 96rpx;
-  text-align: right;
+  top: 34rpx;
+  right: 30rpx;
+  min-width: 96rpx;
+  padding: 14rpx 18rpx;
+  border-radius: 20rpx;
+  background: rgba(255, 255, 255, 0.14);
+  border: 1rpx solid rgba(255, 255, 255, 0.18);
+  text-align: center;
+  z-index: 1;
 }
 
 .hero-count-num {
-  color: #14604f;
+  color: #ffffff;
   font-size: 46rpx;
   font-weight: 900;
   line-height: 1;
@@ -184,7 +190,7 @@
 
 .hero-count-label {
   margin-top: 6rpx;
-  color: #728079;
+  color: rgba(255, 255, 255, 0.75);
   font-size: 20rpx;
 }
 
@@ -197,7 +203,7 @@
 }
 
 .summary-title {
-  color: #15231f;
+  color: #1c2030;
   font-size: 30rpx;
   font-weight: 800;
 }
@@ -211,8 +217,8 @@
 
 .reset-btn {
   width: 112rpx;
-  background: #f4f7f3;
-  color: #52645d;
+  background: #f2f3fa;
+  color: #59617d;
 }
 
 .save-btn {
@@ -225,9 +231,9 @@
   gap: 12rpx;
   height: 70rpx;
   padding: 0 16rpx;
-  border-radius: 10rpx;
-  background: #f4f7f3;
-  border: 1rpx solid #e4ebe5;
+  border-radius: 16rpx;
+  background: #f2f3fa;
+  border: 1rpx solid #e4e7f3;
   box-sizing: border-box;
 }
 
@@ -235,13 +241,13 @@
   flex: 1;
   min-width: 0;
   height: 68rpx;
-  color: #15231f;
+  color: #1c2030;
   font-size: 24rpx;
 }
 
 .clear {
   flex: 0 0 auto;
-  color: #14604f;
+  color: #4653f0;
   font-size: 22rpx;
   font-weight: 800;
 }
@@ -249,11 +255,11 @@
 .saved-searches {
   margin-top: 18rpx;
   padding-top: 18rpx;
-  border-top: 1rpx solid #edf1ee;
+  border-top: 1rpx solid #eceef7;
 }
 
 .saved-title {
-  color: #52645d;
+  color: #59617d;
   font-size: 22rpx;
   font-weight: 850;
 }
@@ -268,9 +274,9 @@
 .saved-chip {
   max-width: 100%;
   padding: 9rpx 12rpx;
-  border-radius: 8rpx;
-  background: #e7f1ee;
-  color: #14604f;
+  border-radius: 14rpx;
+  background: #eaedfb;
+  color: #4653f0;
   font-size: 22rpx;
   font-weight: 750;
   line-height: 1.35;
@@ -281,20 +287,20 @@
 
 .summary-badge {
   padding: 10rpx 16rpx;
-  border-radius: 8rpx;
-  background: #e7f1ee;
-  color: #14604f;
+  border-radius: 14rpx;
+  background: #eaedfb;
+  color: #4653f0;
   font-size: 22rpx;
   font-weight: 800;
 }
 
 .job-card {
-  margin-bottom: 22rpx;
-  padding: 26rpx 26rpx 24rpx;
-  border-radius: 12rpx;
+  margin-bottom: 24rpx;
+  padding: 28rpx 28rpx 26rpx;
+  border-radius: 24rpx;
   background: #ffffff;
-  border: 1rpx solid #dfe6df;
-  box-shadow: 0 12rpx 28rpx rgba(26, 52, 45, 0.06);
+  border: none;
+  box-shadow: 0 10rpx 30rpx rgba(70, 83, 240, 0.07);
 }
 
 .job-card.expired {
@@ -315,7 +321,7 @@
 }
 
 .school {
-  color: #15231f;
+  color: #1c2030;
   font-size: 30rpx;
   font-weight: 800;
   line-height: 1.35;
@@ -326,7 +332,7 @@
 
 .job-title {
   margin-top: 16rpx;
-  color: #15231f;
+  color: #1c2030;
   font-size: 31rpx;
   font-weight: 700;
   line-height: 1.45;
@@ -334,7 +340,7 @@
 
 .job-meta {
   margin-top: 8rpx;
-  color: #66736d;
+  color: #667089;
   font-size: 24rpx;
   overflow: hidden;
   white-space: nowrap;
@@ -351,9 +357,9 @@
 .soft-tag {
   max-width: 210rpx;
   padding: 8rpx 12rpx;
-  border-radius: 8rpx;
-  background: #f4f7f3;
-  color: #52645d;
+  border-radius: 14rpx;
+  background: #f2f3fa;
+  color: #59617d;
   font-size: 21rpx;
   overflow: hidden;
   white-space: nowrap;
@@ -374,7 +380,7 @@
 .expired-hint {
   margin-top: 16rpx;
   padding: 14rpx 16rpx;
-  border-radius: 9rpx;
+  border-radius: 16rpx;
   background: #fff4e7;
   color: #8b4611;
   font-size: 22rpx;
@@ -382,13 +388,13 @@
 }
 
 .soft-tag.source.green {
-  background: #e4f3e9;
-  color: #176238;
+  background: #e1f6ec;
+  color: #0e8a5f;
 }
 
 .soft-tag.source.gray {
-  background: #edf1ef;
-  color: #61706a;
+  background: #eceef7;
+  color: #626c86;
 }
 
 .soft-tag.source.warn {
@@ -403,7 +409,7 @@
   gap: 16rpx;
   margin-top: 18rpx;
   padding-top: 18rpx;
-  border-top: 1rpx solid #edf1ee;
+  border-top: 1rpx solid #eceef7;
 }
 
 .job-stats {
@@ -419,13 +425,13 @@
 }
 
 .stat-label {
-  color: #6f7c76;
+  color: #707a93;
   font-size: 20rpx;
 }
 
 .stat-value {
   margin-top: 6rpx;
-  color: #15231f;
+  color: #1c2030;
   font-size: 25rpx;
   font-weight: 800;
   overflow: hidden;
@@ -447,6 +453,6 @@
   height: 56rpx;
   margin: 0;
   padding: 0;
-  border-radius: 9rpx;
+  border-radius: 999rpx;
   font-size: 23rpx;
 }

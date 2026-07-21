@@ -374,11 +374,19 @@ async function getReadiness() {
   return request("/readiness")
 }
 
-async function askRag(question) {
+async function askRag(question, options = {}) {
   return request("/rag/ask", {
     method: "POST",
-    data: { question }
+    data: {
+      question,
+      top_k: options.topK || 3,
+      context_title: options.contextTitle || undefined
+    }
   })
+}
+
+async function getRagStatus() {
+  return request("/rag/status")
 }
 
 module.exports = {
@@ -388,6 +396,7 @@ module.exports = {
   getJobs,
   getJob,
   getProfile,
+  getRagStatus,
   getMatches,
   getApplications,
   getRemoteResumes,

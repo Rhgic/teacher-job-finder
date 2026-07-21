@@ -3,31 +3,34 @@
   right: 24rpx;
   top: 28rpx;
   z-index: 1;
-  padding: 8rpx 14rpx;
-  border-radius: 8rpx;
-  background: #edf1ef;
-  color: #61706a;
+  padding: 8rpx 16rpx;
+  border-radius: 999rpx;
+  background: rgba(255, 255, 255, 0.16);
+  border: 1rpx solid rgba(255, 255, 255, 0.22);
+  color: #ffffff;
   font-size: 22rpx;
   font-weight: 850;
 }
 
 .status-pill.green {
-  background: #e4f3e9;
-  color: #176238;
+  background: #ffffff;
+  border-color: #ffffff;
+  color: #0e8a5f;
 }
 
 .status-pill.warn {
-  background: #fff2df;
-  color: #a25713;
+  background: #ffca7a;
+  border-color: #ffca7a;
+  color: #7e3a06;
 }
 
 .status-card {
   margin-bottom: 22rpx;
   padding: 26rpx;
-  border-radius: 12rpx;
+  border-radius: 20rpx;
   background: #ffffff;
-  border: 1rpx solid #dfe6df;
-  box-shadow: 0 12rpx 28rpx rgba(26, 52, 45, 0.06);
+  border: 1rpx solid #e5e7f4;
+  box-shadow: 0 12rpx 28rpx rgba(70, 83, 240, 0.06);
 }
 
 .card-head {
@@ -50,13 +53,13 @@
 .metric-line > view,
 .backup-grid > view {
   padding: 18rpx;
-  border-radius: 10rpx;
-  background: #f6faf7;
-  border: 1rpx solid #e4ebe5;
+  border-radius: 16rpx;
+  background: #f6f7fd;
+  border: 1rpx solid #e4e7f3;
 }
 
 .metric-num {
-  color: #14604f;
+  color: #4653f0;
   font-size: 36rpx;
   font-weight: 900;
   line-height: 1;
@@ -69,19 +72,19 @@
 
 .metric-label {
   margin-top: 8rpx;
-  color: #66736d;
+  color: #667089;
   font-size: 22rpx;
 }
 
 .latest {
   margin-top: 16rpx;
-  color: #52645d;
+  color: #59617d;
   font-size: 24rpx;
 }
 
 .latest.muted {
   margin-top: 8rpx;
-  color: #7c8b84;
+  color: #7e88a0;
   font-size: 22rpx;
   word-break: break-all;
 }
@@ -90,16 +93,16 @@
   flex: 0 0 auto;
   margin-left: auto;
   padding: 7rpx 12rpx;
-  border-radius: 8rpx;
-  background: #edf1ef;
-  color: #61706a;
+  border-radius: 14rpx;
+  background: #eceef7;
+  color: #626c86;
   font-size: 21rpx;
   font-weight: 850;
 }
 
 .small-pill.green {
-  background: #e4f3e9;
-  color: #176238;
+  background: #e1f6ec;
+  color: #0e8a5f;
 }
 
 .small-pill.warn {
@@ -112,7 +115,7 @@
   align-items: center;
   gap: 12rpx;
   min-height: 56rpx;
-  border-top: 1rpx solid #edf1ee;
+  border-top: 1rpx solid #eceef7;
 }
 
 .check-row:first-of-type {
@@ -123,18 +126,18 @@
   width: 15rpx;
   height: 15rpx;
   border-radius: 50%;
-  background: #d9dedb;
+  background: #dcdfec;
   flex: 0 0 15rpx;
 }
 
 .check-dot.ok {
-  background: #14604f;
+  background: #4653f0;
 }
 
 .check-label {
   flex: 1;
   min-width: 0;
-  color: #15231f;
+  color: #1c2030;
   font-size: 25rpx;
   font-weight: 750;
 }
@@ -147,12 +150,12 @@
 }
 
 .check-text.ok {
-  color: #176238;
+  color: #0e8a5f;
 }
 
 .next-card {
   padding: 24rpx;
-  border-radius: 12rpx;
+  border-radius: 20rpx;
   background: #fff8ee;
   border: 1rpx solid #f4ddb9;
 }

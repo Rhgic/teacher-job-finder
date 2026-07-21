@@ -13,28 +13,28 @@
         <view class="switch-title">岗位截止</view>
         <view class="switch-desc">快到报名截止日时提醒核对材料</view>
       </view>
-      <switch checked="{{prefs.deadline}}" color="#14604f" />
+      <switch checked="{{prefs.deadline}}" color="#4653f0" />
     </view>
     <view class="switch-row" data-key="application" bindtap="toggle">
       <view>
         <view class="switch-title">投递跟进</view>
         <view class="switch-desc">待处理、失败、面试状态需要继续处理</view>
       </view>
-      <switch checked="{{prefs.application}}" color="#14604f" />
+      <switch checked="{{prefs.application}}" color="#4653f0" />
     </view>
     <view class="switch-row" data-key="materials" bindtap="toggle">
       <view>
         <view class="switch-title">材料缺口</view>
         <view class="switch-desc">证书、附件、报名表未勾选完时提醒</view>
       </view>
-      <switch checked="{{prefs.materials}}" color="#14604f" />
+      <switch checked="{{prefs.materials}}" color="#4653f0" />
     </view>
     <view class="switch-row" data-key="daily" bindtap="toggle">
       <view>
         <view class="switch-title">每日汇总</view>
         <view class="switch-desc">把当天新增岗位和待办合成一条摘要</view>
       </view>
-      <switch checked="{{prefs.daily}}" color="#14604f" />
+      <switch checked="{{prefs.daily}}" color="#4653f0" />
     </view>
   </view>
 

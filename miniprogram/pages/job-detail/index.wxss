@@ -7,13 +7,26 @@
   font-size: 38rpx;
   font-weight: 800;
   line-height: 1.45;
-  color: #15231f;
+  color: #1c2030;
+}
+
+.detail-hero .title {
+  color: #ffffff;
 }
 
 .meta {
   margin-top: 12rpx;
-  color: #66736d;
+  color: #667089;
   font-size: 24rpx;
+}
+
+.detail-hero .meta {
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.detail-hero .pill {
+  position: relative;
+  z-index: 1;
 }
 
 .tags {
@@ -34,7 +47,7 @@
 .expired-banner {
   margin-bottom: 18rpx;
   padding: 22rpx;
-  border-radius: 12rpx;
+  border-radius: 20rpx;
   background: #fff4e7;
   border: 1rpx solid #f3d2a8;
   color: #9a4d10;
@@ -52,10 +65,10 @@
 .check-card {
   margin-bottom: 22rpx;
   padding: 24rpx;
-  border-radius: 12rpx;
-  background: #123d34;
+  border-radius: 20rpx;
+  background: #2c34a3;
   color: #ffffff;
-  box-shadow: 0 14rpx 32rpx rgba(18, 61, 52, 0.16);
+  box-shadow: 0 14rpx 32rpx rgba(58, 68, 201, 0.18);
 }
 
 .check-title {
@@ -82,7 +95,7 @@
   height: 10rpx;
   margin-top: 12rpx;
   border-radius: 50%;
-  background: #85d6bd;
+  background: #7edbb9;
   flex: 0 0 10rpx;
 }
 
@@ -98,7 +111,7 @@
 }
 
 .source-host {
-  color: #66736d;
+  color: #667089;
   font-size: 23rpx;
   line-height: 1.45;
   word-break: break-all;
@@ -107,9 +120,9 @@
 .source-text {
   margin-top: 16rpx;
   padding: 16rpx;
-  border-radius: 10rpx;
-  background: #f6faf7;
-  color: #284139;
+  border-radius: 16rpx;
+  background: #f6f7fd;
+  color: #333a55;
   font-size: 23rpx;
   line-height: 1.55;
   word-break: break-all;
@@ -126,8 +139,8 @@
   min-height: 44rpx;
   padding: 8rpx 16rpx;
   border-radius: 999rpx;
-  background: #eef5f1;
-  color: #31544b;
+  background: #eff1fc;
+  color: #3a44c9;
   font-size: 22rpx;
   line-height: 28rpx;
   box-sizing: border-box;
@@ -142,7 +155,7 @@
   align-items: flex-start;
   gap: 12rpx;
   margin-top: 10rpx;
-  color: #52665f;
+  color: #59617d;
   font-size: 23rpx;
   line-height: 1.55;
 }
@@ -158,7 +171,7 @@
 
 .source-actions {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: 12rpx;
   margin-top: 18rpx;
 }
@@ -172,10 +185,10 @@
   margin: 0;
   padding: 0;
   box-sizing: border-box;
-  border-radius: 10rpx;
-  border: 1rpx solid #cbded6;
+  border-radius: 16rpx;
+  border: 1rpx solid #cdd4ee;
   background: #ffffff;
-  color: #14604f;
+  color: #4653f0;
   font-size: 24rpx;
   line-height: 1;
   font-weight: 700;
@@ -183,7 +196,7 @@
 }
 
 .source-copy.guide {
-  background: #e7f1ee;
+  background: #eaedfb;
 }
 
 .source-copy::after {
@@ -192,7 +205,7 @@
 
 .detail-actions {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: 12rpx;
   margin-bottom: 22rpx;
 }
@@ -205,7 +218,7 @@
 }
 
 .jd {
-  color: #30413a;
+  color: #3a4056;
   font-size: 26rpx;
   line-height: 1.8;
 }
@@ -215,17 +228,17 @@
   justify-content: space-between;
   gap: 20rpx;
   padding: 18rpx 0;
-  border-top: 1rpx solid #edf1ee;
+  border-top: 1rpx solid #eceef7;
   line-height: 1.45;
 }
 
 .row text:first-child {
-  color: #66736d;
+  color: #667089;
   flex: 0 0 150rpx;
 }
 
 .row text:last-child {
-  color: #15231f;
+  color: #1c2030;
   text-align: right;
   flex: 1;
   word-break: break-all;
@@ -242,8 +255,8 @@
   bottom: 0;
   padding: 18rpx 24rpx 32rpx;
   background: #ffffff;
-  border-top: 1rpx solid #dfe6df;
-  box-shadow: 0 -10rpx 28rpx rgba(26, 52, 45, 0.08);
+  border-top: 1rpx solid #e5e7f4;
+  box-shadow: 0 -10rpx 28rpx rgba(70, 83, 240, 0.08);
 }
 
 .expired-btn {
@@ -253,7 +266,7 @@
 
 .source-link {
   margin-top: 20rpx;
-  color: #14604f;
+  color: #4653f0;
   font-size: 23rpx;
   line-height: 1.6;
   word-break: break-all;

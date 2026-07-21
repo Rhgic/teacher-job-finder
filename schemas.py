@@ -230,10 +230,12 @@ class EmailPreviewRead(EmailApplicationRead):
 
 class RagAskRequest(BaseModel):
     question: str = Field(..., min_length=1)
-    top_k: int = Field(default=5, ge=1, le=10)
+    top_k: int = Field(default=3, ge=1, le=10)
+    context_title: str | None = Field(default=None, max_length=200)
 
 
 class RagSourceRead(BaseModel):
+    source_id: str
     title: str
     snippet: str
     score: float

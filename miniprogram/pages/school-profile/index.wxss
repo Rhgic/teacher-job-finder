@@ -1,5 +1,4 @@
 .school-hero {
-  background: linear-gradient(132deg, #ffffff 0%, #eef7f2 50%, #eaf2f6 100%);
 }
 
 .school-metrics {
@@ -10,10 +9,10 @@
 .job-card {
   margin-bottom: 20rpx;
   padding: 24rpx;
-  border-radius: 12rpx;
+  border-radius: 20rpx;
   background: #ffffff;
-  border: 1rpx solid #dfe6df;
-  box-shadow: 0 12rpx 28rpx rgba(26, 52, 45, 0.06);
+  border: 1rpx solid #e5e7f4;
+  box-shadow: 0 12rpx 28rpx rgba(70, 83, 240, 0.06);
 }
 
 .compact {
@@ -25,13 +24,13 @@
   justify-content: space-between;
   gap: 20rpx;
   padding: 18rpx 0;
-  border-top: 1rpx solid #edf1ee;
-  color: #15231f;
+  border-top: 1rpx solid #eceef7;
+  color: #1c2030;
   line-height: 1.45;
 }
 
 .row text:first-child {
-  color: #66736d;
+  color: #667089;
   flex: 0 0 130rpx;
 }
 
@@ -55,7 +54,7 @@
 .job-title {
   flex: 1;
   min-width: 0;
-  color: #15231f;
+  color: #1c2030;
   font-size: 28rpx;
   font-weight: 850;
   line-height: 1.35;
@@ -63,7 +62,7 @@
 
 .job-meta {
   margin-top: 12rpx;
-  color: #66736d;
+  color: #667089;
   font-size: 23rpx;
   line-height: 1.45;
 }

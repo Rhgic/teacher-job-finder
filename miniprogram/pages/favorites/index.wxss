@@ -2,17 +2,17 @@
   width: 100%;
   height: 66rpx;
   margin: 0 0 18rpx;
-  border-radius: 10rpx;
+  border-radius: 16rpx;
   font-size: 24rpx;
 }
 
 .fav-card {
   margin-bottom: 22rpx;
   padding: 26rpx;
-  border-radius: 12rpx;
+  border-radius: 20rpx;
   background: #ffffff;
-  border: 1rpx solid #dfe6df;
-  box-shadow: 0 12rpx 28rpx rgba(26, 52, 45, 0.06);
+  border: 1rpx solid #e5e7f4;
+  box-shadow: 0 12rpx 28rpx rgba(70, 83, 240, 0.06);
 }
 
 .fav-head {
@@ -23,14 +23,14 @@
 }
 
 .school {
-  color: #15231f;
+  color: #1c2030;
   font-size: 30rpx;
   font-weight: 850;
 }
 
 .title {
   margin-top: 16rpx;
-  color: #15231f;
+  color: #1c2030;
   font-size: 29rpx;
   font-weight: 700;
   line-height: 1.45;

@@ -1,15 +1,14 @@
 .guide-hero {
-  background: linear-gradient(132deg, #ffffff 0%, #eef7f2 54%, #f4efe5 100%);
 }
 
 .level-card,
 .rule-card {
   margin-bottom: 22rpx;
   padding: 24rpx;
-  border-radius: 12rpx;
+  border-radius: 20rpx;
   background: #ffffff;
-  border: 1rpx solid #dfe6df;
-  box-shadow: 0 12rpx 28rpx rgba(26, 52, 45, 0.06);
+  border: 1rpx solid #e5e7f4;
+  box-shadow: 0 12rpx 28rpx rgba(70, 83, 240, 0.06);
 }
 
 .level-head {
@@ -21,7 +20,7 @@
 }
 
 .level-title {
-  color: #15231f;
+  color: #1c2030;
   font-size: 29rpx;
   font-weight: 850;
   line-height: 1.3;
@@ -29,7 +28,7 @@
 
 .level-desc {
   margin-top: 8rpx;
-  color: #66736d;
+  color: #667089;
   font-size: 23rpx;
   line-height: 1.5;
 }
@@ -39,7 +38,7 @@
   align-items: flex-start;
   gap: 12rpx;
   padding: 10rpx 0;
-  border-top: 1rpx solid #edf1ee;
+  border-top: 1rpx solid #eceef7;
 }
 
 .tip-dot {
@@ -47,14 +46,14 @@
   height: 10rpx;
   margin-top: 13rpx;
   border-radius: 50%;
-  background: #14604f;
+  background: #4653f0;
   flex: 0 0 10rpx;
 }
 
 .tip-text {
   flex: 1;
   min-width: 0;
-  color: #30413a;
+  color: #3a4056;
   font-size: 24rpx;
   line-height: 1.5;
 }
@@ -67,7 +66,7 @@
   display: flex;
   gap: 14rpx;
   padding: 14rpx 0;
-  border-top: 1rpx solid #edf1ee;
+  border-top: 1rpx solid #eceef7;
 }
 
 .rule-row:first-of-type {
@@ -80,9 +79,9 @@
   justify-content: center;
   width: 38rpx;
   height: 38rpx;
-  border-radius: 8rpx;
-  background: #e7f1ee;
-  color: #14604f;
+  border-radius: 14rpx;
+  background: #eaedfb;
+  color: #4653f0;
   font-size: 22rpx;
   font-weight: 900;
   flex: 0 0 38rpx;
@@ -91,7 +90,7 @@
 .rule-text {
   flex: 1;
   min-width: 0;
-  color: #30413a;
+  color: #3a4056;
   font-size: 24rpx;
   line-height: 1.55;
 }

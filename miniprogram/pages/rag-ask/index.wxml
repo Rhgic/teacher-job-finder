@@ -1,54 +1,131 @@
-<view class="page qa-page">
-  <view class="hero-card qa-hero">
-    <view class="hero-kicker">RAG 公告问答</view>
-    <view class="hero-title">只根据公告回答</view>
-    <view class="hero-subtitle">先检索公告片段，再基于片段回答；公告没写就说未提及。</view>
-  </view>
+<view class="qa-page">
+  <view class="qa-header">
+    <view class="header-main">
+      <view>
+        <view class="page-title">公告问答</view>
+        <view class="page-subtitle">从已收录的招聘公告里找答案</view>
+      </view>
+      <button wx:if="{{messages.length}}" class="clear-button" bindtap="clearConversation">清空</button>
+    </view>
 
-  <view class="rag-flow-card">
-    <view class="flow-title">这页主要演示什么</view>
-    <view class="rag-flow">
-      <view class="rag-flow-step">公告切片</view>
-      <view class="rag-flow-step">向量检索</view>
-      <view class="rag-flow-step">带来源回答</view>
+    <view class="knowledge-status {{statusClass}}">
+      <view class="status-dot"></view>
+      <text class="status-text">{{knowledgeStatus}}</text>
+      <text wx:if="{{modeText}}" class="mode-text">{{modeText}}</text>
     </view>
   </view>
 
-  <view class="ask-card">
-    <view class="field-label">演示问题</view>
-    <input class="question-input compact-input" value="{{question}}" placeholder="{{demoQuestion}}" bindinput="onQuestionInput" />
-    <view class="ask-actions">
-      <button class="ghost-btn ask-half" bindtap="runDemoQuestion">一键演示</button>
-      <button class="primary-btn ask-half" loading="{{loading}}" bindtap="submitQuestion">提问</button>
+  <view class="conversation">
+    <view wx:if="{{!messages.length}}" class="welcome-block">
+      <view class="assistant-row">
+        <view class="assistant-avatar">AI</view>
+        <view class="welcome-copy">
+          <view class="welcome-title">先问结论，再看依据</view>
+          <view class="welcome-text">可以查编制、薪资、截止时间、投递邮箱和岗位要求。公告里没有写的内容，我会直接告诉你“未提及”。</view>
+        </view>
+      </view>
+
+      <view class="quick-title">常用问题</view>
+      <view class="quick-list">
+        <view wx:for="{{examples}}" wx:key="text" class="quick-item" data-text="{{item.text}}" bindtap="useExample">
+          <view class="quick-icon {{item.tone}}">{{item.short}}</view>
+          <view class="quick-copy">
+            <view class="quick-label">{{item.label}}</view>
+            <view class="quick-question">{{item.text}}</view>
+          </view>
+          <view class="quick-arrow">›</view>
+        </view>
+      </view>
+    </view>
+
+    <view id="message-{{message.id}}" wx:for="{{messages}}" wx:key="id" wx:for-item="message" wx:for-index="messageIndex" class="message-group">
+      <view class="user-row">
+        <view class="user-bubble">{{message.question}}</view>
+      </view>
+
+      <view class="assistant-row answer-row">
+        <view class="assistant-avatar small">AI</view>
+        <view class="assistant-content">
+          <view wx:if="{{message.loading}}" class="answer-surface loading-surface">
+            <view class="loading-line long"></view>
+            <view class="loading-line"></view>
+            <view class="loading-label">正在检索公告...</view>
+          </view>
+
+          <view wx:elif="{{message.error}}" class="answer-surface error-surface">
+            <view class="result-heading">这次没查成功</view>
+            <view class="result-text">{{message.error}}</view>
+            <button class="inline-action" data-index="{{messageIndex}}" bindtap="retryMessage">重新查询</button>
+          </view>
+
+          <view wx:else class="answer-surface {{message.found ? '' : 'not-found-surface'}}">
+            <view class="result-head">
+              <view class="result-state {{message.found ? 'found' : 'not-found'}}">
+                <view class="result-mark">{{message.found ? '✓' : '!'}}</view>
+                <text>{{message.found ? '已找到公告依据' : '公告未提及'}}</text>
+              </view>
+              <button class="copy-button" data-index="{{messageIndex}}" bindtap="copyAnswer">复制</button>
+            </view>
+            <view class="result-text">{{message.answer}}</view>
+
+            <view wx:if="{{message.sources.length}}" class="evidence-block">
+              <view class="evidence-toggle" data-index="{{messageIndex}}" bindtap="toggleSources">
+                <view>
+                  <view class="evidence-title">公告依据</view>
+                  <view class="evidence-meta">{{message.sources.length}} 条相关片段</view>
+                </view>
+                <view class="toggle-icon {{message.sourcesExpanded ? 'expanded' : ''}}">⌄</view>
+              </view>
+
+              <view wx:if="{{message.sourcesExpanded}}" class="source-list">
+                <view wx:for="{{message.sources}}" wx:key="id" wx:for-item="source" class="source-item">
+                  <view class="source-head">
+                    <view class="source-number">{{index + 1}}</view>
+                    <view class="source-title">{{source.title}}</view>
+                    <view class="source-score">{{source.scoreText}}</view>
+                  </view>
+                  <view class="source-snippet">{{source.snippet}}</view>
+                  <button class="source-link" data-id="{{source.sourceId}}" bindtap="openSource">查看岗位详情</button>
+                </view>
+              </view>
+            </view>
+
+            <view class="answer-note">AI 只整理已收录公告，请以公告原文为准。</view>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <view wx:if="{{messages.length && !loading}}" class="follow-up-block">
+      <view class="follow-up-label">继续追问当前岗位</view>
+      <scroll-view class="follow-up-scroll" scroll-x enable-flex>
+        <view wx:for="{{followUps}}" wx:key="*this" class="follow-up-chip" data-text="{{item}}" bindtap="useExample">{{item}}</view>
+      </scroll-view>
     </view>
   </view>
 
-  <view class="empty-card">
-    <view class="empty-title">可以问我这些问题</view>
-    <view class="example-list">
-      <view wx:for="{{examples}}" wx:key="*this" class="example-chip" data-text="{{item}}" bindtap="useExample">{{item}}</view>
+  <view class="composer-shell">
+    <view class="composer {{questionFocused ? 'focused' : ''}}">
+      <textarea
+        class="question-input"
+        value="{{question}}"
+        placeholder="输入你想核对的公告问题"
+        placeholder-class="question-placeholder"
+        maxlength="120"
+        auto-height
+        confirm-type="send"
+        bindinput="onQuestionInput"
+        bindfocus="onQuestionFocus"
+        bindblur="onQuestionBlur"
+        bindconfirm="submitQuestion"
+      />
+      <button
+        class="send-button"
+        disabled="{{!canSubmit || loading}}"
+        bindtap="submitQuestion"
+        aria-label="发送问题"
+      >↑</button>
     </view>
-  </view>
-
-  <view wx:if="{{errorText}}" class="error-card">
-    <view class="error-title">查询失败</view>
-    <view class="error-text">{{errorText}}</view>
-  </view>
-
-  <view wx:if="{{answer}}" class="answer-card">
-    <view class="answer-head">
-      <view class="answer-title">{{answerTitle}}</view>
-      <view class="pill {{answerPillClass}}">{{answerPillText}}</view>
-    </view>
-    <view class="answer-text">{{answer}}</view>
-    <view class="answer-note">信息由 AI 依据公告整理，请以公告原文为准。</view>
-  </view>
-
-  <view wx:if="{{hasSources}}" class="sources-card">
-    <view class="section-title compact">依据以下公告</view>
-    <view wx:for="{{sources}}" wx:key="id" class="source-item">
-      <view class="source-title">{{item.title}}</view>
-      <view class="source-snippet">{{item.snippet}}</view>
-    </view>
+    <view class="composer-hint">回答找不到依据时会明确拒答</view>
   </view>
 </view>

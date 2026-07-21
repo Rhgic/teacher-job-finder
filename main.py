@@ -9,8 +9,9 @@ from sqlalchemy import Select, func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
+from config import settings
 from database import Base, engine, get_db
-from models import ApplicationStatus, EmailApplication, Job, Resume, SubRule, Template, User, UserProfile
+from models import ApplicationStatus, DocChunk, EmailApplication, Job, Resume, SubRule, Template, User, UserProfile
 from models import MatchResult
 from schemas import (
     EmailPreviewCreate,
@@ -570,7 +571,25 @@ def reindex_rag(db: DbSession) -> dict[str, int]:
     return rag_index.reindex(db)
 
 
+@app.get("/rag/status")
+def rag_status(db: DbSession) -> dict[str, Any]:
+    """Expose the local knowledge-base state for the mini-program UI."""
+    jobs = db.scalar(select(func.count()).select_from(Job)) or 0
+    chunks = db.scalar(select(func.count()).select_from(DocChunk)) or 0
+    return {
+        "ready": chunks > 0,
+        "jobs": jobs,
+        "chunks": chunks,
+        "demo_mode": settings.LLM_STUB_MODE or settings.EMBEDDING_STUB_MODE,
+    }
+
+
 @app.post("/rag/ask", response_model=RagAskResponse)
 def ask_rag(payload: RagAskRequest, db: DbSession) -> dict:
     """Answer from indexed notice chunks; return found=false when no evidence is found."""
-    return rag_qa.ask(db, payload.question, k=payload.top_k)
+    return rag_qa.ask(
+        db,
+        payload.question,
+        k=payload.top_k,
+        context_title=payload.context_title,
+    )
