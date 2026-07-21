@@ -142,7 +142,8 @@ def ask(db: Session, question: str, k: int = DEFAULT_TOP_K) -> dict:
 
     user_prompt = build_user_prompt(question, chunks)
     try:
-        answer = _call_deepseek(SYSTEM_PROMPT, user_prompt).strip()
+        # 问答要自然语言而非 JSON；json_mode 会因 prompt 不含 "json" 被 DeepSeek 拒掉
+        answer = _call_deepseek(SYSTEM_PROMPT, user_prompt, json_mode=False).strip()
     except Exception as exc:  # noqa: BLE001 - 单次问答失败不应导致服务崩溃
         answer = f"公告问答生成失败：{exc}"
     return {"answer": answer or NOT_FOUND_ANSWER, "found": True, "sources": sources}

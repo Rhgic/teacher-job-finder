@@ -47,22 +47,29 @@ def _stub_result(resume_summary: str, jd_text: str) -> dict:
     }
 
 
-def _call_deepseek(system: str, user: str) -> str:
-    """调用 DeepSeek chat completions，返回模型文本。需 httpx 与有效 API Key。"""
+def _call_deepseek(system: str, user: str, *, json_mode: bool = True) -> str:
+    """调用 DeepSeek chat completions，返回模型文本。需 httpx 与有效 API Key。
+
+    json_mode 仅在期望结构化输出时开启（匹配评分、简历改写）。
+    DeepSeek 规定 response_format=json_object 时 prompt 里必须出现 "json" 字样，
+    否则直接 400；rag_qa 这类自然语言回答的调用必须传 json_mode=False。
+    """
     import httpx
 
+    payload = {
+        "model": settings.DEEPSEEK_MODEL,
+        "messages": [
+            {"role": "system", "content": system},
+            {"role": "user", "content": user},
+        ],
+        "temperature": 0.3,
+    }
+    if json_mode:
+        payload["response_format"] = {"type": "json_object"}
     resp = httpx.post(
         f"{settings.DEEPSEEK_BASE_URL}/chat/completions",
         headers={"Authorization": f"Bearer {settings.DEEPSEEK_API_KEY}"},
-        json={
-            "model": settings.DEEPSEEK_MODEL,
-            "messages": [
-                {"role": "system", "content": system},
-                {"role": "user", "content": user},
-            ],
-            "temperature": 0.3,
-            "response_format": {"type": "json_object"},
-        },
+        json=payload,
         timeout=60,
     )
     resp.raise_for_status()
