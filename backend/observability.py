@@ -199,6 +199,38 @@ class ObservabilityMiddleware(BaseHTTPMiddleware):
             request_id_ctx.reset(token)
 
 
+def _llm_metrics() -> str:
+    """LLM 用量指标。
+
+    大模型是这个系统里唯一按次付费的依赖，只观测 HTTP 层看不到钱花在哪，
+    因此把调用数、token 消耗、缓存命中单独暴露出来。
+    计数存在 Redis，Redis 不可用时整段省略而不是报错。
+    """
+    from services import ratelimit
+
+    snap = ratelimit.usage_snapshot()
+    if not snap.get("available"):
+        return ""
+    hits, misses = snap["cache_hits_today"], snap["cache_misses_today"]
+    lines = [
+        "# HELP llm_calls_today 当日 LLM 调用次数（含被缓存挡下的）",
+        "# TYPE llm_calls_today gauge",
+        f"llm_calls_today {snap['calls_today']}",
+        "# HELP llm_daily_quota 当日全局配额上限，超过即自动降级为占位实现",
+        "# TYPE llm_daily_quota gauge",
+        f"llm_daily_quota {snap['global_quota']}",
+        "# HELP llm_tokens_today 当日 token 消耗总量",
+        "# TYPE llm_tokens_today gauge",
+        f"llm_tokens_today {snap['tokens_today']}",
+        "# HELP llm_cache_events_today 当日 LLM 结果缓存命中与未命中",
+        "# TYPE llm_cache_events_today gauge",
+        f'llm_cache_events_today{{result="hit"}} {hits}',
+        f'llm_cache_events_today{{result="miss"}} {misses}',
+    ]
+    return "\n".join(lines) + "\n"
+
+
 async def metrics_endpoint(_: Request) -> PlainTextResponse:
     """Prometheus 抓取端点。"""
-    return PlainTextResponse(metrics.render(), media_type="text/plain; version=0.0.4")
+    body = metrics.render() + _llm_metrics()
+    return PlainTextResponse(body, media_type="text/plain; version=0.0.4")

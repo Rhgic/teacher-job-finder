@@ -7,9 +7,18 @@
 from __future__ import annotations
 
 import json
+import logging
 import re
+import time
 
 from config import settings
+from services import ratelimit
+
+logger = logging.getLogger("llm")
+
+# 重试上限与退避基数：5xx/超时才重试，4xx 立即抛出
+LLM_MAX_ATTEMPTS = 3
+LLM_BACKOFF_BASE_SEC = 1.0
 
 # 评分契约 + 反虚构 + 可解释。这是匹配质量的核心。
 SYSTEM_PROMPT = """你是教师招聘匹配助手。根据【候选人简历】【求职意向】【岗位 JD】，
@@ -53,7 +62,15 @@ def _call_deepseek(system: str, user: str, *, json_mode: bool = True) -> str:
     json_mode 仅在期望结构化输出时开启（匹配评分、简历改写）。
     DeepSeek 规定 response_format=json_object 时 prompt 里必须出现 "json" 字样，
     否则直接 400；rag_qa 这类自然语言回答的调用必须传 json_mode=False。
+
+    外围加了三层保护：
+    - 相同输入直接命中缓存，不重复付费
+    - token 用量记账，供 /metrics 与成本核算
+    - 5xx 与超时按指数退避重试；4xx 是请求本身有问题，重试无意义，立即抛出
     """
+    import hashlib
+    import json as _json
+
     import httpx
 
     payload = {
@@ -66,14 +83,69 @@ def _call_deepseek(system: str, user: str, *, json_mode: bool = True) -> str:
     }
     if json_mode:
         payload["response_format"] = {"type": "json_object"}
-    resp = httpx.post(
-        f"{settings.DEEPSEEK_BASE_URL}/chat/completions",
-        headers={"Authorization": f"Bearer {settings.DEEPSEEK_API_KEY}"},
-        json=payload,
-        timeout=60,
-    )
-    resp.raise_for_status()
-    return resp.json()["choices"][0]["message"]["content"]
+
+    cache_key = hashlib.sha256(
+        _json.dumps(payload, ensure_ascii=False, sort_keys=True).encode("utf-8")
+    ).hexdigest()[:32]
+    cached = ratelimit.cache_get(cache_key)
+    if cached is not None:
+        ratelimit.record_cache_event(hit=True)
+        logger.info("llm_cache_hit", extra={"extra_fields": {"cache_key": cache_key}})
+        return cached
+    ratelimit.record_cache_event(hit=False)
+
+    url = f"{settings.DEEPSEEK_BASE_URL}/chat/completions"
+    headers = {"Authorization": f"Bearer {settings.DEEPSEEK_API_KEY}"}
+    last_exc: Exception | None = None
+    for attempt in range(LLM_MAX_ATTEMPTS):
+        started = time.perf_counter()
+        try:
+            resp = httpx.post(url, headers=headers, json=payload,
+                              timeout=httpx.Timeout(60.0, connect=10.0))
+        except (httpx.TimeoutException, httpx.TransportError) as exc:
+            last_exc = exc
+            _sleep_backoff(attempt, "network", str(exc))
+            continue
+
+        if resp.status_code >= 500:
+            last_exc = httpx.HTTPStatusError(
+                f"server error {resp.status_code}", request=resp.request, response=resp)
+            _sleep_backoff(attempt, f"http_{resp.status_code}", resp.text[:120])
+            continue
+
+        # 4xx：参数、鉴权或配额问题，重试一百次也是同样结果
+        resp.raise_for_status()
+        data = resp.json()
+        usage = data.get("usage") or {}
+        total = int(usage.get("total_tokens") or 0)
+        ratelimit.record_tokens(total)
+        logger.info("llm_call", extra={"extra_fields": {
+            "model": settings.DEEPSEEK_MODEL,
+            "json_mode": json_mode,
+            "prompt_tokens": usage.get("prompt_tokens"),
+            "completion_tokens": usage.get("completion_tokens"),
+            "total_tokens": total,
+            "cached_tokens": usage.get("prompt_cache_hit_tokens"),
+            "duration_ms": round((time.perf_counter() - started) * 1000, 1),
+            "attempt": attempt + 1,
+        }})
+        content = data["choices"][0]["message"]["content"]
+        ratelimit.cache_set(cache_key, content)
+        return content
+
+    raise last_exc if last_exc else RuntimeError("DeepSeek 调用失败")
+
+
+def _sleep_backoff(attempt: int, kind: str, detail: str) -> None:
+    """指数退避；最后一次尝试失败后不再等待，直接让调用方拿到异常。"""
+    if attempt >= LLM_MAX_ATTEMPTS - 1:
+        logger.warning("llm_call_failed", extra={"extra_fields": {
+            "kind": kind, "detail": detail, "attempts": attempt + 1}})
+        return
+    delay = LLM_BACKOFF_BASE_SEC * (2 ** attempt)
+    logger.warning("llm_retry", extra={"extra_fields": {
+        "kind": kind, "detail": detail, "attempt": attempt + 1, "sleep_sec": delay}})
+    time.sleep(delay)
 
 
 def _extract_json(text: str) -> dict:

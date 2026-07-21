@@ -1,7 +1,7 @@
 """推荐 / 匹配管道接口。"""
 from datetime import date
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from sqlalchemy import case, select
 from sqlalchemy.orm import Session
 
@@ -9,13 +9,14 @@ from database import get_db
 from deps import get_current_user, require_admin_token
 from models import User, Job, MatchResult
 from schemas import MatchOut
-from services import pipeline
+from services import pipeline, ratelimit
 
 router = APIRouter(tags=["matches"])
 
 
 @router.post("/matches/refresh")
 def refresh_my_matches(
+    request: Request,
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user),
 ):
@@ -23,7 +24,21 @@ def refresh_my_matches(
 
     与 /crawl/run 的全量管道分开：这里不触发爬虫、不碰别人的规则，
     因此可以放心暴露给已登录（含体验身份）的普通用户。
+
+    一次刷新可能对几十个候选岗位逐个调模型，比单次问答更烧钱，
+    所以配额按次扣在这里，规则层粗筛掉的岗位不计入。
     """
+    ip = request.client.host if request.client else ""
+    if not ratelimit.check_ip_rate(ip):
+        raise HTTPException(429, "请求过于频繁，请稍后再试")
+
+    verdict = ratelimit.check_and_consume_llm_quota(user.id)
+    if not verdict.allowed:
+        raise HTTPException(429, (
+            "今日匹配次数已用完，请明天再来"
+            if verdict.reason == "user_quota_exceeded"
+            else "演示环境今日额度已用完，请明天再来"
+        ))
     return pipeline.run_pipeline(db, user_id=user.id)
 
 

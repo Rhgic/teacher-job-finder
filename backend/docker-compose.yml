@@ -1,8 +1,9 @@
-# 本地开发环境：一条命令起 MySQL。
-#   docker compose up -d db
-#   docker compose ps          # 等 db 变成 healthy
+# 本地开发环境：一条命令起 MySQL + Redis。
+#   docker compose up -d
+#   docker compose ps          # 等两个都变成 healthy
 # 连接串（写进 .env）：
 #   DATABASE_URL=mysql+pymysql://teacher:teacher_dev_pwd@127.0.0.1:3306/teacher_jobs?charset=utf8mb4
+#   REDIS_URL=redis://127.0.0.1:6379/0
 services:
   db:
     image: mysql:8.0
@@ -32,5 +33,34 @@ services:
       retries: 20
       start_period: 30s
 
+  redis:
+    image: redis:7-alpine
+    container_name: teacher-jobs-redis
+    restart: unless-stopped
+    # 配额与限流计数丢了会放行超额请求，比丢缓存严重，
+    # 因此开 AOF 持久化（everysec 兼顾安全与写入性能）。
+    command:
+      - redis-server
+      - --appendonly
+      - "yes"
+      - --appendfsync
+      - everysec
+      - --maxmemory
+      - 256mb
+      # 计数器不能被内存压力淘汰，只淘汰设了 TTL 的缓存键
+      - --maxmemory-policy
+      - volatile-lru
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 5s
+
 volumes:
   mysql_data:
+  redis_data:

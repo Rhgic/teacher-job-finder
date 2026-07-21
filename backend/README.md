@@ -21,6 +21,33 @@ uvicorn main:app --reload      # 访问 http://127.0.0.1:8000/docs
 `mysql+pymysql://teacher:teacher_dev_pwd@127.0.0.1:3306/teacher_jobs?charset=utf8mb4`。
 已有 SQLite 数据可整库搬迁：`python scripts/migrate_sqlite_to_mysql.py --source sqlite:///./teacher_jobs.db --target "<MySQL URL>" --truncate`。
 
+## 限流、配额与 LLM 成本护栏（Redis）
+
+大模型是本项目唯一按次付费的依赖，且 `/rag/ask`、`/matches/refresh` 都公开可达，
+没有闸门的话任何人写个循环就能刷爆 API 余额。计数落在 Redis：
+
+```bash
+docker compose up -d          # 同时起 MySQL 与 Redis
+```
+
+三道闸，逐层收紧：
+
+| 闸门 | 默认值 | 作用 |
+| --- | --- | --- |
+| `IP_RATE_PER_MINUTE` | 60 | 单 IP 每分钟请求数，挡脚本刷接口 |
+| `USER_DAILY_LLM_QUOTA` | 30 | 单身份每日 LLM 调用数，防一人刷爆 |
+| `GLOBAL_DAILY_LLM_QUOTA` | 2000 | 全局每日上限，保护账户余额的最后一道 |
+
+另有 LLM 结果缓存（`LLM_CACHE_TTL_SEC`，默认 24h）：相同输入直接复用，
+实测重复提问从 3041ms 降到 30ms 且不产生费用。
+
+**设计前提：Redis 不可用不能让主功能挂掉。** 限流是护栏而非业务本身，
+连不上时按"放行 + 记一条告警"处理——宁可短时间失去保护，
+也不能因为护栏故障把整个服务打死。已实测：停掉 Redis 后
+`/health`、`/jobs`、`/rag/ask`、`/metrics` 全部照常返回 200。
+
+用量可在 `GET /metrics` 查看：当日调用数、token 消耗、缓存命中/未命中、配额上限。
+
 ## 数据库迁移（Alembic）
 
 结构变更一律走迁移，不要靠 `init_db()` 的 `create_all` —— 后者只补建缺失的表，
