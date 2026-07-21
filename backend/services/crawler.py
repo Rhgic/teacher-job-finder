@@ -43,6 +43,29 @@ class RawJob:
     deadline: date | None = None
 
 
+# 招聘流程中的结果类公告，以及公务员招录——都不是可投递的教师岗位。
+# 注意不能用"公告"做判据：真实招聘标题同样以"公告"结尾
+#（如"深圳市公办中小学2026年6月公开招聘教师公告"）。
+NON_POSTING_MARKERS = (
+    "拟录用", "拟聘用", "拟聘", "拟选调", "公示",
+    "体检公告", "考察结果", "成绩公布", "面试名单", "递补",
+    "公务员", "选调生",
+)
+
+
+def is_recruitment_posting(title: str) -> bool:
+    """判断列表页标题是否为可投递的招聘公告。
+
+    官方公告栏里混着大量"拟录用人员公示""体检公告"这类流程结果，
+    解析它们会得到学校名是"广东省"、学科靠关键词误命中的垃圾记录，
+    入库后直接污染岗位列表，因此在链接阶段就滤掉。
+    """
+    text = (title or "").strip()
+    if not text:
+        return False
+    return not any(marker in text for marker in NON_POSTING_MARKERS)
+
+
 def content_hash(r: RawJob) -> str:
     raw = f"{r.school_name}|{r.subject or ''}|{r.stage or ''}|{r.description or ''}"
     return hashlib.sha256(raw.encode("utf-8")).hexdigest()[:16]
@@ -120,6 +143,15 @@ class BaseCrawler:
         return robots.can_fetch("TeacherJobBot/0.1", url)
 
     def _load_robots(self, origin: str, **kwargs) -> RobotFileParser | None:
+        """取站点 robots.txt。返回 None 表示"按禁止处理"。
+
+        状态码按 RFC 9309 §2.3.1 区分，不能一律当作禁止：
+        - 401/403：站点明确拒绝访问 robots 本身 → 全站禁止
+        - 其它 4xx（含 404）：站点没有 robots.txt → 全部允许。
+          曾把 404 一并当成禁止，结果把没有 robots.txt 的官方公告源
+          整个屏蔽掉了，白白丢失最权威的数据来源。
+        - 5xx / 网络异常：站点状态不明 → 保守按禁止处理
+        """
         import httpx
 
         robots_url = f"{origin}/robots.txt"
@@ -133,12 +165,18 @@ class BaseCrawler:
                 follow_redirects=True,
                 **kwargs,
             )
-            if resp.status_code >= 400:
-                return None
         except Exception:
             return None
+
         parser = RobotFileParser()
         parser.set_url(robots_url)
+        if resp.status_code in (401, 403):
+            return None
+        if resp.status_code >= 500:
+            return None
+        if resp.status_code >= 400:
+            parser.allow_all = True
+            return parser
         parser.parse(resp.text.splitlines())
         return parser
 
@@ -184,7 +222,7 @@ class ShenzhenEduBureauCrawler(BaseCrawler):
         "https://szeb.sz.gov.cn/home/xxgk/flzy/rsxx2/ryzp/index.html",
         "https://szeb.sz.gov.cn/home/xxgk/flzy/rsxx2/ryzp/index_14.html",
     )
-    max_detail_pages = 12
+    max_detail_pages = int(os.getenv("CRAWL_MAX_DETAIL_PAGES", "40"))
 
     def fetch(self) -> list[RawJob]:
         """抓取深圳市教育局「人员招聘」公告并解析为 RawJob。
@@ -223,6 +261,8 @@ class ShenzhenEduBureauCrawler(BaseCrawler):
                 if "/ryzp/content/post_" not in href or href in seen:
                     continue
                 seen.add(href)
+                if not is_recruitment_posting(title):
+                    continue
                 links.append((href, title))
         return links
 
@@ -273,7 +313,7 @@ class ShenzhenTeacherTalentCrawler(BaseCrawler):
     source = "sz910"
     base_url = "https://www.sz910.cn"
     list_urls = ("https://www.sz910.cn/",)
-    max_detail_pages = 20
+    max_detail_pages = int(os.getenv("CRAWL_MAX_DETAIL_PAGES", "40"))
 
     allowed_prefixes = (
         "/zhanwuzhongxin/zhaokao/",
@@ -315,6 +355,8 @@ class ShenzhenTeacherTalentCrawler(BaseCrawler):
                 if href in seen or not self._is_allowed_detail_url(href):
                     continue
                 seen.add(href)
+                if not is_recruitment_posting(title):
+                    continue
                 links.append((href, title))
         return links
 
@@ -394,7 +436,7 @@ class ShenzhenTeacherRecruitCrawler(BaseCrawler):
     source = "shenzhenjiaoshi"
     base_url = "https://www.shenzhenjiaoshi.com"
     list_urls = ("https://www.shenzhenjiaoshi.com/zhaopin/",)
-    max_detail_pages = 20
+    max_detail_pages = int(os.getenv("CRAWL_MAX_DETAIL_PAGES", "40"))
 
     def fetch(self) -> list[RawJob]:
         detail_links = self._fetch_detail_links()
@@ -428,6 +470,8 @@ class ShenzhenTeacherRecruitCrawler(BaseCrawler):
                 if href in seen or not self._is_allowed_detail_url(href):
                     continue
                 seen.add(href)
+                if not is_recruitment_posting(title):
+                    continue
                 links.append((href, title))
         return links
 
@@ -515,6 +559,8 @@ def _extract_links(html: str, base_url: str) -> list[tuple[str, str]]:
         href = urljoin(base_url, unescape(match.group(1).strip()))
         title = _compact_text(_html_to_text(match.group(2)))
         if title:
+            if not is_recruitment_posting(title):
+                continue
             links.append((href, title))
     return links
 
@@ -598,10 +644,24 @@ def _guess_school_name(title: str) -> str:
 
 
 def _guess_district(text: str) -> str | None:
+    """从公告文本识别所属区。
+
+    取"出现位置最靠前"的那个而非列表里的第一个：文本是标题+正文拼接，
+    标题里的区才是岗位所在地，正文里顺带提到的区（办公地址、参照文件等）
+    不该压过它。曾因按列表顺序匹配，把"深汕合作区公办幼儿园"错标成龙岗区。
+
+    同时接受公告常用简称（如"深汕合作区"），归一到标准区名。
+    """
+    best: tuple[int, str] | None = None
+    for alias, canonical in taxonomy.DISTRICT_ALIASES.items():
+        pos = text.find(alias)
+        if pos >= 0 and (best is None or pos < best[0]):
+            best = (pos, canonical)
     for district in taxonomy.DISTRICTS:
-        if district in text:
-            return district
-    return None
+        pos = text.find(district)
+        if pos >= 0 and (best is None or pos < best[0]):
+            best = (pos, district)
+    return best[1] if best else None
 
 
 def _guess_district_from_path(path: str) -> str | None:
