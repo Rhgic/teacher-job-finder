@@ -21,7 +21,7 @@ def login(body: LoginIn, db: Session = Depends(get_db)):
     try:
         openid = wechat_code_to_openid(body.code)
     except Exception as e:  # noqa: BLE001
-        raise HTTPException(400, f"微信登录失败：{e}")
+        raise HTTPException(400, f"微信登录失败：{e}") from e
 
     user = db.scalar(select(User).where(User.openid == openid))
     if user is None:

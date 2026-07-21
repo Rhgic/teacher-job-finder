@@ -1,6 +1,5 @@
 """用户配置 / 简历 / 模板 接口（已实现 CRUD）。"""
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from database import get_db

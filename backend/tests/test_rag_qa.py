@@ -1,7 +1,7 @@
-from sqlalchemy import create_engine, select
+from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
-from models import Base, DocChunk, Job
+from models import Base, Job
 from services import rag_index, rag_qa
 
 

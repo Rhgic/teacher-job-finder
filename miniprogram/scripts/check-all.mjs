@@ -5,6 +5,9 @@ import { fileURLToPath } from "node:url"
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..")
 const releaseMode = process.argv.includes("--release")
+// --static：只跑不依赖"后端正在运行"的检查（语法、JSON、纯函数断言）。
+// CI 和"还没起后端就想自检一遍"的场景用这个，避免把环境问题误报成代码问题。
+const staticOnly = process.argv.includes("--static")
 
 function listFiles(dir, predicate) {
   const result = []
@@ -53,7 +56,11 @@ for (const file of jsonFiles) {
 }
 
 ok = run("岗位标题拼接断言", "node", ["scripts/test-build-job-title.mjs"]) && ok
-ok = run("开发后端健康检查", "node", ["scripts/dev-health-check.mjs"]) && ok
+if (staticOnly) {
+  console.log("\n== 开发后端健康检查 ==\n– 已按 --static 跳过（该检查需要后端运行在 127.0.0.1:8000）")
+} else {
+  ok = run("开发后端健康检查", "node", ["scripts/dev-health-check.mjs"]) && ok
+}
 
 if (releaseMode) {
   ok = run("正式发布配置检查", "node", ["scripts/release-check.mjs"]) && ok

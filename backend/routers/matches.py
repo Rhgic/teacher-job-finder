@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 
 from database import get_db
 from deps import get_current_user, require_admin_token
-from models import User, Job, MatchResult, MatchStatus
+from models import User, Job, MatchResult
 from schemas import MatchOut
 from services import pipeline
 
@@ -71,7 +71,7 @@ def tailor_for_match(
     try:
         version = pipeline.generate_tailored_resume(db, match)
     except ValueError as e:
-        raise HTTPException(400, str(e))
+        raise HTTPException(400, str(e)) from e
     return {
         "resume_version_id": version.id,
         "change_summary": version.change_summary,
