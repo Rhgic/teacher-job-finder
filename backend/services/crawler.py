@@ -19,6 +19,8 @@ from urllib.robotparser import RobotFileParser
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from services import taxonomy
+
 from models import Job, SchoolType
 
 
@@ -596,11 +598,7 @@ def _guess_school_name(title: str) -> str:
 
 
 def _guess_district(text: str) -> str | None:
-    districts = (
-        "福田区", "罗湖区", "南山区", "盐田区", "宝安区", "龙岗区",
-        "龙华区", "坪山区", "光明区", "大鹏新区", "深汕特别合作区",
-    )
-    for district in districts:
+    for district in taxonomy.DISTRICTS:
         if district in text:
             return district
     return None
@@ -642,12 +640,7 @@ def _guess_stage(text: str) -> str | None:
 
 
 def _guess_subject(text: str) -> str | None:
-    subjects = (
-        "语文", "数学", "英语", "物理", "化学", "生物", "历史", "地理",
-        "政治", "道德与法治", "体育", "音乐", "美术", "信息技术",
-        "心理", "科学", "劳动", "特殊教育",
-    )
-    for subject in subjects:
+    for subject in taxonomy.SUBJECTS:
         if subject in text:
             return subject
     return None

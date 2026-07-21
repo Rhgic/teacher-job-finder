@@ -11,8 +11,24 @@ from sqlalchemy.orm import Session
 from config import settings
 from database import get_db
 from models import Job, SubRule
+from services import taxonomy
 
 router = APIRouter(tags=["meta"])
+
+
+@router.get("/taxonomy")
+def get_taxonomy():
+    """岗位分类标准表，供前端渲染订阅规则的可选项。
+
+    刻意不按库中已有数据裁剪：订阅规则匹配的是将来爬到的岗位，
+    当前没有体育岗位不代表体育老师不能表达求职意向。
+    """
+    return {
+        "subjects": list(taxonomy.SUBJECTS),
+        "stages": list(taxonomy.STAGES),
+        "districts": list(taxonomy.DISTRICTS),
+        "school_types": list(taxonomy.SCHOOL_TYPES),
+    }
 
 
 def _configured(value: str) -> bool:

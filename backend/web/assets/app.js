@@ -479,10 +479,23 @@ async function initMePage() {
     guestArea.hidden = true;
     form.hidden = false;
 
-    // 选项来自真实岗位数据，保证规则值与库里的字段能精确对上
-    const jobs = await api("/jobs?size=100").catch(() => []);
-    const uniq = (k) => [...new Set(jobs.map((j) => j[k]).filter(Boolean))].sort();
-    const rows = [["学段", "stages", uniq("stage")], ["学科", "subjects", uniq("subject")], ["区域", "districts", uniq("district")]];
+    // 选项以后端标准表为准，而非库中已有数据——订阅规则匹配的是将来爬到的
+    // 岗位，当前没有体育岗位不代表体育老师不能表达意向。
+    // 再并入数据里出现过的值，兜住爬到标准表之外学科的情况。
+    const [tax, jobs] = await Promise.all([
+      api("/taxonomy").catch(() => ({ subjects: [], stages: [], districts: [] })),
+      api("/jobs?size=100").catch(() => []),
+    ]);
+    const merge = (canonical, key) => {
+      const extra = [...new Set(jobs.map((j) => j[key]).filter(Boolean))]
+        .filter((v) => !(canonical || []).includes(v)).sort();
+      return [...(canonical || []), ...extra];
+    };
+    const rows = [
+      ["学段", "stages", merge(tax.stages, "stage")],
+      ["学科", "subjects", merge(tax.subjects, "subject")],
+      ["区域", "districts", merge(tax.districts, "district")],
+    ];
     document.getElementById("ruleChips").innerHTML = rows.map(([label, key, values]) => `
       <div class="chip-row" data-key="${key}">
         <span class="label">${label}</span>
