@@ -480,6 +480,9 @@ button { font: inherit; cursor: pointer; border: 0; background: none; color: inh
 .tab.on { background: var(--surface); color: var(--brand); font-weight: 700; box-shadow: 0 1px 4px rgba(28,32,48,.06); }
 
 .drop {
+  /* label 默认是 inline，不显式转块级的话带边框的行内盒会被拆成多个碎片，
+     渲染出零散的虚线边框段。 */
+  display: block; cursor: pointer;
   border: 1.5px dashed var(--line); border-radius: var(--radius);
   background: var(--bg); padding: 30px 24px; text-align: center;
   transition: border-color .15s, background .15s;
