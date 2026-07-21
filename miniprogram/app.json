@@ -48,6 +48,12 @@
         "selectedIconPath": "assets/tabbar/recommend-active.png"
       },
       {
+        "pagePath": "pages/rag-ask/index",
+        "text": "问答",
+        "iconPath": "assets/tabbar/qa.png",
+        "selectedIconPath": "assets/tabbar/qa-active.png"
+      },
+      {
         "pagePath": "pages/applications/index",
         "text": "投递",
         "iconPath": "assets/tabbar/apply.png",
