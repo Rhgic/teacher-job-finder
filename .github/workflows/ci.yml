@@ -41,6 +41,17 @@ jobs:
         # 测试跑在 SQLite 上，不依赖 MySQL 与任何外部密钥。
         run: python -m pytest -q
 
+      - name: 迁移与模型一致性
+        working-directory: backend
+        env:
+          DATABASE_URL: sqlite:///./ci_migration_check.db
+        # 先按迁移建库，再让 alembic 比对模型与库结构。
+        # 有人改了 models.py 却没写迁移的话，check 会报出差异并让 CI 失败——
+        # 否则这种漂移要等到上线执行迁移时才暴露。
+        run: |
+          alembic upgrade head
+          alembic check
+
   miniprogram:
     name: 小程序 · 静态检查
     runs-on: ubuntu-latest

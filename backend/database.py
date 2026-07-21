@@ -62,10 +62,14 @@ SessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False, futu
 
 
 def init_db() -> None:
-    """建表。
+    """建表（仅供本地零配置跑通与单元测试）。
 
-    生产应改用 Alembic 迁移：create_all 只补建缺失的表，
-    不会把已存在表的列变更同步过去。
+    生产用 Alembic：`alembic upgrade head`（脚本在 migrations/）。
+    原因是 create_all 只补建缺失的表，已存在表的列变更它一概不管——
+    加字段、改长度、加索引都不会同步，久了库结构就和 models.py 悄悄分叉。
+
+    已有数据的库首次接入迁移，用 `alembic stamp head` 标记当前版本，
+    不要直接 upgrade（表已存在会冲突）。
     """
     Base.metadata.create_all(bind=engine)
 

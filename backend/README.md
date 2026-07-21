@@ -21,17 +21,44 @@ uvicorn main:app --reload      # 访问 http://127.0.0.1:8000/docs
 `mysql+pymysql://teacher:teacher_dev_pwd@127.0.0.1:3306/teacher_jobs?charset=utf8mb4`。
 已有 SQLite 数据可整库搬迁：`python scripts/migrate_sqlite_to_mysql.py --source sqlite:///./teacher_jobs.db --target "<MySQL URL>" --truncate`。
 
+## 数据库迁移（Alembic）
+
+结构变更一律走迁移，不要靠 `init_db()` 的 `create_all` —— 后者只补建缺失的表，
+改列、加索引它一概不管，久了库结构会和 `models.py` 悄悄分叉。
+
+连接串从 `DATABASE_URL` 读（与 `database.py` 同源），`alembic.ini` 里不配、配了也不生效。
+
+```bash
+alembic upgrade head                      # 建库/升级到最新
+alembic downgrade -1                      # 回滚一步
+alembic current                           # 当前版本
+alembic check                             # 模型与库是否有差异（CI 会跑）
+
+# 改完 models.py 后生成迁移，然后必须人工核对生成结果
+alembic revision --autogenerate -m "描述"
+```
+
+两个已踩过的坑：
+
+1. **已有数据的库首次接入用 `alembic stamp head`**，不要直接 `upgrade` ——
+   表已存在会冲突。stamp 只写版本号，不碰表结构与数据。
+2. **autogenerate 生成的 `downgrade()` 在 MySQL 上跑不通**：它会在 `drop_table`
+   前逐个 `drop_index`，而 MySQL 拒绝删除被外键依赖的索引（错误 1553）。
+   删表本就会连带删索引，所以初始迁移里那些 `drop_index` 已被手工移除。
+   以后新增迁移若涉及删表，同样要检查这一点。
+
 ## 目录
 ```
 main.py          应用入口，挂载路由（已实现）
 config.py        环境变量配置（已实现）
 database.py      引擎/会话（已实现）
-models.py        9 张表（已实现，勿改字段约定）
+models.py        11 张表（已实现，勿改字段约定；改动须配套 Alembic 迁移）
 schemas.py       Pydantic DTO（已实现）
 deps.py          当前用户依赖（stub：见下）
 seed.py          种子数据（已实现）
 routers/         jobs/profile/rules/matches/applications（CRUD 与流程已实现）
 services/        业务逻辑（部分实现，部分 stub）
+migrations/      Alembic 迁移脚本（env.py 从 DATABASE_URL 取连接串）
 ```
 
 ## 已实现（直接用，别重写）
