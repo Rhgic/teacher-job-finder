@@ -37,6 +37,15 @@ Codex完成清单.md
 .claude/
 backend/CODEX_PROMPT.md
 
+# ---- 上线/审核运维笔记（本地保留，不入仓库）----
+# 理由同上：属个人操作笔记而非项目文档，且本项目定位为面试作品、
+# 不走微信公开发布审核，这些清单描述的流程已不适用。
+# 其中"醒来后上线待办"还含云服务器真实 IP。
+miniprogram/上线前必读.md
+miniprogram/审核前验收清单.md
+miniprogram/微信后台填写清单.md
+miniprogram/醒来后上线待办.md
+
 # ---- 编辑器 / 系统 ----
 .DS_Store
 .idea/
