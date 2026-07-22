@@ -15,6 +15,9 @@ __pycache__/
 .mypy_cache/
 *.egg-info/
 
+# ---- 爬虫抓取缓存（本地临时文件，不进仓库）----
+.crawler_cache/
+
 # ---- 数据库与备份（本地数据，不进仓库）----
 *.db
 *.db-wal
