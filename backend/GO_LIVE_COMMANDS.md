@@ -53,7 +53,8 @@ unset TJF_DB_ROOT_PASSWORD TJF_DB_PASSWORD TJF_SESSION_SECRET TJF_ADMIN_API_TOKE
 chmod 600 .env
 ```
 
-交互输入微信与 DeepSeek 密钥，避免密钥进入 shell 历史：
+Web 端通过 `/auth/guest` 创建匿名体验身份，不需要微信密钥。
+只有同时发布微信小程序时才交互输入 AppSecret，避免密钥进入 shell 历史：
 
 ```bash
 read -r -s -p "微信 AppSecret: " TJF_WECHAT_SECRET; echo

@@ -1,4 +1,4 @@
-"""Check backend environment readiness for public Mini Program release.
+"""Check backend environment readiness for public Web release.
 
 This script intentionally prints only status and missing keys, never secret values.
 Run it on the server from /opt/teacher-job-api/backend or locally from the backend folder:
@@ -15,13 +15,15 @@ from urllib.parse import unquote, urlsplit
 REQUIRED_FOR_RELEASE = [
     "MYSQL_ROOT_PASSWORD",
     "MYSQL_PASSWORD",
-    "WECHAT_APPID",
-    "WECHAT_SECRET",
     "SESSION_SECRET",
     "ADMIN_API_TOKEN",
 ]
 
 OPTIONAL_REAL_SERVICE_GROUPS = {
+    "微信小程序登录": {
+        "flag": None,
+        "keys": ["WECHAT_APPID", "WECHAT_SECRET"],
+    },
     "真实 AI 匹配": {
         "flag": ("LLM_STUB_MODE", "0"),
         "keys": ["DEEPSEEK_API_KEY"],
