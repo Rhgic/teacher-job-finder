@@ -18,6 +18,7 @@ from pathlib import Path
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
+from sqlalchemy.exc import TimeoutError as PoolTimeout
 
 from database import init_db
 from observability import (
@@ -47,6 +48,30 @@ async def lifespan(_: FastAPI):
 app = FastAPI(title="教师求职小程序 API", version="0.1.0", lifespan=lifespan)
 
 app.add_middleware(ObservabilityMiddleware)
+
+
+@app.exception_handler(PoolTimeout)
+async def pool_timeout_handler(request: Request, exc: PoolTimeout):
+    """数据库连接池被占满时的响应。
+
+    这不是"服务器内部错误"，而是"当前太忙"——语义上属于 503 而非 500，
+    区分开才能让客户端知道值得重试，也能让监控把过载与真实 bug 分开统计。
+    带 Retry-After，避免客户端立刻重试把过载放大。
+    """
+    request_id = getattr(request.state, "request_id", request_id_ctx.get())
+    logger.warning(
+        "db_pool_exhausted",
+        extra={"extra_fields": {
+            "request_id": request_id,
+            "path": request.url.path,
+            "hint": "并发已超出连接池容量，可调大 DB_POOL_SIZE / DB_MAX_OVERFLOW",
+        }},
+    )
+    return JSONResponse(
+        status_code=503,
+        content={"detail": "服务繁忙，请稍后重试。", "request_id": request_id},
+        headers={"X-Request-ID": request_id, "Retry-After": "2"},
+    )
 
 
 @app.exception_handler(Exception)

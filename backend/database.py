@@ -27,6 +27,19 @@ def _engine_kwargs() -> dict:
     - pool_pre_ping：MySQL 会断开空闲超过 wait_timeout（默认 8 小时）的连接，
       连接池里的死连接不检测就会抛 "MySQL server has gone away"。
     - pool_recycle：早于服务端 wait_timeout 主动回收，从源头减少上面那种死连接。
+
+    连接池容量与超时按压测结果调整（详见 backend/README.md「容量」一节）：
+    路由是同步的，Session 从首次查询一直持有连接到请求结束，
+    因此并发请求数一旦超过池容量就会排队。压测实测原配置（10+20，超时 30s）
+    在 128 并发下退化为全部请求等满 60 秒、日志里 360 次 QueuePool 超时——
+    这是"慢性死亡"而非快速失败，比直接拒绝更糟。
+
+    改法有两处：
+    - 提高容量到 20+30=50。MySQL max_connections 默认 151，
+      单实例占 50 仍留有余量；但这也意味着**最多并排跑 3 个实例**，
+      再多要先调大 MySQL 侧上限。
+    - 把等待超时压到 5 秒。宁可让超载请求快速失败让客户端重试，
+      也不要让用户干等一分钟——与 Redis 那层"降级优先于保护"同一原则。
     """
     if IS_SQLITE:
         # SQLite 是本地文件，没有网络连接池语义；只需允许跨线程使用。
@@ -35,9 +48,9 @@ def _engine_kwargs() -> dict:
     kwargs = {
         "pool_pre_ping": True,
         "pool_recycle": int(os.getenv("DB_POOL_RECYCLE", "3600")),
-        "pool_size": int(os.getenv("DB_POOL_SIZE", "10")),
-        "max_overflow": int(os.getenv("DB_MAX_OVERFLOW", "20")),
-        "pool_timeout": int(os.getenv("DB_POOL_TIMEOUT", "30")),
+        "pool_size": int(os.getenv("DB_POOL_SIZE", "20")),
+        "max_overflow": int(os.getenv("DB_MAX_OVERFLOW", "30")),
+        "pool_timeout": int(os.getenv("DB_POOL_TIMEOUT", "5")),
     }
     if IS_MYSQL and "charset=" not in DATABASE_URL:
         # URL 未显式带 charset 时兜底，避免中文/emoji 落库变成 ?

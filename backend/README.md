@@ -21,6 +21,44 @@ uvicorn main:app --reload      # 访问 http://127.0.0.1:8000/docs
 `mysql+pymysql://teacher:teacher_dev_pwd@127.0.0.1:3306/teacher_jobs?charset=utf8mb4`。
 已有 SQLite 数据可整库搬迁：`python scripts/migrate_sqlite_to_mysql.py --source sqlite:///./teacher_jobs.db --target "<MySQL URL>" --truncate`。
 
+## 容量：压测实测与连接池
+
+单实例压测（本机 MySQL 8 + 105 条岗位，打最重的读路径 `GET /jobs?size=100`）：
+
+| 并发 | QPS | P50 | P95 |
+| --- | --- | --- | --- |
+| 1 | 240 | 4 ms | 5 ms |
+| 4 | **299（峰值）** | 13 ms | 16 ms |
+| 32 | 275 | 116 ms | 151 ms |
+| 128 | 257 | 483 ms | 623 ms |
+
+**吞吐在并发 4 左右见顶（约 300 QPS），之后延迟随并发线性增长**——
+说明这个量级上已经跑满，加并发只是排队。
+
+**压测发现的真问题**：原配置（`pool_size=10` + `max_overflow=20`，
+超时 30 秒）在 128 并发下会**整体退化为等满 60 秒**，日志里 360 次
+QueuePool 超时。路由是同步的，Session 从首次查询一直持有连接到请求结束，
+所以并发一超过池容量就排队；而 30 秒的等待超时让它表现为"慢性死亡"
+而不是快速失败——比直接拒绝更糟。
+
+两处调整：
+
+- 容量提到 `20 + 30 = 50`。MySQL `max_connections` 默认 151，
+  单实例占 50 尚有余量，但这也意味着**最多并排跑 3 个实例**，
+  再多要先调大 MySQL 侧上限。
+- 等待超时压到 **5 秒**，超出容量时快速失败。
+  `main.py` 捕获 `sqlalchemy.exc.TimeoutError` 返回 **503 + `Retry-After: 2`**
+  而非 500——过载不是 bug，语义上分开才能让客户端知道值得重试、
+  也能让监控把过载和真实故障分开统计。
+
+调整后 128 并发从「QPS 3、全部失败、60.4 秒」变为
+「QPS 257、零错误、P50 483 ms」；400 并发（8 倍于池容量）下
+82 个成功、318 个拿到 503 + Retry-After，没有请求卡死。
+
+**已知的扩展上限**：`/metrics` 的计数存在进程内存里，
+多实例部署时每个副本各报各的数，需要改用 Redis 或
+Prometheus 多进程模式才能汇总。当前单实例部署不受影响。
+
 ## 限流、配额与 LLM 成本护栏（Redis）
 
 大模型是本项目唯一按次付费的依赖，且 `/rag/ask`、`/matches/refresh` 都公开可达，
