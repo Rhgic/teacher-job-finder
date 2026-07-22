@@ -1,7 +1,10 @@
 """RAG 招聘公告问答：检索公告片段 + 防幻觉回答。"""
 from __future__ import annotations
 
+import hashlib
 import json
+import logging
+import re
 from dataclasses import dataclass
 
 from sqlalchemy import select
@@ -9,8 +12,11 @@ from sqlalchemy.orm import Session
 
 from config import settings
 from models import DocChunk
+from services import ratelimit
 from services.embedding import embed
 from services.llm_match import _call_deepseek
+
+logger = logging.getLogger("rag")
 
 MIN_SCORE = 0.08
 DEFAULT_TOP_K = 5
@@ -61,38 +67,120 @@ def _query_terms(question: str) -> set[str]:
     return terms
 
 
-def _passes_stub_lexical_gate(question: str, content: str) -> bool:
+def _passes_stub_lexical_gate(question: str, content: str, extra_terms: set[str] | None = None) -> bool:
     """占位向量较粗糙，额外要求问题关键词在片段中出现，避免无关问题误命中。"""
-    terms = _query_terms(question)
+    terms = _query_terms(question) | (extra_terms or set())
     if not terms:
         return False
     return any(term in content for term in terms)
 
 
-def retrieve(db: Session, question: str, k: int = DEFAULT_TOP_K) -> list[RetrievedChunk]:
-    """全量加载 doc_chunks，用点积近似余弦相似度取 top-k。"""
+EXPAND_PROMPT = """你把求职者的口语提问，翻译成招聘公告里会出现的书面表达。
+
+只输出关键词，用顿号分隔，不要解释、不要编号、不超过 8 个。
+关键词要是公告正文里可能原样出现的词，不要输出问句。
+
+例：
+问：工资多少？
+答：薪酬、待遇、年薪、月薪、工资、绩效
+
+问：有编制吗？
+答：编制、事业单位、员额、聘用制、在编"""
+
+
+def expand_query(question: str) -> set[str]:
+    """把口语问法扩展成公告里的书面用词，用于加宽词法召回。
+
+    公告写"薪酬待遇"，用户问"工资多少"；公告写"资格复审"，用户问"要审什么"。
+    纯词法召回对这种同义不同词无能为力——实测 12 个口语问题有 7 个零召回。
+    这里用 LLM 补上这一层，避免了为语义检索单独引入 embedding 供应商。
+
+    任何一步失败都返回空集合，退回原有的词法召回，不让问答挂掉。
+    """
+    q = (question or "").strip()
+    if not q or settings.LLM_STUB_MODE:
+        return set()
+
+    cache_key = "qx:" + hashlib.sha256(q.encode("utf-8")).hexdigest()[:32]
+    cached = ratelimit.cache_get(cache_key)
+    if cached is not None:
+        return {t for t in cached.split("、") if t}
+
+    try:
+        raw = _call_deepseek(EXPAND_PROMPT, f"问：{q}\n答：", json_mode=False)
+    except Exception as exc:  # noqa: BLE001 - 扩展失败不该影响主流程
+        logger.warning("query_expand_failed", extra={"extra_fields": {"error": str(exc)}})
+        return set()
+
+    terms = {
+        t.strip() for t in re.split(r"[、,，\s]+", raw.strip())
+        # 单字太宽泛会把无关片段全放进来；超长的多半是模型没听话输出了句子
+        if 2 <= len(t.strip()) <= 12
+    }
+    ratelimit.cache_set(cache_key, "、".join(sorted(terms)))
+    return terms
+
+
+def retrieve(db: Session, question: str, k: int = DEFAULT_TOP_K,
+             expand: bool = True) -> list[RetrievedChunk]:
+    """全量加载 doc_chunks，用点积近似余弦相似度取 top-k。
+
+    expand=True 时先用 LLM 把口语问法扩展成公告用词再做词法召回，
+    显著减少"同义不同词"导致的零召回。
+    """
     q = (question or "").strip()
     if not q:
         return []
     q_vec = embed([q])[0]
+    extra_terms = expand_query(q) if expand else set()
 
+    all_terms = _query_terms(q) | extra_terms
     scored: list[RetrievedChunk] = []
+    skipped_dim = 0
     chunks = db.scalars(select(DocChunk)).all()
+
+    # 曾在这里加过 IDF 加权（压低"多少""什么"这类高频词的权重）。
+    # 用 10 个口语问题做过 A/B：等权与 IDF 的 P@1、P@3 完全相同，
+    # 在当前 123 片段的规模上测不出收益，故按等权保留、不引入这层复杂度。
     for chunk in chunks:
-        if settings.EMBEDDING_STUB_MODE and not _passes_stub_lexical_gate(q, chunk.content):
+        if settings.EMBEDDING_STUB_MODE and not _passes_stub_lexical_gate(
+                q, chunk.content, extra_terms):
             continue
         vec = _load_embedding(chunk.embedding)
         if not vec:
             continue
-        score = _dot(q_vec, vec)
-        if score < MIN_SCORE:
+        # 切换 embedding 模型/维度后若忘了重建索引，库里still是旧维度向量。
+        # 点积会在较短的那条上算完并给出一个"看起来正常"的分数，
+        # 检索结果整体错乱却不报错——必须显式跳过并告警。
+        if len(vec) != len(q_vec):
+            skipped_dim += 1
             continue
+        if settings.EMBEDDING_STUB_MODE:
+            # 占位模式下真正携带信息的是词法命中，而非哈希特征的点积：
+            # 实测"什么时候截止"扩展出正确的词、11 个片段过了门控，
+            # 但点积最高仅 0.04，全被 0.08 阈值砍掉。
+            # 因此改按命中词数占比打分，点积只作细微的同分决胜。
+            matched = sum(1 for t in all_terms if t in chunk.content)
+            if matched == 0:
+                continue
+            score = matched / max(len(all_terms), 1) + _dot(q_vec, vec) * 0.01
+        else:
+            score = _dot(q_vec, vec)
+            if score < MIN_SCORE:
+                continue
         scored.append(RetrievedChunk(
             content=chunk.content,
             source_title=chunk.source_title or "未命名公告",
             source_id=chunk.source_id,
             score=score,
         ))
+
+    if skipped_dim:
+        logger.warning("embedding_dim_mismatch", extra={"extra_fields": {
+            "skipped_chunks": skipped_dim,
+            "query_dim": len(q_vec),
+            "hint": "embedding 模型或维度已变更，请重建索引：POST /rag/reindex",
+        }})
 
     scored.sort(key=lambda item: item.score, reverse=True)
     return scored[: max(1, k)]
