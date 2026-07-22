@@ -30,13 +30,14 @@ MYSQL_ROOT_PASSWORD=随机数据库 root 密码
 MYSQL_PASSWORD=随机应用数据库密码
 DATABASE_URL=mysql+pymysql://teacher:与 MYSQL_PASSWORD 相同的密码@127.0.0.1:3306/teacher_jobs?charset=utf8mb4
 AUTH_DEV_MODE=0
-WECHAT_APPID=真实 AppID
-WECHAT_SECRET=真实 AppSecret
 SESSION_SECRET=随机会话签名密钥
 ADMIN_API_TOKEN=另一条随机管理令牌
 LLM_STUB_MODE=0
 DEEPSEEK_API_KEY=真实 DeepSeek Key
 ```
+
+Web 端使用 `/auth/guest` 创建匿名体验身份，不依赖微信配置。只有同时发布微信
+小程序时才额外填写 `WECHAT_APPID` 与 `WECHAT_SECRET`。
 
 `SESSION_SECRET` 与 `ADMIN_API_TOKEN` 必须分别生成，不能相同。`.env` 权限设为
 `600`，不能提交到 Git。配置后运行：
