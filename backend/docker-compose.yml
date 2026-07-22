@@ -10,10 +10,11 @@ services:
     container_name: teacher-jobs-mysql
     restart: unless-stopped
     environment:
-      MYSQL_ROOT_PASSWORD: root_dev_pwd
-      MYSQL_DATABASE: teacher_jobs
-      MYSQL_USER: teacher
-      MYSQL_PASSWORD: teacher_dev_pwd
+      # 本地未配置时保留开发默认值；服务器必须在 .env 里覆盖成随机值。
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root_dev_pwd}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-teacher_jobs}
+      MYSQL_USER: ${MYSQL_USER:-teacher}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-teacher_dev_pwd}
       TZ: Asia/Shanghai
     # 建库即 utf8mb4，避免中文/emoji 落库出错；
     # MYSQL_DATABASE 自动建的库会继承这里的服务端默认字符集。
@@ -22,12 +23,13 @@ services:
       - --collation-server=utf8mb4_0900_ai_ci
       - --default-time-zone=+08:00
     ports:
-      - "3306:3306"
+      # 只给宿主机上的 API 使用，不把数据库端口暴露到公网。
+      - "127.0.0.1:3306:3306"
     volumes:
       - mysql_data:/var/lib/mysql
     healthcheck:
       # 用真实登录探活，而不是只看端口，避免"端口通了但还没初始化完"
-      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-uteacher", "-pteacher_dev_pwd"]
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -u$${MYSQL_USER} -p$${MYSQL_PASSWORD} --silent"]
       interval: 5s
       timeout: 5s
       retries: 20
@@ -51,7 +53,8 @@ services:
       - --maxmemory-policy
       - volatile-lru
     ports:
-      - "6379:6379"
+      # Redis 无认证，仅允许宿主机访问，绝不能直接暴露公网。
+      - "127.0.0.1:6379:6379"
     volumes:
       - redis_data:/data
     healthcheck:

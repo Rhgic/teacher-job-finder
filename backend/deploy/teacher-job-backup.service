@@ -4,6 +4,6 @@ After=teacher-job-api.service
 
 [Service]
 Type=oneshot
-WorkingDirectory=/opt/teacher-job-api
-EnvironmentFile=/opt/teacher-job-api/.env
-ExecStart=/opt/teacher-job-api/.venv/bin/python scripts/backup_sqlite.py --output-dir /opt/teacher-job-api/backups --keep 14
+WorkingDirectory=/opt/teacher-job-api/backend
+EnvironmentFile=/opt/teacher-job-api/backend/.env
+ExecStart=/opt/teacher-job-api/backend/.venv/bin/python scripts/backup_db.py --output-dir /opt/teacher-job-api/backend/backups --keep 14

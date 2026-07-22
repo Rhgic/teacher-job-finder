@@ -3,9 +3,9 @@ Description=Teacher Job Finder API
 After=network.target
 
 [Service]
-WorkingDirectory=/opt/teacher-job-api
-EnvironmentFile=/opt/teacher-job-api/.env
-ExecStart=/opt/teacher-job-api/.venv/bin/uvicorn main:app --host 127.0.0.1 --port 8000
+WorkingDirectory=/opt/teacher-job-api/backend
+EnvironmentFile=/opt/teacher-job-api/backend/.env
+ExecStart=/opt/teacher-job-api/backend/.venv/bin/uvicorn main:app --host 127.0.0.1 --port 8000
 Restart=always
 RestartSec=3
 

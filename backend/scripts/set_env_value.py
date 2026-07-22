@@ -12,6 +12,10 @@ from pathlib import Path
 
 
 ALLOWED_KEYS = {
+    "MYSQL_ROOT_PASSWORD",
+    "MYSQL_DATABASE",
+    "MYSQL_USER",
+    "MYSQL_PASSWORD",
     "AUTH_DEV_MODE",
     "WECHAT_APPID",
     "WECHAT_SECRET",

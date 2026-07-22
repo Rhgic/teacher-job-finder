@@ -5,6 +5,6 @@ Wants=network-online.target
 
 [Service]
 Type=oneshot
-WorkingDirectory=/opt/teacher-job-api
-EnvironmentFile=/opt/teacher-job-api/.env
-ExecStart=/opt/teacher-job-api/.venv/bin/python scripts/run_scheduled_crawl.py --source all --max-detail-pages 12
+WorkingDirectory=/opt/teacher-job-api/backend
+EnvironmentFile=/opt/teacher-job-api/backend/.env
+ExecStart=/opt/teacher-job-api/backend/.venv/bin/python scripts/run_scheduled_crawl.py --source all --max-detail-pages 12

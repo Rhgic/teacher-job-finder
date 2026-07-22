@@ -1,7 +1,7 @@
 """Check backend environment readiness for public Mini Program release.
 
 This script intentionally prints only status and missing keys, never secret values.
-Run it on the server from /opt/teacher-job-api or locally from the backend folder:
+Run it on the server from /opt/teacher-job-api/backend or locally from the backend folder:
 
     python3 scripts/check_release_env.py .env
 """
@@ -9,9 +9,12 @@ from __future__ import annotations
 
 import sys
 from pathlib import Path
+from urllib.parse import unquote, urlsplit
 
 
 REQUIRED_FOR_RELEASE = [
+    "MYSQL_ROOT_PASSWORD",
+    "MYSQL_PASSWORD",
     "WECHAT_APPID",
     "WECHAT_SECRET",
     "SESSION_SECRET",
@@ -77,13 +80,17 @@ def main() -> int:
             issues.append("MySQL 连接串缺少 charset=utf8mb4，中文与 emoji 会写入失败")
         if "change-me" in database_url:
             issues.append("DATABASE_URL 仍是示例密码，请改成真实凭据")
+        database_password = unquote(urlsplit(database_url).password or "")
+        mysql_password_ready = masked_state(env.get("MYSQL_PASSWORD")) == "已填写"
+        if "change-me" not in database_url and mysql_password_ready and database_password != env["MYSQL_PASSWORD"]:
+            issues.append("DATABASE_URL 密码与 MYSQL_PASSWORD 不一致，应用将无法连接容器中的 MySQL")
 
     for key in REQUIRED_FOR_RELEASE:
         state = masked_state(env.get(key))
         if state != "已填写":
             issues.append(f"{key} {state}")
 
-    for key in ("SESSION_SECRET", "ADMIN_API_TOKEN"):
+    for key in ("MYSQL_ROOT_PASSWORD", "MYSQL_PASSWORD", "SESSION_SECRET", "ADMIN_API_TOKEN"):
         if env.get(key) and len(env[key]) < 24:
             issues.append(f"{key} 太短，建议至少 24 位以上随机字符串")
 

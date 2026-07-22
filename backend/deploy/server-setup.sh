@@ -1,17 +1,18 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-APP_DIR="/opt/teacher-job-api"
+APP_DIR="/opt/teacher-job-api/backend"
 
 echo "Install system packages..."
 apt-get update
-apt-get install -y python3 python3-venv python3-pip nginx certbot python3-certbot-nginx
+apt-get install -y python3 python3-venv python3-pip nginx default-mysql-client
 
-echo "Create virtual environment..."
+echo "Verify application files and virtual environment..."
 cd "$APP_DIR"
-python3 -m venv .venv
-.venv/bin/pip install --upgrade pip
-.venv/bin/pip install -r requirements.txt
+if [[ ! -x .venv/bin/python || ! -f .env ]]; then
+  echo "Missing .venv or .env. Complete GO_LIVE_COMMANDS.md steps 1-3 as the deploy user first." >&2
+  exit 1
+fi
 
 echo "Install systemd service..."
 cp deploy/teacher-job-api.service /etc/systemd/system/teacher-job-api.service
@@ -27,4 +28,4 @@ systemctl start teacher-job-crawl.timer
 systemctl enable teacher-job-backup.timer
 systemctl start teacher-job-backup.timer
 
-echo "Done. Next configure Nginx, HTTPS certificate, and WeChat request domain."
+echo "Done. Next install the IP-only Nginx config and run the acceptance checks."
