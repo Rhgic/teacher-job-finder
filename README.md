@@ -47,6 +47,24 @@ flowchart LR
   M --> N["/readiness<br/>/crawl/sources"]
 ```
 
+## 界面预览
+
+岗位页把区域、学段、学科与编制条件收进筛选条，并用卡片集中展示薪资、截止时间和公告原文入口。
+
+![岗位浏览与多条件筛选](docs/screenshots/jobs.png)
+
+推荐页用“成绩单”式卡片呈现 AI 匹配分、匹配评语和人工确认状态，便于解释两阶段匹配结果。
+
+![AI 匹配成绩单](docs/screenshots/recommendations.png)
+
+公告问答只依据已收录内容作答，并允许展开查看实际命中的公告片段。
+
+![RAG 公告问答与出处](docs/screenshots/rag-qa.png)
+
+「我的」页支持粘贴或上传简历，并用学段、学科、区域和编制条件圈定求职范围。
+
+![简历上传与求职范围](docs/screenshots/profile-and-resume.png)
+
 ## 核心亮点
 
 1. **两层匹配管道**
