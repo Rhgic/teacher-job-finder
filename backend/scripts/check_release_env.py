@@ -83,8 +83,9 @@ def main() -> int:
         if state != "已填写":
             issues.append(f"{key} {state}")
 
-    if env.get("SESSION_SECRET") and len(env["SESSION_SECRET"]) < 24:
-        issues.append("SESSION_SECRET 太短，建议至少 24 位以上随机字符串")
+    for key in ("SESSION_SECRET", "ADMIN_API_TOKEN"):
+        if env.get(key) and len(env[key]) < 24:
+            issues.append(f"{key} 太短，建议至少 24 位以上随机字符串")
 
     for name, group in OPTIONAL_REAL_SERVICE_GROUPS.items():
         flag = group["flag"]

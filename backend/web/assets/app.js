@@ -6,6 +6,14 @@ const TOKEN_KEY = "tjf_guest_token";
 const getToken = () => localStorage.getItem(TOKEN_KEY);
 const clearToken = () => localStorage.removeItem(TOKEN_KEY);
 
+class ApiError extends Error {
+  constructor(status, message) {
+    super(message);
+    this.name = "ApiError";
+    this.status = status;
+  }
+}
+
 const api = async (path, options = {}) => {
   const headers = { ...(options.headers || {}) };
   const token = getToken();
@@ -14,7 +22,7 @@ const api = async (path, options = {}) => {
   if (!resp.ok) {
     let detail = `HTTP ${resp.status}`;
     try { detail = (await resp.json()).detail || detail; } catch (_) { /* 非 JSON 响应 */ }
-    throw new Error(detail);
+    throw new ApiError(resp.status, detail);
   }
   return resp.json();
 };
@@ -24,6 +32,16 @@ async function ensureGuest() {
   const d = await api("/auth/guest", { method: "POST" });
   localStorage.setItem(TOKEN_KEY, d.token);
   return d.token;
+}
+
+function showIdentityRequired(box, pageName) {
+  // 生产密钥轮换后，浏览器里的旧令牌也会失效；先清掉，确保「我的」页
+  // 能重新展示“创建体验身份”按钮。这里不静默创建身份，仍由用户明确点击。
+  clearToken();
+  box.innerHTML = `<div class="state">
+    <div class="big">查看${esc(pageName)}前，请先创建体验身份</div>
+    <div>去<a class="cta-inline" href="me.html">「我的」页</a>点击“创建体验身份”，再回来查看</div>
+  </div>`;
 }
 
 /* 与 miniprogram/utils/api.js 的 buildJobTitle 同一逻辑：
@@ -314,6 +332,10 @@ async function initRecommendPage() {
   try {
     items = await api("/recommendations");
   } catch (e) {
+    if (e.status === 401) {
+      showIdentityRequired(box, "个性化推荐");
+      return;
+    }
     box.innerHTML = `<div class="state">
       <div class="big">连不上后端接口</div><div>${esc(e.message)}</div>
       <div>本地演示请先启动：<code>uvicorn main:app --port 8000</code></div></div>`;
@@ -522,6 +544,10 @@ async function initApplicationsPage() {
       api("/jobs?include_expired=true&size=100"),
     ]);
   } catch (e) {
+    if (e.status === 401) {
+      showIdentityRequired(box, "投递记录");
+      return;
+    }
     box.innerHTML = `<div class="state">
       <div class="big">连不上后端接口</div><div>${esc(e.message)}</div>
       <div>本地演示请先启动：<code>uvicorn main:app --port 8000</code></div></div>`;
