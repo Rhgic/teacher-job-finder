@@ -37,6 +37,9 @@ CLAUDE_运行说明.md
 Codex完成清单.md
 给Claude审查_*.md
 给Codex的方案_*.md
+# 面试讲解材料：里面有「追问怎么答」，面试官在仓库里翻到观感是在背稿。
+# 内容本身没有敏感信息，纯粹是不该作为交付物的一部分。
+面试讲解.md
 .claude/
 backend/CODEX_PROMPT.md
 
