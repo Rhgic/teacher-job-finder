@@ -136,6 +136,84 @@ sudo nginx -t
 sudo systemctl reload nginx
 ```
 
+## 备份恢复
+
+**没演练过的备份等于没有备份。** 备份任务跑得再规律，只要没验证过
+"能不能恢复回来"，那就只是在定时产出一堆没人用过的文件。
+
+### 定期演练（推荐每月一次，改动过备份流程后必须跑）
+
+```bash
+cd /opt/teacher-job-api
+.venv/bin/python backend/scripts/verify_backup_restore.py
+```
+
+脚本做五件事：找最近一份备份 → 校验是真 gzip 且不含跨库语句 →
+建临时库 `teacher_jobs_restore_drill` → 恢复并计时 → 逐表比对行数，
+跑完自动删掉临时库。**全程不写生产库**，只读 `COUNT(*)` 做比对。
+加 `--keep-temp` 可保留临时库便于排查。
+
+需要 `.env` 里的 `MYSQL_ROOT_PASSWORD`：建库是管理操作，应用账号
+`teacher` 没有 `CREATE DATABASE` 权限——这是正确的最小权限配置，
+不要为了让脚本跑通去给应用账号提权。
+
+**本机与另一个小程序共用同一个 MySQL 实例**，所以恢复前会扫描 dump 里的
+`USE` / `CREATE DATABASE` 语句并在发现时中止：恢复的目标库只由命令行参数
+决定，dump 里一旦带这类语句，以 root 恢复就会越过临时库静默写到别的库上。
+当前 `backup_db.py` 是单库 `mysqldump`（传库名，不是 `--databases`），
+不产生这类语句；这道校验是防止以后有人改参数把它变成静默破坏。
+
+### 实测基线（2026-07-23，生产库 11 表 / 160 行，备份 0.18 MB）
+
+| 指标 | 实测值 |
+| --- | --- |
+| RTO（恢复耗时） | **1.3 秒** |
+| RPO（最坏数据丢失） | **24 小时**，等于备份间隔 |
+| 恢复完整性 | 11 表全到，行数差异仅来自备份后的新增写入 |
+
+RPO 是这里的短板：每天备份一次，意味着最坏情况丢一整天的投递记录和
+抓取结果。岗位数据可以重爬，`applications` / `resumes` 丢了不可再生。
+真要压低得上 binlog 增量备份或主从，当前规模下先记录清楚这个取舍。
+
+### 真的要恢复生产库时
+
+演练脚本只写临时库，**不会**替你恢复生产库。真出事时按下面走，
+每一步都确认完再进行下一步：
+
+```bash
+sudo systemctl stop teacher-job-api          # 1. 先停写入，避免边恢复边写
+cd /opt/teacher-job-api/backend
+ls -lt backups/                              # 2. 挑一份，确认时间戳符合预期
+```
+
+```bash
+# 3. 先恢复到临时库验一遍，确认这份备份可用（别直接往生产库倒）
+.venv/bin/python scripts/verify_backup_restore.py --keep-temp
+```
+
+```bash
+# 4. 把现在的生产库先另存一份——恢复是覆盖操作，错了没有回头路
+MYSQL_PWD='<MYSQL_ROOT_PASSWORD>' mysqldump -h127.0.0.1 -uroot \
+  --single-transaction teacher_jobs | gzip > backups/before-restore-$(date +%Y%m%d-%H%M%S).sql.gz
+```
+
+```bash
+# 5. 恢复。teacher_jobs 会被备份里的内容整体覆盖
+gzip -dc backups/teacher_jobs-<时间戳>.sql.gz \
+  | MYSQL_PWD='<MYSQL_ROOT_PASSWORD>' mysql -h127.0.0.1 -uroot teacher_jobs
+```
+
+```bash
+# 6. 校验后再放流量进来
+.venv/bin/alembic current
+sudo systemctl start teacher-job-api
+curl -fsS http://42.194.146.44/health
+curl -fsS http://42.194.146.44/readiness
+```
+
+第 4 步不能省。恢复覆盖生产库之后，"备份其实是三天前的"这种事
+就再也补救不了了。
+
 ## 合规边界
 
 - 投递必须由用户人工确认，不做全自动投递。

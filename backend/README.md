@@ -16,6 +16,7 @@ uvicorn main:app --reload      # 访问 http://127.0.0.1:8000/docs
 查看非敏感上线准备状态：`GET /readiness`。
 服务器定时抓取一次：`python scripts/run_scheduled_crawl.py --source all --max-detail-pages 12`；也可单独用 `--source sz910` 或 `--source shenzhenjiaoshi`。
 手动备份一次：`python scripts/backup_db.py --output-dir ./backups --keep 14`（按 `DATABASE_URL` 自动分派 SQLite / mysqldump）。
+演练恢复：`python scripts/verify_backup_restore.py`——把最近一份备份真的恢复到临时库并逐表比对，只写临时库、跑完自动清理。**没演练过的备份等于没有备份**；实测 RTO 与恢复步骤见 `DEPLOYMENT.md` 的「备份恢复」章节。
 
 本地起 MySQL：`docker compose up -d db`，然后把 `.env` 的 `DATABASE_URL` 换成
 `mysql+pymysql://teacher:teacher_dev_pwd@127.0.0.1:3306/teacher_jobs?charset=utf8mb4`。
