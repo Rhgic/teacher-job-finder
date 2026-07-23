@@ -17,6 +17,7 @@ import os
 import shutil
 import subprocess
 import sys
+import tempfile
 import time
 from pathlib import Path
 from urllib.parse import unquote, urlsplit
@@ -168,17 +169,29 @@ def main() -> int:
     # 不能把 gzip 文件对象直接交给 subprocess 的 stdin：子进程读的是它的
     # 底层 fd，拿到的是压缩字节而非解压后的 SQL。这与 backup_db.py 里
     # 记录的那个坑是同一类，方向相反——必须显式解压后流式喂进去。
-    proc = subprocess.Popen(mysql_cmd(admin, TEMP_DB), stdin=subprocess.PIPE,
-                            stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=env_pwd)
-    try:
-        with gzip.open(latest, "rb") as fh:
-            shutil.copyfileobj(fh, proc.stdin)
-        proc.stdin.close()
-    except BrokenPipeError:
-        pass  # mysql 提前退出，真正的原因在下面的 stderr 里
-    _, err = proc.communicate()
+    #
+    # stderr 收到临时文件而不是 PIPE：管道要靠 communicate() 来收，
+    # 而 communicate() 会去 flush 我们已经手动关掉的 stdin
+    # （ValueError: flush of closed file）。落文件同时消掉了另一个隐患——
+    # stderr 写满管道缓冲区、子进程阻塞而父进程还在喂 stdin 的死锁。
+    with tempfile.TemporaryFile() as errf:
+        proc = subprocess.Popen(mysql_cmd(admin, TEMP_DB), stdin=subprocess.PIPE,
+                                stdout=subprocess.DEVNULL, stderr=errf, env=env_pwd)
+        try:
+            with gzip.open(latest, "rb") as fh:
+                shutil.copyfileobj(fh, proc.stdin)
+        except BrokenPipeError:
+            pass  # mysql 提前退出，真正的原因在 stderr 里
+        finally:
+            try:
+                proc.stdin.close()
+            except BrokenPipeError:
+                pass
+        returncode = proc.wait()
+        errf.seek(0)
+        err = errf.read()
     rto = time.perf_counter() - started
-    if proc.returncode != 0:
+    if returncode != 0:
         # stderr 可能混入二进制，errors="replace" 保证错误处理本身不会再崩
         print(f"✗ 恢复失败：{err.decode('utf-8', errors='replace')[:300]}")
         return 1
