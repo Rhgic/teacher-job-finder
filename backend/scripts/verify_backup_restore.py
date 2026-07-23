@@ -14,6 +14,7 @@ from __future__ import annotations
 import argparse
 import gzip
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -27,6 +28,10 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 TEMP_DB = "teacher_jobs_restore_drill"
+
+# 会让恢复越过临时库的语句。注释掉的 mysqldump 版本头（/*!40000 ... */）
+# 不匹配，因为要求语句从行首开始。
+CROSS_DB_RE = re.compile(rb"^\s*(USE\s|CREATE\s+DATABASE|CREATE\s+SCHEMA)", re.IGNORECASE)
 
 
 def load_env(path: Path) -> dict:
@@ -140,21 +145,40 @@ def main() -> int:
     # 2) 验证是真 gzip 而非顶着 .gz 名字的裸文件
     #    这是本项目踩过的真坑：把 gzip 文件对象直接交给 subprocess 的 stdout，
     #    子进程写的是底层 fd、绕过压缩层，产出的文件解不开。
+    #
+    #    同一趟顺便扫跨库语句。这台服务器上还跑着别的项目、共用一个 MySQL
+    #    实例，而恢复是以 root 把 SQL 直接喂给 mysql 的：目标库只由命令行
+    #    参数决定，dump 里一旦出现 USE / CREATE DATABASE，写入就会越过临时库
+    #    落到生产库或别人的库上，而且不报错。单库 mysqldump 不产生这类语句，
+    #    但只要有人给 backup_db.py 加上 --databases 就会变成静默的破坏。
     print("\n[2/5] 校验压缩完整性")
+    raw = 0
+    looks_like_dump = False
+    stray: list[str] = []
     try:
         with gzip.open(latest, "rb") as fh:
-            head = fh.read(4096)
-            raw = 0
-            while chunk := fh.read(1 << 20):
-                raw += len(chunk)
+            for line in fh:
+                raw += len(line)
+                if not looks_like_dump and (b"CREATE TABLE" in line or b"MySQL dump" in line):
+                    looks_like_dump = True
+                if CROSS_DB_RE.match(line):
+                    stray.append(line[:120].decode("utf-8", "replace").strip())
     except OSError as exc:
         print(f"✗ 不是有效的 gzip：{exc}")
         print("  很可能是假压缩（顶着 .gz 名字的裸 SQL），备份不可用")
         return 1
-    if b"CREATE TABLE" not in head and b"MySQL dump" not in head:
+    if not looks_like_dump:
         print("✗ 解开后不像 mysqldump 产物")
         return 1
-    print(f"      ✓ 真 gzip，解压后约 {(raw + len(head)) / 1024 / 1024:.2f} MB")
+    if stray:
+        print("✗ 备份里含跨库语句，以 root 恢复会写到临时库之外：")
+        for item in stray[:5]:
+            print(f"        {item}")
+        print("  本机与其它项目共用同一个 MySQL 实例，演练中止以免误写。")
+        print("  单库 dump 不该出现 USE / CREATE DATABASE，")
+        print("  请检查 backup_db.py 的 mysqldump 参数是否被改成了 --databases。")
+        return 1
+    print(f"      ✓ 真 gzip，解压后约 {raw / 1024 / 1024:.2f} MB，无跨库语句")
 
     # 3) 建临时库
     print(f"\n[3/5] 建临时库 {TEMP_DB}")
