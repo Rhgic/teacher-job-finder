@@ -148,9 +148,15 @@ button { font: inherit; cursor: pointer; border: 0; background: none; color: inh
 
 .job-foot {
   display: flex; justify-content: space-between; align-items: center;
-  border-top: 1px solid var(--line); padding-top: 11px; margin-top: 2px;
+  border-top: 1px solid var(--line); padding-top: 11px;
+  /* 卡片外框由 grid 拉成等高，但内容原本紧贴标题往下排：标题占一行的卡，
+     分隔线会比标题占两行的高出一截，底部空出一大块，一行看过去参差。
+     auto 把页脚推到底，同一行的分隔线与"查看详情"就对齐了。 */
+  margin-top: auto;
 }
-.salary { font-size: 14px; font-weight: 700; color: var(--brand-deep); }
+/* 行高定死：有薪资(14px/700)与"薪资详见公告"(12.5px/500)字号不同，
+   行盒高度会差 2px，把 .job-foot 的分隔线在一行内顶得高低不齐。 */
+.salary { font-size: 14px; font-weight: 700; color: var(--brand-deep); line-height: 20px; }
 .salary.na { color: var(--ink-3); font-weight: 500; font-size: 12.5px; }
 .deadline { font-size: 12px; color: var(--ink-3); }
 .deadline.warn { color: var(--warn); font-weight: 600; }
