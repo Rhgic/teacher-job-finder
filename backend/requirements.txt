@@ -11,7 +11,9 @@ pytest>=8.0          # 单元测试
 ruff>=0.6            # 代码检查，规则见 ruff.toml（CI 与本地同一套）
 alembic>=1.13        # 数据库迁移，脚本在 migrations/
 pymysql>=1.1         # MySQL 驱动（生产数据库）
-redis>=5.0            # 限流计数、每日配额、LLM 结果缓存
+# 上界不是我们的需求，是 arq 的：它约束 redis<6。写在这里是为了让这个约束可见——
+# 不写的话 pip 会把已装的 redis 8.x 静默降到 5.x，装完才在日志里看见 Uninstalling。
+redis>=5.0,<6        # 限流计数、每日配额、LLM 结果缓存
 arq>=0.26            # 异步任务队列（/matches/refresh 的 LLM 批量匹配）
 cryptography>=42.0   # MySQL 8 默认 caching_sha2_password 认证需要，缺了连不上
 # 后续阶段按需启用：
