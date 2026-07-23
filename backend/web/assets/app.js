@@ -269,7 +269,7 @@ async function initJobsPage() {
       return `
       <article class="job-card rise" style="animation-delay:${Math.min(i * 40, 400)}ms">
         <div class="job-head">
-          <h3 class="job-title">${esc(buildJobTitle(j))}</h3>
+          <h3 class="job-title"><a href="job.html?id=${encodeURIComponent(j.id)}">${esc(buildJobTitle(j))}</a></h3>
           ${j.is_establishment ? '<span class="tag-bianzhi">有编制</span>' : ""}
         </div>
         <div class="job-meta">
@@ -282,7 +282,7 @@ async function initJobsPage() {
           <span class="salary ${j.salary_min || j.salary_max ? "" : "na"}">${salary}</span>
           <span class="deadline ${dl.cls}">${dl.text}</span>
         </div>
-        ${j.source_url ? `<div class="job-link"><a href="${esc(j.source_url)}" target="_blank" rel="noopener">查看公告原文 ↗</a></div>` : ""}
+        <div class="job-link"><a href="job.html?id=${encodeURIComponent(j.id)}">查看详情与公告正文 →</a></div>
       </article>`;
     }).join("");
   }
@@ -387,9 +387,9 @@ async function initRecommendPage() {
         <div class="match-actions">
           ${confirmed
             ? '<button class="btn btn-done">已确认投递</button>'
-            : `<button class="btn btn-primary act-apply">确认投递</button>
-               <button class="btn btn-ghost act-cancel" hidden>取消</button>`}
-          <span class="action-note">${confirmed ? "" : "投递前需你确认，系统不会自动发送"}</span>
+            : `<a class="btn btn-primary" href="apply.html?job=${encodeURIComponent(j.id || "")}&match=${encodeURIComponent(m.id)}">去投递</a>
+               <a class="btn btn-ghost" href="job.html?id=${encodeURIComponent(j.id || "")}">看岗位详情</a>`}
+          <span class="action-note">${confirmed ? "" : "下一步可挑选简历、确认邮件主题"}</span>
         </div>
       </div>
     </section>`;
@@ -397,37 +397,6 @@ async function initRecommendPage() {
 
   animateRings();
 
-  box.addEventListener("click", async (ev) => {
-    const btn = ev.target.closest(".act-apply");
-    if (!btn) return;
-    const card = btn.closest(".match-card");
-    const note = card.querySelector(".action-note");
-    if (btn.dataset.armed !== "1") {
-      btn.dataset.armed = "1";
-      btn.textContent = "确认发送简历？";
-      card.querySelector(".act-cancel").hidden = false;
-      card.querySelector(".act-cancel").onclick = () => {
-        btn.dataset.armed = ""; btn.textContent = "确认投递";
-        card.querySelector(".act-cancel").hidden = true; note.textContent = "投递前需你确认，系统不会自动发送"; note.classList.remove("err");
-      };
-      return;
-    }
-    btn.disabled = true; note.textContent = "发送中…"; note.classList.remove("err");
-    try {
-      await api("/applications", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ job_id: card.dataset.jid, match_id: card.dataset.mid }),
-      });
-      btn.className = "btn btn-done"; btn.textContent = "已确认投递"; btn.disabled = false;
-      card.querySelector(".act-cancel").hidden = true;
-      note.textContent = "已进入投递记录";
-    } catch (e) {
-      btn.disabled = false; btn.dataset.armed = ""; btn.textContent = "确认投递";
-      card.querySelector(".act-cancel").hidden = true;
-      note.textContent = e.message; note.classList.add("err");
-    }
-  });
 }
 
 /* ---------- 问答页 ---------- */
@@ -834,4 +803,442 @@ async function initMePage() {
   });
 
   if (getToken()) await showForm();
+}
+
+/* ---------- 岗位详情页 ---------- */
+async function initJobDetailPage() {
+  const box = document.getElementById("detail");
+  const id = new URLSearchParams(location.search).get("id");
+  if (!id) {
+    box.innerHTML = `<div class="state"><div class="big">缺少岗位编号</div>
+      <div>请从<a class="cta-inline" href="index.html">岗位列表</a>点击进入</div></div>`;
+    return;
+  }
+
+  let job;
+  try {
+    job = await api(`/jobs/${encodeURIComponent(id)}`);
+  } catch (e) {
+    box.innerHTML = `<div class="state">
+      <div class="big">${e.status === 404 ? "这个岗位不存在或已下架" : "加载失败"}</div>
+      <div>${esc(e.message)}</div>
+      <div><a class="cta-inline" href="index.html">返回岗位列表</a></div></div>`;
+    return;
+  }
+
+  document.title = `${buildJobTitle(job)} · 深圳教师求职助手`;
+  const dl = deadlineInfo(job.deadline);
+  const expired = dl.cls === "over";
+  // 只渲染有值的事实项：公告普遍缺字段，全部占位会让网格出现大片"未注明"，
+  // 反而淹没真正有用的信息。缺什么在正文里看，正文永远给出链接。
+  const fact = (k, v) => (v
+    ? `<div class="fact"><div class="k">${k}</div><div class="v">${esc(v)}</div></div>`
+    : "");
+
+  box.innerHTML = `
+    <section class="detail-head rise">
+      <h1 class="detail-title">${esc(buildJobTitle(job))}</h1>
+      <div class="detail-sub">
+        ${job.is_establishment ? '<span class="tag-bianzhi">有编制</span>' : ""}
+        <span class="salary ${job.salary_min || job.salary_max ? "" : "na"}">${esc(fmtSalary(job.salary_min, job.salary_max))}</span>
+        <span class="deadline ${dl.cls}">${dl.text}</span>
+      </div>
+      <div class="detail-facts">
+        ${fact("学校", job.school_name)}
+        ${fact("区域", job.district)}
+        ${fact("学段", job.stage)}
+        ${fact("学科", job.subject)}
+        ${fact("办学类型", job.school_type ? schoolTypeZh(job.school_type) : null)}
+        ${fact("投递邮箱", job.recruiter_email)}
+      </div>
+      <div class="detail-actions">
+        ${expired
+          ? `<button class="btn btn-ghost" disabled>已过截止日期</button>
+             <span class="action-note">系统会拦截已截止岗位的投递</span>`
+          : !job.recruiter_email
+            // 没抓到邮箱就发不出去。这里直接说明并给出官方渠道，
+            // 不要放一个点进去才被拦的按钮。
+            ? `<a class="btn btn-ghost" href="${esc(job.source_url || "#")}" target="_blank" rel="noopener">按公告渠道投递 ↗</a>
+               <span class="action-note">这条公告没有留邮箱，请按原文指引投递</span>`
+            : `<a class="btn btn-primary" href="apply.html?job=${encodeURIComponent(job.id)}">投递这个岗位</a>
+               <span class="action-note">下一步可挑选简历、确认邮件主题</span>`}
+      </div>
+    </section>
+
+    <section class="jd rise" style="animation-delay:80ms">
+      <h2>公告正文</h2>
+      ${job.description
+        ? `<div class="body">${esc(job.description)}</div>`
+        : `<div class="none">这条岗位没有抓到正文，请点下方链接看原始公告。</div>`}
+      ${job.source_url
+        ? `<div class="origin">信息来自公开招聘公告，以原文为准 ·
+             <a class="cta-inline" href="${esc(job.source_url)}" target="_blank" rel="noopener">查看公告原文 ↗</a></div>`
+        : ""}
+    </section>`;
+}
+
+/* ---------- 投递确认页 ---------- */
+async function initApplyPage() {
+  const box = document.getElementById("applyBox");
+  const params = new URLSearchParams(location.search);
+  const jobId = params.get("job");
+  const matchId = params.get("match");   // 从推荐页进来时带上，投递后该匹配转 confirmed
+
+  document.getElementById("backLink").href =
+    matchId ? "recommend.html" : (jobId ? `job.html?id=${encodeURIComponent(jobId)}` : "index.html");
+
+  if (!jobId) {
+    box.innerHTML = `<div class="state"><div class="big">缺少岗位编号</div>
+      <div>请从<a class="cta-inline" href="index.html">岗位列表</a>选一个岗位再投递</div></div>`;
+    return;
+  }
+
+  let job, resumes = [], templates = [];
+  try {
+    [job, resumes, templates] = await Promise.all([
+      api(`/jobs/${encodeURIComponent(jobId)}`),
+      api("/resumes").catch(() => []),
+      api("/templates").catch(() => []),
+    ]);
+  } catch (e) {
+    if (e.status === 401) { showIdentityRequired(box, "投递"); return; }
+    box.innerHTML = `<div class="state"><div class="big">加载失败</div>
+      <div>${esc(e.message)}</div></div>`;
+    return;
+  }
+
+  const dl = deadlineInfo(job.deadline);
+  const expired = dl.cls === "over";
+  const noEmail = !job.recruiter_email;
+  const defaultResume = resumes.find((r) => r.is_default) || resumes[0];
+
+  // 与后端 _send_one 的默认主题保持一致，用户可改
+  const defaultSubject = `应聘${job.school_name}教师岗位`;
+
+  const blocker = expired
+    ? "这个岗位已过截止日期，不能再投递。"
+    : noEmail
+      ? "这条公告没有抓到投递邮箱，请点开公告原文按官方渠道投递。"
+      : resumes.length === 0
+        ? "还没有简历。请先去「我的」页上传或粘贴一份，再回来投递。"
+        : null;
+
+  box.innerHTML = `
+    <section class="apply-job">
+      <div class="t">${esc(buildJobTitle(job))}</div>
+      <div class="s">
+        ${job.is_establishment ? '<span class="tag-bianzhi">有编制</span>' : ""}
+        ${job.district ? `<span class="meta-tag">${esc(job.district)}</span>` : ""}
+        <span class="deadline ${dl.cls}">${dl.text}</span>
+      </div>
+      <div class="to">投递至 <span class="mail">${esc(job.recruiter_email || "公告未提供邮箱")}</span></div>
+    </section>
+
+    ${blocker ? `
+      <div class="apply-warn"><span>⚠</span><div>${esc(blocker)}
+        ${resumes.length === 0 && !expired && !noEmail
+          ? ' <a class="cta-inline" href="me.html">去上传简历 →</a>' : ""}
+        ${job.source_url
+          ? ` <a class="cta-inline" href="${esc(job.source_url)}" target="_blank" rel="noopener">查看公告原文 ↗</a>` : ""}
+      </div></div>` : `
+      <div class="card">
+        <h2>选择简历</h2>
+        <div class="desc">发出的附件就是这一份</div>
+        <div class="pick-list" id="resumePick">
+          ${resumes.map((r, i) => `
+            <label class="pick-row${(defaultResume && r.id === defaultResume.id) ? " on" : ""}">
+              <input type="radio" name="resume" value="${esc(r.id)}"
+                ${(defaultResume && r.id === defaultResume.id) ? "checked" : ""}>
+              <span class="name">${esc(r.file_name)}</span>
+              <span class="meta">${r.is_default ? "默认" : ""}</span>
+            </label>`).join("")}
+        </div>
+      </div>
+
+      ${templates.length ? `
+      <div class="card">
+        <h2>求职信模板</h2>
+        <div class="desc">可不选，不选则只发简历附件</div>
+        <div class="pick-list" id="tplPick">
+          <label class="pick-row on">
+            <input type="radio" name="tpl" value="" checked>
+            <span class="name">不使用模板</span>
+          </label>
+          ${templates.map((t) => `
+            <label class="pick-row">
+              <input type="radio" name="tpl" value="${esc(t.id)}">
+              <span class="name">${esc(t.title)}</span>
+            </label>`).join("")}
+        </div>
+      </div>` : ""}
+
+      <div class="card">
+        <h2>邮件主题</h2>
+        <div class="desc">收件人一眼看到的就是这句</div>
+        <div class="field full">
+          <input id="subject" type="text" value="${esc(defaultSubject)}" maxlength="80">
+        </div>
+      </div>
+
+      <div class="run-bar">
+        <button class="btn btn-grad" id="sendBtn">确认发送</button>
+        <span class="run-note" id="sendNote">点击后才会发出，这一步不可撤销</span>
+      </div>`}
+  `;
+
+  // 单选行的视觉选中态
+  box.addEventListener("change", (ev) => {
+    const input = ev.target.closest('input[type="radio"]');
+    if (!input) return;
+    box.querySelectorAll(`input[name="${input.name}"]`).forEach((el) => {
+      el.closest(".pick-row").classList.toggle("on", el.checked);
+    });
+  });
+
+  const sendBtn = document.getElementById("sendBtn");
+  if (!sendBtn) return;
+
+  sendBtn.addEventListener("click", async () => {
+    const note = document.getElementById("sendNote");
+    // 二次确认：投递不可撤销，不能一键就发出去
+    if (sendBtn.dataset.armed !== "1") {
+      sendBtn.dataset.armed = "1";
+      sendBtn.textContent = "确认无误，立即发送";
+      note.textContent = "再点一次就会真的发出";
+      return;
+    }
+    sendBtn.disabled = true;
+    note.className = "run-note";
+    note.textContent = "发送中…";
+    try {
+      const body = {
+        job_id: jobId,
+        resume_id: box.querySelector('input[name="resume"]:checked')?.value || null,
+        template_id: box.querySelector('input[name="tpl"]:checked')?.value || null,
+        email_subject: document.getElementById("subject").value.trim() || null,
+      };
+      if (matchId) body.match_id = matchId;
+      const app = await api("/applications", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      box.innerHTML = `
+        <div class="apply-done">
+          <div class="t">✓ 已投递</div>
+          <div class="s">发送至 <span class="num">${esc(app.recipient_email)}</span>
+            ${app.status === "SENT" ? "" : "（状态：" + esc(app.status) + "）"}</div>
+          <div class="acts">
+            <a class="btn btn-primary" href="applications.html">查看投递记录</a>
+            <a class="btn btn-ghost" href="index.html">继续找岗位</a>
+          </div>
+        </div>`;
+    } catch (e) {
+      sendBtn.disabled = false;
+      sendBtn.dataset.armed = "";
+      sendBtn.textContent = "确认发送";
+      note.className = "run-note err";
+      note.textContent = e.message;
+    }
+  });
+}
+
+/* ---------- 订阅规则管理 ---------- */
+async function initRulesPage() {
+  const box = document.getElementById("rulesBox");
+  let rules = [], tax = {}, jobs = [];
+
+  async function load() {
+    [rules, tax, jobs] = await Promise.all([
+      api("/rules"),
+      api("/taxonomy").catch(() => ({ subjects: [], stages: [], districts: [] })),
+      api("/jobs?size=100").catch(() => []),
+    ]);
+  }
+
+  try {
+    await load();
+  } catch (e) {
+    if (e.status === 401) { showIdentityRequired(box, "订阅规则"); return; }
+    box.innerHTML = `<div class="state"><div class="big">加载失败</div>
+      <div>${esc(e.message)}</div></div>`;
+    return;
+  }
+
+  // 选项以标准表为准，再并入数据中出现过的值——与「我的」页同一套语义：
+  // 规则要匹配的是将来爬到的岗位，不能被当前数据裁剪掉。
+  const merge = (canonical, key) => {
+    const extra = [...new Set(jobs.map((j) => j[key]).filter(Boolean))]
+      .filter((v) => !(canonical || []).includes(v)).sort();
+    return [...(canonical || []), ...extra];
+  };
+  const OPTIONS = {
+    stages: merge(tax.stages, "stage"),
+    subjects: merge(tax.subjects, "subject"),
+    districts: merge(tax.districts, "district"),
+  };
+
+  const condTags = (r) => {
+    const all = [...(r.stages || []), ...(r.subjects || []), ...(r.districts || [])];
+    if (r.need_establishment) all.push("只要带编制");
+    return all.length
+      ? all.map((v) => `<span class="meta-tag">${esc(v)}</span>`).join("")
+      : `<span class="none">未限定条件——将对全部在招岗位做 AI 精排</span>`;
+  };
+
+  function render() {
+    box.innerHTML = `
+      ${rules.length ? rules.map((r) => `
+        <section class="rule-card${r.is_active ? "" : " off"}" data-id="${esc(r.id)}">
+          <div class="rule-head">
+            <span class="rule-name">${esc(r.name || "未命名规则")}</span>
+            <span class="rule-badge ${r.is_active ? "on" : "off"}">${r.is_active ? "启用中" : "已停用"}</span>
+            <span class="rule-acts">
+              <button type="button" class="act-toggle">${r.is_active ? "停用" : "启用"}</button>
+              <button type="button" class="act-edit">编辑</button>
+              <button type="button" class="act-del del">删除</button>
+            </span>
+          </div>
+          <div class="rule-cond">${condTags(r)}</div>
+        </section>`).join("") : `
+        <div class="state">
+          <div class="big">还没有订阅规则</div>
+          <div>建一条规则，AI 只会对命中的岗位打分——这是成本控制的第一道闸</div>
+        </div>`}
+
+      <div class="run-bar" style="margin-top:16px">
+        <button class="btn btn-grad" id="addRule">新建规则</button>
+        <a class="btn btn-ghost" href="me.html">回「我的」跑匹配</a>
+      </div>`;
+  }
+
+  /* 展开编辑表单。rule 为空时是新建。 */
+  function openForm(card, rule) {
+    const sel = {
+      stages: new Set(rule?.stages || []),
+      subjects: new Set(rule?.subjects || []),
+      districts: new Set(rule?.districts || []),
+      bianzhi: Boolean(rule?.need_establishment),
+    };
+    card.insertAdjacentHTML("beforeend", `
+      <div class="rule-form">
+        <div class="field full" style="margin-bottom:12px">
+          <label>规则名称</label>
+          <input class="rule-name-input" value="${esc(rule?.name || "")}" placeholder="比如：南山区小学语文" maxlength="40">
+        </div>
+        <div class="pickers"></div>
+        <div class="picked"></div>
+        <div class="run-bar" style="margin-top:14px">
+          <button class="btn btn-primary act-save">${rule ? "保存修改" : "创建规则"}</button>
+          <button class="btn btn-ghost act-cancel">取消</button>
+          <span class="run-note"></span>
+        </div>
+      </div>`);
+
+    const form = card.querySelector(".rule-form");
+    const host = form.querySelector(".pickers");
+    const pickedBox = form.querySelector(".picked");
+    const pickers = [];
+
+    const renderPicked = () => {
+      const all = [
+        ...[...sel.stages].map((v) => ["stages", v]),
+        ...[...sel.subjects].map((v) => ["subjects", v]),
+        ...[...sel.districts].map((v) => ["districts", v]),
+      ];
+      if (sel.bianzhi) all.push(["bianzhi", "只要带编制"]);
+      pickedBox.innerHTML = all.length
+        ? all.map(([k, v]) => `<span class="tag">${esc(v)}<button type="button" data-k="${k}" data-v="${esc(v)}" aria-label="移除 ${esc(v)}">✕</button></span>`).join("")
+        : `<span class="none">未限定范围——将对全部在招岗位做 AI 精排</span>`;
+    };
+
+    [["stages", "学段"], ["subjects", "学科"], ["districts", "区域"]].forEach(([key, label]) => {
+      pickers.push(createPicker(host, {
+        key, label, options: OPTIONS[key], selected: sel[key], onChange: renderPicked,
+      }));
+    });
+    host.insertAdjacentHTML("beforeend", `
+      <div class="picker" data-key="bianzhi">
+        <button type="button" class="picker-trigger bz${sel.bianzhi ? " on" : ""}" aria-pressed="${sel.bianzhi}">
+          <span class="label">只要带编制</span>
+        </button>
+      </div>`);
+    const bz = host.querySelector(".bz");
+    bz.addEventListener("click", () => {
+      sel.bianzhi = !sel.bianzhi;
+      bz.classList.toggle("on", sel.bianzhi);
+      bz.setAttribute("aria-pressed", String(sel.bianzhi));
+      renderPicked();
+    });
+    pickedBox.addEventListener("click", (ev) => {
+      const btn = ev.target.closest("button");
+      if (!btn) return;
+      if (btn.dataset.k === "bianzhi") { sel.bianzhi = false; bz.classList.remove("on"); }
+      else sel[btn.dataset.k].delete(btn.dataset.v);
+      pickers.forEach((p) => p.paint());
+      renderPicked();
+    });
+    renderPicked();
+
+    form.querySelector(".act-cancel").addEventListener("click", render);
+    form.querySelector(".act-save").addEventListener("click", async () => {
+      const note = form.querySelector(".run-note");
+      const name = form.querySelector(".rule-name-input").value.trim();
+      if (!name) { note.className = "run-note err"; note.textContent = "请先给规则起个名字"; return; }
+      note.className = "run-note"; note.textContent = "保存中…";
+      const body = {
+        name,
+        stages: sel.stages.size ? [...sel.stages] : null,
+        subjects: sel.subjects.size ? [...sel.subjects] : null,
+        districts: sel.districts.size ? [...sel.districts] : null,
+        need_establishment: sel.bianzhi || null,
+        is_active: rule ? rule.is_active : true,
+      };
+      try {
+        await api(rule ? `/rules/${rule.id}` : "/rules", {
+          method: rule ? "PUT" : "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body),
+        });
+        await load();
+        render();
+      } catch (e) {
+        note.className = "run-note err";
+        note.textContent = e.message;
+      }
+    });
+  }
+
+  box.addEventListener("click", async (ev) => {
+    if (ev.target.id === "addRule") {
+      box.insertAdjacentHTML("afterbegin", '<section class="rule-card" data-new="1"></section>');
+      openForm(box.firstElementChild, null);
+      return;
+    }
+    const card = ev.target.closest(".rule-card");
+    if (!card) return;
+    const rule = rules.find((r) => r.id === card.dataset.id);
+    if (!rule) return;
+
+    if (ev.target.closest(".act-edit")) {
+      if (!card.querySelector(".rule-form")) openForm(card, rule);
+      return;
+    }
+    if (ev.target.closest(".act-toggle")) {
+      // 停用而非删除：规则停了，历史匹配结果仍保留
+      await api(`/rules/${rule.id}`, {
+        method: "PUT", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...rule, is_active: !rule.is_active }),
+      });
+      await load(); render();
+      return;
+    }
+    if (ev.target.closest(".act-del")) {
+      if (!confirm(`删除规则「${rule.name}」？该规则命中的历史匹配结果也会一并删除。`)) return;
+      await api(`/rules/${rule.id}`, { method: "DELETE" });
+      await load(); render();
+    }
+  });
+
+  render();
 }

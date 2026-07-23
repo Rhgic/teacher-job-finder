@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>订阅规则 · 深圳教师求职助手</title>
+<link rel="stylesheet" href="assets/app.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='24' fill='%234653f0'/><text x='50' y='68' font-size='52' text-anchor='middle' fill='white' font-family='sans-serif' font-weight='bold'>师</text></svg>">
+</head>
+<body>
+
+<header class="topbar">
+  <div class="topbar-inner">
+    <a class="logo" href="index.html">
+      <span class="logo-mark">师</span>
+      <span class="logo-text">深圳教师求职助手</span>
+    </a>
+    <nav class="nav">
+      <a href="index.html">岗位</a>
+      <a href="recommend.html">推荐</a>
+      <a href="ask.html">问答</a>
+      <a href="applications.html">投递</a>
+      <a href="me.html" aria-current="page">我的</a>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap" style="max-width:820px">
+  <a class="back-link" href="me.html">← 返回「我的」</a>
+  <div class="console">
+    <div>
+      <h1>订阅规则</h1>
+      <div class="sub">规则层用 SQL 按硬条件确定性粗筛<span class="pipe">·</span>只有命中的岗位才会进入 AI 精排</div>
+    </div>
+  </div>
+
+  <div id="rulesBox">
+    <div class="skeleton" style="height:120px"></div>
+  </div>
+</main>
+
+<footer class="foot">
+  技术演示项目 · 规则命中的岗位才会调用大模型评分，这是成本控制的第一道闸<br>
+  投递需人工确认，系统不做全自动投递
+</footer>
+
+<script src="assets/app.js"></script>
+<script>initRulesPage();</script>
+</body>
+</html>
