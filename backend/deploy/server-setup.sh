@@ -16,6 +16,7 @@ fi
 
 echo "Install systemd service..."
 cp deploy/teacher-job-api.service /etc/systemd/system/teacher-job-api.service
+cp deploy/teacher-job-worker.service /etc/systemd/system/teacher-job-worker.service
 cp deploy/teacher-job-crawl.service /etc/systemd/system/teacher-job-crawl.service
 cp deploy/teacher-job-crawl.timer /etc/systemd/system/teacher-job-crawl.timer
 cp deploy/teacher-job-backup.service /etc/systemd/system/teacher-job-backup.service
@@ -23,6 +24,8 @@ cp deploy/teacher-job-backup.timer /etc/systemd/system/teacher-job-backup.timer
 systemctl daemon-reload
 systemctl enable teacher-job-api
 systemctl restart teacher-job-api
+systemctl enable teacher-job-worker
+systemctl restart teacher-job-worker
 systemctl enable teacher-job-crawl.timer
 systemctl start teacher-job-crawl.timer
 systemctl enable teacher-job-backup.timer

@@ -7,6 +7,7 @@
 """
 from __future__ import annotations
 
+from collections.abc import Callable
 from datetime import date
 
 from sqlalchemy import select
@@ -34,11 +35,14 @@ def _resume_summary_for(rule: SubRule) -> str:
 
 
 def run_pipeline(db: Session, job_ids: list[str] | None = None,
-                 user_id: str | None = None) -> dict:
+                 user_id: str | None = None,
+                 on_progress: Callable[[int, int], None] | None = None) -> dict:
     """对(可选指定的)岗位跑 active 规则。返回统计。
 
     user_id 给定时只跑该用户的规则——Web 体验用户"运行匹配"走这里，
     不给普通访客触发全量管道的能力。
+
+    on_progress(done, total) 在每次 LLM 调用后回调，用于异步任务上报进度。
     """
     rule_q = select(SubRule).where(SubRule.is_active.is_(True))
     if user_id:
@@ -51,10 +55,11 @@ def run_pipeline(db: Session, job_ids: list[str] | None = None,
     jobs = db.scalars(job_q).all()
     today = date.today()
 
-    created = 0
+    # 先把要评的 (rule, job) 全列出来，再逐个调模型。分成两趟是为了
+    # 提前知道总数：进度要有分母，而"这次要花多少次模型调用"本身
+    # 也是该在开跑前就能看到的量，而不是跑完才知道。
+    todo: list[tuple[SubRule, Job]] = []
     for rule in rules:
-        resume_summary = _resume_summary_for(rule)
-        intent = rule.user.profile.intent if rule.user.profile else None
         for job in jobs:
             if job.deadline and job.deadline < today:
                 continue
@@ -68,18 +73,32 @@ def run_pipeline(db: Session, job_ids: list[str] | None = None,
                 continue
             if not rule_matches_job(rule, job):
                 continue  # 第一层未过，直接丢弃（不入库）
+            todo.append((rule, job))
 
-            # 第二层：LLM 匹配
-            result = match_resume_to_job(resume_summary, job.description or "", intent)
-            db.add(MatchResult(
-                rule_id=rule.id, job_id=job.id, user_id=rule.user_id,
-                rule_passed=True,
-                llm_score=result.get("score"),
-                match_reason=result.get("reason"),
-                cover_letter=result.get("cover_letter"),
-                status=MatchStatus.PENDING_PUSH,
-            ))
-            created += 1
+    total = len(todo)
+    if on_progress:
+        on_progress(0, total)
+
+    summaries: dict[str, str] = {}
+    created = 0
+    for done, (rule, job) in enumerate(todo, start=1):
+        if rule.id not in summaries:
+            summaries[rule.id] = _resume_summary_for(rule)
+        intent = rule.user.profile.intent if rule.user.profile else None
+
+        # 第二层：LLM 匹配
+        result = match_resume_to_job(summaries[rule.id], job.description or "", intent)
+        db.add(MatchResult(
+            rule_id=rule.id, job_id=job.id, user_id=rule.user_id,
+            rule_passed=True,
+            llm_score=result.get("score"),
+            match_reason=result.get("reason"),
+            cover_letter=result.get("cover_letter"),
+            status=MatchStatus.PENDING_PUSH,
+        ))
+        created += 1
+        if on_progress:
+            on_progress(done, total)
 
     db.commit()
     return {"rules": len(rules), "jobs": len(jobs), "new_matches": created}

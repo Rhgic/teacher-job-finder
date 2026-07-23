@@ -244,6 +244,56 @@ def test_rules_are_scoped_to_owner(client, seeded, session_factory):
     assert len(theirs) == 1
 
 
+# ---------------- 异步匹配任务 ----------------
+
+def test_refresh_falls_back_to_sync_when_queue_unavailable(client, seeded):
+    """队列不可用时必须当场跑完并返回结果，而不是报错。
+
+    这是"降级优先于保护"在异步化之后的延续：异步是体验优化，
+    Redis 挂掉时用户可以等得久一点，但不能连匹配都跑不了。
+    conftest 已把入队短路成不可用，这里跑的就是兜底路径。
+    """
+    resp = client.post("/matches/refresh", headers=auth(seeded["token"]))
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["mode"] == "sync"
+    assert body["status"] == "done"
+    assert "new_matches" in body       # 同步兜底必须直接给出结果
+    assert "task_id" not in body       # 没有队列就没有可轮询的任务
+
+
+def test_refresh_status_404_for_unknown_task(client, seeded):
+    resp = client.get("/matches/refresh/no-such-task", headers=auth(seeded["token"]))
+    assert resp.status_code == 404
+
+
+def test_refresh_status_hides_other_users_task(client, seeded, monkeypatch):
+    """task_id 是可猜的字符串，不校验归属就等于凭 ID 能读别人的匹配结果。
+
+    且必须与"任务不存在"返回同样的 404——区分开来，这个接口就成了
+    探测他人任务 ID 是否有效的工具。
+    """
+    from services import tasks
+
+    monkeypatch.setattr(tasks, "read_state", lambda _tid: {
+        "status": "done", "user_id": "someone-else", "new_matches": 7,
+    })
+    resp = client.get("/matches/refresh/borrowed-id", headers=auth(seeded["token"]))
+    assert resp.status_code == 404
+    assert "7" not in resp.text
+
+
+def test_refresh_status_returns_own_task(client, seeded, monkeypatch):
+    from services import tasks
+
+    monkeypatch.setattr(tasks, "read_state", lambda _tid: {
+        "status": "running", "user_id": seeded["user_id"], "done": 3, "total": 10,
+    })
+    body = client.get("/matches/refresh/mine", headers=auth(seeded["token"])).json()
+    assert body["task_id"] == "mine"
+    assert (body["done"], body["total"]) == (3, 10)
+
+
 # ---------------- 静态前端挂载 ----------------
 
 def test_root_redirects_to_web(client):

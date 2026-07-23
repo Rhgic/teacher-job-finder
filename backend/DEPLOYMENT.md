@@ -75,11 +75,23 @@ cd /opt/teacher-job-api/backend
 
 ```text
 teacher-job-api.service
+teacher-job-worker.service
 teacher-job-crawl.service
 teacher-job-crawl.timer
 teacher-job-backup.service
 teacher-job-backup.timer
 ```
+
+`teacher-job-worker.service` 是 arq worker，只处理 `/matches/refresh` 的
+LLM 批量匹配（见 README「异步任务队列」）。它必须和 API 用同一个
+`EnvironmentFile`：**worker 连错数据库不会崩，只会每次返回 0 个匹配**，
+这种静默失配比进程挂掉难查得多。启动日志第一行会打出实际连到的库：
+
+```bash
+sudo journalctl -u teacher-job-worker -n 30 --no-pager | grep "worker started"
+```
+
+worker 挂掉不影响主功能：入队失败时 API 会退回同步执行，只是用户要多等。
 
 定时爬虫每天 07:10 后随机延迟最多 45 分钟执行；每个来源最多抓 12 个详情页，
 继续遵守 robots、2 秒礼貌限速和 30 分钟缓存。Redis 不可用时限流会降级放行，
@@ -130,7 +142,7 @@ cd backend
 sudo docker compose up -d
 sudo cp deploy/teacher-job-*.service deploy/teacher-job-*.timer /etc/systemd/system/
 sudo systemctl daemon-reload
-sudo systemctl restart teacher-job-api
+sudo systemctl restart teacher-job-api teacher-job-worker
 sudo systemctl restart teacher-job-crawl.timer teacher-job-backup.timer
 sudo nginx -t
 sudo systemctl reload nginx

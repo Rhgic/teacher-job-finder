@@ -1,0 +1,13 @@
+[Unit]
+Description=Teacher Job Finder async worker (arq)
+After=network.target
+
+[Service]
+WorkingDirectory=/opt/teacher-job-api/backend
+EnvironmentFile=/opt/teacher-job-api/backend/.env
+ExecStart=/opt/teacher-job-api/backend/.venv/bin/arq services.tasks.WorkerSettings
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target

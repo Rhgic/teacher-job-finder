@@ -785,8 +785,16 @@ async function initMePage() {
         existingRuleId = created.id;
       }
 
-      note.textContent = "AI 逐岗评分中…（几秒）";
-      const stats = await api("/matches/refresh", { method: "POST" });
+      note.textContent = "AI 逐岗评分中…";
+      const started = await api("/matches/refresh", { method: "POST" });
+      // mode=sync 是队列不可用时的兜底，那种情况下结果已经在响应里了
+      const stats = started.mode === "async"
+        ? await pollRefresh(started.task_id, (done, total) => {
+            note.textContent = total
+              ? `AI 逐岗评分中… ${done}/${total} 个岗位`
+              : "任务排队中…";
+          })
+        : started;
       note.className = "run-note ok";
       if (stats.new_matches > 0) {
         note.textContent = `完成：规则命中并新评了 ${stats.new_matches} 个岗位，正在跳转推荐页…`;
@@ -803,6 +811,33 @@ async function initMePage() {
   });
 
   if (getToken()) await showForm();
+}
+
+/* 轮询匹配任务进度。
+
+   用轮询而不是 WebSocket/SSE：单实例部署、任务几十秒、用户就停在这一个页面等，
+   长连接要处理重连、心跳、nginx 缓冲，换不回相应的收益。
+
+   404 容忍几次再放弃：任务状态存在 Redis 里，重启或偶发抖动可能短暂读不到，
+   一次读不到就把整个流程判失败，对用户来说是白等一场。 */
+async function pollRefresh(taskId, onProgress) {
+  const deadline = Date.now() + 10 * 60 * 1000;
+  let misses = 0;
+  while (Date.now() < deadline) {
+    await new Promise((r) => setTimeout(r, 1200));
+    let s;
+    try {
+      s = await api(`/matches/refresh/${encodeURIComponent(taskId)}`);
+    } catch (e) {
+      if (e.status === 404 && ++misses <= 5) continue;
+      throw e;
+    }
+    misses = 0;
+    onProgress(s.done || 0, s.total || 0);
+    if (s.status === "done") return s;
+    if (s.status === "failed") throw new Error(s.error || "匹配任务执行失败");
+  }
+  throw new Error("匹配任务超时。它可能仍在后台跑，稍后到推荐页看看");
 }
 
 /* ---------- 岗位详情页 ---------- */

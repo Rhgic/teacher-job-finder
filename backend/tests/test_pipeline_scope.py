@@ -61,6 +61,36 @@ def test_no_user_scope_runs_all_rules(db):
     assert stats["new_matches"] == 2
 
 
+def test_progress_reports_total_before_first_llm_call(db):
+    """进度必须先报总数再开跑——否则前端只能显示"已评 N 个"这种没有分母的数。
+
+    分母还有一层意义：它等于这次要花掉的模型调用次数，
+    是在开跑前就该知道的成本，而不是跑完才知道。
+    """
+    make_user_with_rule(db, "guest_a")
+    db.add_all([
+        Job(school_name=f"学校{i}", subject="语文", stage="小学") for i in range(3)
+    ])
+    db.add(Job(school_name="不匹配的", subject="数学", stage="小学"))  # 规则层就被筛掉
+    db.flush()
+
+    seen: list[tuple[int, int]] = []
+    stats = run_pipeline(db, user_id=None, on_progress=lambda d, t: seen.append((d, t)))
+
+    assert seen[0] == (0, 3)                     # 开跑前先报分母，且不含被规则筛掉的
+    assert seen == [(0, 3), (1, 3), (2, 3), (3, 3)]
+    assert stats["new_matches"] == 3
+
+
+def test_progress_is_optional(db):
+    """不传回调时行为不变——定时任务与管理端调用不需要进度。"""
+    make_user_with_rule(db, "guest_a")
+    db.add(Job(school_name="南山实验学校", subject="语文", stage="小学"))
+    db.flush()
+
+    assert run_pipeline(db)["new_matches"] == 1
+
+
 def test_unknown_user_matches_nothing(db):
     """体验身份还没建规则时，跑匹配应安静返回零，而不是报错。"""
     make_user_with_rule(db, "guest_a")
