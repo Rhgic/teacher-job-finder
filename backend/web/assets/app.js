@@ -164,19 +164,57 @@ function createPicker(host, { key, label, options, selected, onChange, counts })
 }
 
 /* ---------- 岗位页 ---------- */
+/* 一次把在招岗位取全（分页拉）。
+
+   原来是单发 `/jobs?size=100`，而后端 size 的上限就是 100：等在招岗位涨过
+   100（现在 91，爬虫每天在加），页面会安静地只显示前 100 个，筛选和搜索都
+   跑在被截断的集合上，用户看不出少了东西。搜索尤其不能这样——
+   「搜不到」和「没有这个岗位」在用户看来是同一件事。
+
+   岗位是有界数据（一个城市的教师岗，量级几百），一次取全是合理的。
+   仍留一个硬上限兜底：真撞上了就在界面上说明，不假装自己是完整的。 */
+const JOBS_PAGE_SIZE = 100;
+const JOBS_HARD_CAP = 600;
+
+async function loadAllJobs() {
+  const all = [];
+  for (let page = 1; all.length < JOBS_HARD_CAP; page += 1) {
+    const batch = await api(`/jobs?size=${JOBS_PAGE_SIZE}&page=${page}`);
+    all.push(...batch);
+    if (batch.length < JOBS_PAGE_SIZE) return { jobs: all, truncated: false };
+  }
+  return { jobs: all.slice(0, JOBS_HARD_CAP), truncated: true };
+}
+
+/* 搜索匹配。
+
+   空格分词后要求全部命中，"南山 语文" 才能同时约束两个维度；
+   只要有一个词命中就返回的话，词加得越多结果反而越多，与直觉相反。
+
+   搜索范围是学校名与几个标签字段——公告正文不在 JobOut 里（那是详情接口
+   的字段）。要搜正文得走服务端检索，是另一件事，这里不假装支持。 */
+function jobMatchesQuery(j, q) {
+  if (!q) return true;
+  const hay = [j.school_name, j.district, j.stage, j.subject, schoolTypeZh(j.school_type)]
+    .filter(Boolean).join(" ").toLowerCase();
+  return q.toLowerCase().split(/\s+/).filter(Boolean).every((t) => hay.includes(t));
+}
+
 async function initJobsPage() {
   const grid = document.getElementById("grid");
   const statsEl = document.getElementById("stats");
   const filtersEl = document.getElementById("filters");
   const countEl = document.getElementById("resultCount");
+  const searchEl = document.getElementById("jobSearch");
   let jobs = [];
+  let truncated = false;
   // 多选：可同时看南山区 + 福田区，比单选实用
   const active = {
-    district: new Set(), stage: new Set(), subject: new Set(), bianzhi: false,
+    district: new Set(), stage: new Set(), subject: new Set(), bianzhi: false, q: "",
   };
 
   try {
-    jobs = await api("/jobs?size=100");
+    ({ jobs, truncated } = await loadAllJobs());
   } catch (e) {
     grid.innerHTML = `<div class="state">
       <div class="big">连不上后端接口</div>
@@ -233,25 +271,45 @@ async function initJobsPage() {
     if (!ev.target.closest(".picker")) pickers.forEach((p) => p.close());
   });
 
+  searchEl.addEventListener("input", () => {
+    // 客户端过滤几百条，不需要防抖，即时反馈比省这点计算重要
+    active.q = searchEl.value.trim();
+    render();
+  });
+  // `/` 聚焦搜索：列表页的通用习惯，键盘用户不用摸鼠标
+  document.addEventListener("keydown", (ev) => {
+    const tag = (document.activeElement && document.activeElement.tagName) || "";
+    if (ev.key === "/" && !/^(INPUT|TEXTAREA|SELECT)$/.test(tag)) {
+      ev.preventDefault();
+      searchEl.focus();
+    }
+  });
+
   function render() {
     const hit = (set, value) => set.size === 0 || set.has(value);
     const list = jobs.filter((j) =>
       hit(active.district, j.district) &&
       hit(active.stage, j.stage) &&
       hit(active.subject, j.subject) &&
-      (!active.bianzhi || j.is_establishment));
+      (!active.bianzhi || j.is_establishment) &&
+      jobMatchesQuery(j, active.q));
 
     const chosen = active.district.size + active.stage.size + active.subject.size
-      + (active.bianzhi ? 1 : 0);
-    countEl.innerHTML = chosen
+      + (active.bianzhi ? 1 : 0) + (active.q ? 1 : 0);
+    const capNote = truncated
+      ? `<span class="cap-note">数据量已超过本页上限，仅展示前 ${JOBS_HARD_CAP} 个</span>`
+      : "";
+    countEl.innerHTML = (chosen
       ? `筛出 <span class="num">${list.length}</span> / ${jobs.length} 个岗位
          <button type="button" class="reset" id="resetFilters">清除筛选</button>`
-      : `共 <span class="num">${jobs.length}</span> 个在招岗位`;
+      : `共 <span class="num">${jobs.length}</span> 个在招岗位`) + capNote;
     const reset = document.getElementById("resetFilters");
     if (reset) {
       reset.addEventListener("click", () => {
         active.district.clear(); active.stage.clear(); active.subject.clear();
         active.bianzhi = false;
+        active.q = "";
+        searchEl.value = "";
         bz.classList.remove("on");
         bz.setAttribute("aria-pressed", "false");
         pickers.forEach((p) => p.paint());
@@ -260,7 +318,13 @@ async function initJobsPage() {
     }
 
     if (!list.length) {
-      grid.innerHTML = `<div class="state"><div class="big">没有符合筛选的岗位</div><div>换个条件试试</div></div>`;
+      grid.innerHTML = `<div class="state">
+        <div class="big">${active.q
+          ? `没有匹配「${esc(active.q)}」的岗位`
+          : "没有符合筛选的岗位"}</div>
+        <div>${active.q
+          ? "换个关键词，或清除其它筛选条件"
+          : "换个条件试试"}</div></div>`;
       return;
     }
     grid.innerHTML = list.map((j, i) => {

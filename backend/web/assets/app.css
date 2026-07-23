@@ -439,6 +439,40 @@ button { font: inherit; cursor: pointer; border: 0; background: none; color: inh
 }
 
 /* ---------- 下拉选择器（求职范围） ---------- */
+/* ---------- 搜索框 ---------- */
+.searchbar {
+  position: relative; display: flex; align-items: center;
+  margin-bottom: 12px; max-width: 480px;
+}
+.searchbar .search-icon {
+  position: absolute; left: 14px; width: 17px; height: 17px;
+  color: var(--ink-3); pointer-events: none;
+}
+.searchbar input {
+  width: 100%; font: inherit; font-size: 14px; color: var(--ink);
+  background: var(--surface); border: 1px solid var(--line); border-radius: 99px;
+  padding: 11px 42px 11px 40px;
+  transition: border-color .15s, box-shadow .15s;
+}
+.searchbar input::placeholder { color: var(--ink-3); }
+.searchbar input:focus {
+  outline: none; border-color: var(--brand);
+  box-shadow: 0 0 0 3px rgba(70, 83, 240, .12);
+}
+/* 有内容时原生清除按钮会占住右侧，这时把快捷键提示让出去 */
+.searchbar input:focus ~ .search-kbd,
+.searchbar input:not(:placeholder-shown) ~ .search-kbd { opacity: 0; }
+.search-kbd {
+  position: absolute; right: 14px;
+  font: 600 11px/1 var(--font-num); color: var(--ink-3);
+  border: 1px solid var(--line); border-radius: 5px; padding: 3px 6px;
+  background: var(--bg); pointer-events: none; transition: opacity .15s;
+}
+@media (max-width: 640px) {
+  .searchbar { max-width: none; }
+  .search-kbd { display: none; }   /* 触屏没有键盘快捷键，别占位置 */
+}
+
 .pickers { display: flex; gap: 10px; flex-wrap: wrap; }
 
 .picker { position: relative; }
@@ -563,6 +597,8 @@ button { font: inherit; cursor: pointer; border: 0; background: none; color: inh
   font-size: 12.5px; color: var(--brand); font-weight: 600;
 }
 .result-count .reset:hover { text-decoration: underline; }
+/* 数据被上限截断时的说明。宁可显得不完美，也不能让用户以为看到的是全部 */
+.result-count .cap-note { color: var(--warn); }
 
 /* ---------- 岗位详情页 ---------- */
 .back-link {

@@ -112,6 +112,24 @@ def test_job_detail_includes_description(client, seeded):
     assert "招聘小学语文教师" in resp.json()["description"]
 
 
+def test_jobs_pagination_pages_are_disjoint_and_complete(client, seeded):
+    """岗位页靠翻页把在招岗位取全，所以分页必须既不重复也不漏。
+
+    size 上限是 100，前端翻到某页返回不满一页才停——这个"不满即结束"的
+    约定一旦破了（比如某页因排序不稳定少给一条），页面会安静地少显示岗位，
+    而搜索搜不到和岗位不存在，在用户看来是一回事。
+    """
+    p1 = client.get("/jobs?size=1&page=1").json()
+    p2 = client.get("/jobs?size=1&page=2").json()
+    all_ids = {j["id"] for j in client.get("/jobs?size=100&page=1").json()}
+
+    assert len(p1) == 1 and len(p2) == 1
+    assert p1[0]["id"] != p2[0]["id"]           # 不重复
+    assert {p1[0]["id"], p2[0]["id"]} <= all_ids  # 不越界
+    # 翻过尾页返回空，前端据此停止
+    assert client.get("/jobs?size=100&page=99").json() == []
+
+
 def test_job_detail_404_for_unknown_id(client, seeded):
     resp = client.get("/jobs/no-such-job")
     assert resp.status_code == 404
