@@ -105,6 +105,16 @@ def main() -> int:
 
     conf = parse_mysql_url(url)
     prod_db = conf["database"]
+
+    # 建库/删库是管理操作，应用账号本就不该有这个权限（实测服务器上
+    # teacher 账号确实被拒，这是正确的最小权限配置，不是配置错误）。
+    # 因此演练用 root 连接，只在临时库上操作。
+    root_pwd = env.get("MYSQL_ROOT_PASSWORD", "")
+    if not root_pwd:
+        print("✗ .env 里没有 MYSQL_ROOT_PASSWORD")
+        print("  演练需要建临时库，应用账号没有建库权限（这是对的）")
+        return 1
+    admin = {**conf, "user": "root", "password": root_pwd}
     backup_dir = Path(env.get("BACKUP_DIR", "./backups"))
     if not backup_dir.is_absolute():
         backup_dir = (ROOT / backup_dir).resolve()
@@ -147,16 +157,16 @@ def main() -> int:
 
     # 3) 建临时库
     print(f"\n[3/5] 建临时库 {TEMP_DB}")
-    run_sql(conf, f"DROP DATABASE IF EXISTS `{TEMP_DB}`")
-    run_sql(conf, f"CREATE DATABASE `{TEMP_DB}` "
+    run_sql(admin, f"DROP DATABASE IF EXISTS `{TEMP_DB}`")
+    run_sql(admin, f"CREATE DATABASE `{TEMP_DB}` "
                   "CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci")
 
     # 4) 恢复并计时（RTO）
     print("\n[4/5] 恢复中…")
     started = time.perf_counter()
-    env_pwd = {**os.environ, "MYSQL_PWD": conf["password"]}
+    env_pwd = {**os.environ, "MYSQL_PWD": admin["password"]}
     with gzip.open(latest, "rb") as fh:
-        proc = subprocess.run(mysql_cmd(conf, TEMP_DB), stdin=fh,
+        proc = subprocess.run(mysql_cmd(admin, TEMP_DB), stdin=fh,
                               capture_output=True, env=env_pwd)
     rto = time.perf_counter() - started
     if proc.returncode != 0:
@@ -166,8 +176,8 @@ def main() -> int:
 
     # 5) 比对生产库与恢复库
     print("\n[5/5] 比对表与行数")
-    prod = table_counts(conf, prod_db)
-    restored = table_counts(conf, TEMP_DB)
+    prod = table_counts(admin, prod_db)
+    restored = table_counts(admin, TEMP_DB)
 
     only_prod = set(prod) - set(restored)
     only_restored = set(restored) - set(prod)
@@ -195,7 +205,7 @@ def main() -> int:
             ok = False
 
     if not args.keep_temp:
-        run_sql(conf, f"DROP DATABASE IF EXISTS `{TEMP_DB}`")
+        run_sql(admin, f"DROP DATABASE IF EXISTS `{TEMP_DB}`")
         print(f"\n      已清理临时库 {TEMP_DB}")
     else:
         print(f"\n      临时库 {TEMP_DB} 已保留")
