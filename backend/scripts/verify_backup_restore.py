@@ -165,12 +165,22 @@ def main() -> int:
     print("\n[4/5] 恢复中…")
     started = time.perf_counter()
     env_pwd = {**os.environ, "MYSQL_PWD": admin["password"]}
-    with gzip.open(latest, "rb") as fh:
-        proc = subprocess.run(mysql_cmd(admin, TEMP_DB), stdin=fh,
-                              capture_output=True, env=env_pwd)
+    # 不能把 gzip 文件对象直接交给 subprocess 的 stdin：子进程读的是它的
+    # 底层 fd，拿到的是压缩字节而非解压后的 SQL。这与 backup_db.py 里
+    # 记录的那个坑是同一类，方向相反——必须显式解压后流式喂进去。
+    proc = subprocess.Popen(mysql_cmd(admin, TEMP_DB), stdin=subprocess.PIPE,
+                            stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=env_pwd)
+    try:
+        with gzip.open(latest, "rb") as fh:
+            shutil.copyfileobj(fh, proc.stdin)
+        proc.stdin.close()
+    except BrokenPipeError:
+        pass  # mysql 提前退出，真正的原因在下面的 stderr 里
+    _, err = proc.communicate()
     rto = time.perf_counter() - started
     if proc.returncode != 0:
-        print(f"✗ 恢复失败：{proc.stderr.decode()[:300]}")
+        # stderr 可能混入二进制，errors="replace" 保证错误处理本身不会再崩
+        print(f"✗ 恢复失败：{err.decode('utf-8', errors='replace')[:300]}")
         return 1
     print(f"      ✓ 恢复完成，耗时 {rto:.1f} 秒（RTO）")
 
