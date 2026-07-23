@@ -93,6 +93,10 @@ def run_pipeline(db: Session, job_ids: list[str] | None = None,
             rule_passed=True,
             llm_score=result.get("score"),
             match_reason=result.get("reason"),
+            # 模型已经按条给出了命中点和差距，token 也付过了——不存下来
+            # 推荐页就只剩一个没法解释的分数。
+            matched_points=result.get("matched_points") or None,
+            gaps=result.get("gaps") or None,
             cover_letter=result.get("cover_letter"),
             status=MatchStatus.PENDING_PUSH,
         ))

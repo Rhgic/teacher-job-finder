@@ -238,7 +238,11 @@ class MatchResult(Base):
     )
     rule_passed: Mapped[bool] = mapped_column(Boolean, default=False)  # 第一层规则是否通过
     llm_score: Mapped[int | None] = mapped_column(Integer)            # 第二层 LLM 评分 0-100
-    match_reason: Mapped[str | None] = mapped_column(Text)            # LLM 命中理由
+    match_reason: Mapped[str | None] = mapped_column(Text)            # LLM 一句话综合理由
+    # 命中点与差距是模型逐条给出的结构化结果，也是"这个分数怎么来的"的唯一依据。
+    # 之前没有这两列，等于花 token 让模型算完再扔掉，推荐页只能给一个不可解释的分数。
+    matched_points: Mapped[list | None] = mapped_column(JSON)         # ["学科匹配：语文", ...]
+    gaps: Mapped[list | None] = mapped_column(JSON)                   # JD 要求但简历未体现的点
     cover_letter: Mapped[str | None] = mapped_column(Text)           # 生成的求职信草稿
     status: Mapped[MatchStatus] = mapped_column(
         Enum(MatchStatus), default=MatchStatus.PENDING_PUSH

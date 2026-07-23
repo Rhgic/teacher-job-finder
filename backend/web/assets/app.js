@@ -326,6 +326,26 @@ function animateRings() {
   });
 }
 
+/* 分数拆解：命中点与差距。
+
+   这是「75 分」和「为什么是 75 分」的区别。模型本来就按条输出了这两项，
+   只展示一个总分等于把可解释性丢掉。差距同样要显示——只报命中点会让
+   每个岗位看起来都很合适，用户反而没法排序。 */
+function breakdown(m) {
+  const hits = (m.matched_points || []).filter(Boolean);
+  const gaps = (m.gaps || []).filter(Boolean);
+  if (!hits.length && !gaps.length) return "";
+  const row = (cls, label, items) => items.length ? `
+    <div class="bd-row ${cls}">
+      <span class="bd-label">${label}</span>
+      <div class="bd-items">${items.map((t) => `<span class="bd-chip">${esc(t)}</span>`).join("")}</div>
+    </div>` : "";
+  return `<div class="breakdown">
+    ${row("bd-hit", "✓ 命中", hits)}
+    ${row("bd-gap", "△ 差距", gaps)}
+  </div>`;
+}
+
 async function initRecommendPage() {
   const box = document.getElementById("matches");
   let items = [];
@@ -357,6 +377,11 @@ async function initRecommendPage() {
     const dl = deadlineInfo(j.deadline);
     const reason = m.match_reason || "（规则层已命中，等待 AI 精排评语）";
     const confirmed = m.status === "confirmed";
+    // llm_score 为空 = 这条没被模型评上（调用失败或还没跑）。
+    // 此时 match_reason 里存的是"LLM 匹配失败：xxx"这类内部错误，
+    // 把它塞进「AI 匹配评语」等于拿一句用户看不懂也没法处理的报错冒充评价。
+    // 内部原因留在库和日志里，界面只说清状态和下一步。
+    const scored = m.llm_score != null;
     return `
     <section class="match-card rise" style="animation-delay:${Math.min(i * 60, 300)}ms" data-mid="${esc(m.id)}" data-jid="${esc(j.id || "")}">
       <div class="scorebox">
@@ -375,10 +400,17 @@ async function initRecommendPage() {
         </div>
       </div>
       <div>
+        ${scored ? `
         <div class="remark">
           <span class="eyebrow">✦ AI 匹配评语</span>
           <div>${esc(reason)}</div>
         </div>
+        ${breakdown(m)}` : `
+        <div class="remark remark-muted">
+          <span class="eyebrow">AI 暂未完成评分</span>
+          <div>这个岗位通过了规则层的硬条件，但 AI 精排没有成功。
+          可以先看岗位详情自行判断，或稍后回「我的」重新运行匹配。</div>
+        </div>`}
         ${m.cover_letter ? `
         <details class="cover">
           <summary>AI 起草的求职信</summary>

@@ -113,6 +113,8 @@ class MatchOut(_ORM):
     job_id: str
     llm_score: int | None = None
     match_reason: str | None = None
+    matched_points: list[str] | None = None
+    gaps: list[str] | None = None
     cover_letter: str | None = None
     status: str
     job: JobOut | None = None

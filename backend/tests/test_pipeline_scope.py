@@ -82,6 +82,25 @@ def test_progress_reports_total_before_first_llm_call(db):
     assert stats["new_matches"] == 3
 
 
+def test_match_breakdown_is_persisted(db):
+    """命中点与差距必须落库。
+
+    模型每次都在输出这两项、token 也付了，之前没有列可存就被丢掉，
+    推荐页只剩一个无法解释的分数。这条测试守的就是"别再扔了"。
+    """
+    make_user_with_rule(db, "guest_a")
+    db.add(Job(school_name="南山实验学校", subject="语文", stage="小学"))
+    db.flush()
+
+    run_pipeline(db)
+
+    match = db.scalars(select(MatchResult)).one()
+    assert match.matched_points  # stub 也会给出命中点
+    assert isinstance(match.matched_points, list)
+    # gaps 为空数组时存 NULL 而不是 []，前端两种都按"无差距"渲染
+    assert match.gaps is None or isinstance(match.gaps, list)
+
+
 def test_progress_is_optional(db):
     """不传回调时行为不变——定时任务与管理端调用不需要进度。"""
     make_user_with_rule(db, "guest_a")

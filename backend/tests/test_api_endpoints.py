@@ -244,6 +244,32 @@ def test_rules_are_scoped_to_owner(client, seeded, session_factory):
     assert len(theirs) == 1
 
 
+def test_recommendations_expose_match_breakdown(client, seeded, session_factory):
+    """/recommendations 必须把命中点与差距带给前端。
+
+    存了不返回，等于换个地方丢掉——推荐页依然只能显示一个光秃秃的分数。
+    """
+    from models import MatchResult, SubRule
+
+    with session_factory() as db:
+        rule = SubRule(user_id=seeded["user_id"], name="规则")
+        db.add(rule)
+        db.flush()
+        db.add(MatchResult(
+            rule_id=rule.id, job_id=seeded["open_job"], user_id=seeded["user_id"],
+            rule_passed=True, llm_score=82,
+            match_reason="学科与区域均匹配",
+            matched_points=["学科匹配：语文", "区域符合：南山区"],
+            gaps=["JD 要求班主任经验，简历未体现"],
+        ))
+        db.commit()
+
+    body = client.get("/recommendations", headers=auth(seeded["token"])).json()
+    assert len(body) == 1
+    assert body[0]["matched_points"] == ["学科匹配：语文", "区域符合：南山区"]
+    assert body[0]["gaps"] == ["JD 要求班主任经验，简历未体现"]
+
+
 # ---------------- 异步匹配任务 ----------------
 
 def test_refresh_falls_back_to_sync_when_queue_unavailable(client, seeded):

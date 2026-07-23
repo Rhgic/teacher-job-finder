@@ -200,6 +200,37 @@ button { font: inherit; cursor: pointer; border: 0; background: none; color: inh
   margin-bottom: 3px;
 }
 
+/* 兜底态：模型没评上分时用中性灰，不套品牌渐变。
+   评语框的视觉分量代表"这是 AI 的判断"，没有判断时不该保留那份分量。 */
+.remark-muted { background: #f3f4f8; color: var(--ink-2); }
+.remark-muted::before { background: var(--ink-3); }
+.remark-muted .eyebrow {
+  background: none; -webkit-text-fill-color: var(--ink-2); color: var(--ink-2);
+}
+
+/* ---------- 分数拆解：命中点 / 差距 ---------- */
+.breakdown { margin-top: 10px; display: grid; gap: 6px; }
+.bd-row { display: flex; gap: 10px; align-items: baseline; flex-wrap: wrap; }
+.bd-label {
+  flex: none; font-size: 11.5px; font-weight: 700; letter-spacing: .04em;
+  padding-top: 2px;
+}
+.bd-hit .bd-label { color: var(--ok); }
+.bd-gap .bd-label { color: var(--warn); }
+.bd-items { display: flex; flex-wrap: wrap; gap: 6px; }
+.bd-chip {
+  font-size: 12.5px; line-height: 1.5; padding: 3px 9px;
+  border-radius: 99px; border: 1px solid transparent;
+}
+.bd-hit .bd-chip { background: var(--ok-bg); color: var(--ok); }
+.bd-gap .bd-chip { background: var(--warn-bg); color: var(--warn); }
+
+@media (max-width: 640px) {
+  /* 窄屏下标签独占一行，chip 不至于被挤成一列 */
+  .bd-row { display: block; }
+  .bd-label { display: block; margin-bottom: 4px; }
+}
+
 .cover { margin-top: 10px; }
 .cover summary {
   font-size: 12.5px; color: var(--ink-2); cursor: pointer; user-select: none;
