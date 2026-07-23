@@ -106,3 +106,41 @@ def test_district_prefers_earliest_mention(text, expected):
     from services.crawler import _guess_district
 
     assert _guess_district(text) == expected
+
+
+def test_empty_crawl_is_reported_not_silent(monkeypatch, tmp_path, caplog):
+    """抓到 0 条必须记 ERROR。
+
+    这些站点是 HTML 解析，改版后爬虫会静默返回空、定时任务照常"成功"退出，
+    数据悄悄停止增长而没有任何信号——静默失败比崩溃更难发现。
+    """
+    import logging
+
+    from scripts import run_scheduled_crawl as job
+
+    class EmptyCrawler:
+        source = "fake"
+        obey_robots = True
+        min_interval_sec = 2.0
+        cache_ttl_sec = 1800
+        max_detail_pages = 10
+
+        def fetch(self):
+            return []
+
+    monkeypatch.setattr(job, "CRAWLERS", {"fake": EmptyCrawler})
+    monkeypatch.setattr(job, "init_db", lambda: None)
+    monkeypatch.setattr(job, "upsert_jobs", lambda db, raws: {"new": 0, "updated": 0})
+
+    class _NullSession:
+        def __enter__(self): return self
+        def __exit__(self, *a): return False
+
+    monkeypatch.setattr(job, "SessionLocal", _NullSession)
+
+    args = job.parse_args(["--source", "fake", "--no-match"])
+    with caplog.at_level(logging.ERROR):
+        result = job.run_once(args)
+
+    assert result["empty_sources"] == ["fake"]
+    assert "crawl_returned_nothing" in caplog.text

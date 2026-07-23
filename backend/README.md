@@ -21,6 +21,34 @@ uvicorn main:app --reload      # 访问 http://127.0.0.1:8000/docs
 `mysql+pymysql://teacher:teacher_dev_pwd@127.0.0.1:3306/teacher_jobs?charset=utf8mb4`。
 已有 SQLite 数据可整库搬迁：`python scripts/migrate_sqlite_to_mysql.py --source sqlite:///./teacher_jobs.db --target "<MySQL URL>" --truncate`。
 
+## RAG 检索质量评测
+
+光看几个例子说"效果不错"没有说服力，改了检索逻辑之后也无从判断是好是坏。
+`scripts/eval_rag.py` 给出可复跑、出数字的基线：24 道题
+（20 道语料里有答案、4 道确实没有）。
+
+```bash
+python scripts/eval_rag.py              # 完整评测
+python scripts/eval_rag.py --no-expand  # 关掉查询扩展做对照
+```
+
+当前基线（105 个岗位、123 个公告切片）：
+
+| 指标 | 关查询扩展 | 开查询扩展 |
+| --- | --- | --- |
+| 召回率 | 95% | **100%** |
+| P@1 | 90% | **95%** |
+| P@3 | 95% | **100%** |
+| 正确拒答率 | 100% | 100% |
+
+拒答那 4 道守的是防幻觉红线：语料里确实没有的信息，
+正确行为是回"公告未提及"而不是硬凑一个答案。
+两种配置下都是 100%——**查询扩展提升了召回，没有以牺牲拒答为代价**，
+这一点必须同时看，只看召回会掩盖幻觉变多的风险。
+
+题目用"含答案的片段里必然出现的词"而非精确答案来判定，
+因为语料会随爬虫更新，绑死具体答案会让评测集很快失效。
+
 ## 容量：压测实测与连接池
 
 单实例压测（本机 MySQL 8 + 105 条岗位，打最重的读路径 `GET /jobs?size=100`）：
