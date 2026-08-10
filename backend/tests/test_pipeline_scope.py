@@ -118,4 +118,44 @@ def test_unknown_user_matches_nothing(db):
 
     stats = run_pipeline(db, user_id="no-such-user")
 
-    assert stats == {"rules": 0, "jobs": 1, "new_matches": 0}
+    assert stats == {"rules": 0, "jobs": 1, "new_matches": 0, "skipped": 0}
+
+
+def test_concurrent_unique_conflict_skips_only_one_and_keeps_paid_results(db, monkeypatch):
+    """模拟另一 worker 抢先写入造成的唯一约束冲突。
+
+    冲突前后的结果都必须真正落库；这比只断言“不报错”更重要，
+    因为它守的是已付费的模型结果不被整批回滚。
+    """
+    user = make_user_with_rule(db, "guest_a")
+    rule = db.scalars(select(SubRule).where(SubRule.user_id == user.id)).one()
+    jobs = [
+        Job(school_name="先成功", subject="语文", stage="小学", description="first"),
+        Job(school_name="并发冲突", subject="语文", stage="小学", description="conflict"),
+        Job(school_name="后成功", subject="语文", stage="小学", description="last"),
+    ]
+    db.add_all(jobs)
+    db.flush()
+    conflict_job_id = jobs[1].id
+    injected = False
+
+    def concurrent_match(_resume, description, _intent):
+        nonlocal injected
+        if description == "conflict" and not injected:
+            injected = True
+            # 在本 worker 预查询完之后抢先写入，等价于另一 worker 获胜。
+            db.add(MatchResult(
+                rule_id=rule.id, job_id=conflict_job_id, user_id=user.id,
+                rule_passed=True, llm_score=88,
+            ))
+            db.commit()
+        return {"score": 75, "reason": "stub"}
+
+    monkeypatch.setattr("services.pipeline.match_resume_to_job", concurrent_match)
+    stats = run_pipeline(db)
+
+    assert stats["new_matches"] == 2
+    assert stats["skipped"] == 1
+    rows = db.scalars(select(MatchResult)).all()
+    assert len(rows) == 3
+    assert {m.job.school_name for m in rows} == {"先成功", "并发冲突", "后成功"}

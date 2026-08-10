@@ -11,6 +11,7 @@ from collections.abc import Callable
 from datetime import date
 
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from models import (
@@ -81,6 +82,7 @@ def run_pipeline(db: Session, job_ids: list[str] | None = None,
 
     summaries: dict[str, str] = {}
     created = 0
+    skipped = 0
     for done, (rule, job) in enumerate(todo, start=1):
         if rule.id not in summaries:
             summaries[rule.id] = _resume_summary_for(rule)
@@ -88,24 +90,37 @@ def run_pipeline(db: Session, job_ids: list[str] | None = None,
 
         # 第二层：LLM 匹配
         result = match_resume_to_job(summaries[rule.id], job.description or "", intent)
-        db.add(MatchResult(
-            rule_id=rule.id, job_id=job.id, user_id=rule.user_id,
-            rule_passed=True,
-            llm_score=result.get("score"),
-            match_reason=result.get("reason"),
-            # 模型已经按条给出了命中点和差距，token 也付过了——不存下来
-            # 推荐页就只剩一个没法解释的分数。
-            matched_points=result.get("matched_points") or None,
-            gaps=result.get("gaps") or None,
-            cover_letter=result.get("cover_letter"),
-            status=MatchStatus.PENDING_PUSH,
-        ))
-        created += 1
+        try:
+            # 预查询只能减少重复调用，不能作为并发下的唯一保证。
+            # savepoint 让唯一约束冲突只回滚当前这一条，不污染整个 Session。
+            with db.begin_nested():
+                db.add(MatchResult(
+                    rule_id=rule.id, job_id=job.id, user_id=rule.user_id,
+                    rule_passed=True,
+                    llm_score=result.get("score"),
+                    match_reason=result.get("reason"),
+                    # 模型已经按条给出了命中点和差距，token 也付过了——不存下来
+                    # 推荐页就只剩一个没法解释的分数。
+                    matched_points=result.get("matched_points") or None,
+                    gaps=result.get("gaps") or None,
+                    cover_letter=result.get("cover_letter"),
+                    status=MatchStatus.PENDING_PUSH,
+                ))
+                db.flush()
+        except IntegrityError:
+            # 另一个 worker 已先落库，这是正常的并发结果。
+            skipped += 1
+        else:
+            # 每次模型调用后立即持久化：后续单条失败不能丢掉已付费结果。
+            db.commit()
+            created += 1
         if on_progress:
             on_progress(done, total)
 
-    db.commit()
-    return {"rules": len(rules), "jobs": len(jobs), "new_matches": created}
+    return {
+        "rules": len(rules), "jobs": len(jobs),
+        "new_matches": created, "skipped": skipped,
+    }
 
 
 def generate_tailored_resume(db: Session, match: MatchResult) -> ResumeVersion:
