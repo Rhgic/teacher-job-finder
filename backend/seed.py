@@ -16,8 +16,7 @@ from datetime import date
 
 from database import engine, SessionLocal, init_db
 from models import (
-    Base, User, UserProfile, Resume, Template, Job, SubRule,
-    MatchResult, SchoolType, MatchStatus,
+    Base, User, UserProfile, Resume, Template, Job, SubRule, SchoolType,
 )
 
 
@@ -119,28 +118,21 @@ def seed() -> None:
                 recruiter_email=f"hr{i:02d}@example.edu.cn",
                 description=f"{data['school_name']}招聘{data['stage']}{data['subject']}教师，"
                             f"要求相关专业、持教师资格证。",
-                deadline=date(2026, 7, 31),
+                # 截止日期设为未来：run_pipeline 会跳过 deadline<今天 的岗位，
+                # 若仍是 2026-07-31（已过期），点"重新评分"会因全部被跳过而 0 new_matches，
+                # 真实 LLM 分数永远不会出现。改未来日期后按钮才能真正触发评分。
+                deadline=date(2026, 12, 31),
                 content_hash=job_hash(data["school_name"], data["subject"], data["stage"]),
                 **data,
             )
             jobs.append(job)
             db.add(job)
-        db.flush()
-
-        # --- 4. 跑第一层规则过滤，生成匹配结果（llm_score 留空，待第二层填）---
-        hit = 0
-        for job in jobs:
-            passed = rule_matches_job(rule, job)
-            if passed:
-                db.add(MatchResult(
-                    rule_id=rule.id, job_id=job.id, user_id=user.id,
-                    rule_passed=True, status=MatchStatus.PENDING_PUSH,
-                    # llm_score / match_reason / cover_letter 由后续 LLM 步骤填充
-                ))
-                hit += 1
-
         db.commit()
-        print(f"✅ 种子数据写入完成：1 个用户 · {len(jobs)} 个岗位 · {hit} 条规则命中（待 LLM 评分）")
+        # 匹配结果（含真实 LLM 评分）不再在此预建：
+        # run_pipeline 对已有 (rule,job) 是幂等跳过的，预建会让用户点"重新评分"时
+        # 这些行被跳过、永远停在 llm_score=null，真实分数出不来。
+        # 改为首刷时由 run_pipeline 实时生成。
+        print(f"✅ 种子数据写入完成：1 个用户 · {len(jobs)} 个岗位 · 1 条订阅规则（评分待首次「重新评分」）")
     finally:
         db.close()
 
