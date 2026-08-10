@@ -29,7 +29,17 @@ const api = async (path, options = {}) => {
   const resp = await fetch(path, { ...options, headers });
   if (!resp.ok) {
     let detail = `HTTP ${resp.status}`;
-    try { detail = (await resp.json()).detail || detail; } catch (_) { /* 非 JSON 响应 */ }
+    try {
+      const body = await resp.json();
+      const problem = body.detail;
+      // FastAPI/Pydantic 的 422 detail 是字段错误数组。直接塞进 Error 会变成
+      // "[object Object]"，用户看不出该改邮箱、密码还是其它输入。
+      if (Array.isArray(problem)) {
+        detail = problem.map((item) => item.msg || "输入不正确").join("；");
+      } else if (typeof problem === "string") {
+        detail = problem;
+      }
+    } catch (_) { /* 非 JSON 响应 */ }
     throw new ApiError(resp.status, detail);
   }
   return resp.json();
