@@ -134,4 +134,4 @@ app.mount("/web", StaticFiles(directory=Path(__file__).parent / "web", html=True
 
 @app.get("/", include_in_schema=False)
 def root_to_web():
-    return RedirectResponse("/web/")
+    return RedirectResponse("/web/redesign.html")
