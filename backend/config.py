@@ -45,6 +45,12 @@ class Settings:
     # 管理接口令牌。生产环境用于保护爬虫、后台任务等非普通用户接口。
     ADMIN_API_TOKEN: str = os.getenv("ADMIN_API_TOKEN", "")
 
+    # 用户 API Key 的加密主密钥（Fernet，32 字节 urlsafe-base64）。
+    # 刻意**不给开发默认值**：给了默认值就等于所有开发机共用同一把密钥，
+    # 而且忘记配置时不会有任何报错。缺失时 services/crypto.py 抛错、
+    # 应用启动失败；测试由 tests/conftest.py 显式注入固定测试密钥。
+    APP_ENCRYPTION_KEY: str = os.getenv("APP_ENCRYPTION_KEY", "")
+
     # 对象存储 COS（简历 PDF）；未配置则渲染到本地目录
     COS_REGION: str = os.getenv("COS_REGION", "")
     COS_BUCKET: str = os.getenv("COS_BUCKET", "")

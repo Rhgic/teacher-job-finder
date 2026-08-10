@@ -3,13 +3,16 @@
 框架、目录、路由、服务层已接好线并可启动。**机械逻辑已实现**，
 **需要动脑的部分留成带说明的 stub**，照下表填即可，不要改动整体结构与既有约定。
 
-## 启动（先确认骨架能跑）
+## 启动
 ```bash
 pip install -r requirements.txt
-python seed.py                 # 建表 + 种子数据（1 用户 + 12 岗位 + 1 规则）
+export APP_ENCRYPTION_KEY="$(python -c 'from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())')"
+alembic upgrade head           # 建库/升级；不要用 create_all 代替迁移
+python seed.py                 # 种子数据（1 用户 + 12 岗位 + 1 规则）
 uvicorn main:app --reload      # 访问 http://127.0.0.1:8000/docs
 ```
-默认 `LLM_STUB_MODE=1`、`MAILER_DRY_RUN=1`：无需任何外部 Key/网络即可端到端跑通。
+默认 `LLM_STUB_MODE=1`、`MAILER_DRY_RUN=1`：无需任何外部模型 Key/网络即可跑通；
+但 `APP_ENCRYPTION_KEY` 必须显式配置，用于加密用户自己的 DeepSeek Key。
 试一下：`POST /pipeline/run` → `GET /recommendations` 能看到带占位评分的推荐。
 开发模式手动抓取深圳本地教师岗位：`POST /crawl/run?source=all&max_detail_pages=12`；生产模式需带 `X-Admin-Token: ADMIN_API_TOKEN`，避免公开域名被外部反复触发。
 查看抓取源合规策略：`GET /crawl/sources`。
@@ -167,7 +170,8 @@ arq services.tasks.WorkerSettings      # 在 backend/ 下启动 worker
 
 ```bash
 alembic upgrade head                      # 建库/升级到最新
-alembic downgrade -1                      # 回滚一步
+# a421c6e81d02（邮箱密码与加密 Key）禁止 downgrade，避免销毁用户凭据；
+# 对这类结构请用一条新迁移修复，而不是强行回滚。
 alembic current                           # 当前版本
 alembic check                             # 模型与库是否有差异（CI 会跑）
 
@@ -219,9 +223,10 @@ migrations/      Alembic 迁移脚本（env.py 从 DATABASE_URL 取连接串）
 | `services/resume_tailor.py` | `_maybe_upload_cos` | 用 cos-python-sdk-v5 上传 PDF 返回 URL | 需你的 COS 桶与密钥 |
 | 阶段 3 | 简历 PDF→结构化 | 把上传 PDF 解析进 `resumes.structured_content`（可 LLM 抽取；先支持手填） | 增强项，非阻塞 |
 
-**真实运行需配置的环境变量**：`DEEPSEEK_API_KEY`（设 `LLM_STUB_MODE=0`）、
+**真实运行需配置的环境变量**：`APP_ENCRYPTION_KEY`（用户 Key 的加密主密钥，缺失即拒绝启动）、
+`DEEPSEEK_API_KEY`（平台统一 Key 的旧模式，设 `LLM_STUB_MODE=0`）、
 `SMTP_*`（设 `MAILER_DRY_RUN=0`）、`WECHAT_APPID`/`WECHAT_SECRET`/`SESSION_SECRET`/`ADMIN_API_TOKEN`（设 `AUTH_DEV_MODE=0`）、
-可选 `COS_*`。全不配时默认开发模式仍可端到端跑通。
+可选 `COS_*`。除加密主密钥外，其余均可不配并以开发模式运行。
 
 ## 红线（实现时不可破）
 - 投递必须用户确认（单条或批量），**不做全自动投递**。

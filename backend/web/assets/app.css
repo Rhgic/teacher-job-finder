@@ -429,6 +429,48 @@ button { font: inherit; cursor: pointer; border: 0; background: none; color: inh
 .guest-banner .quit { font-size: 12px; color: var(--ink-3); cursor: pointer; }
 .guest-banner .quit:hover { color: var(--danger); }
 
+/* ---------- 我的：账号与模型配置 ---------- */
+.account-wrap { max-width: 980px; }
+.account-hero { max-width: 680px; margin: 18px 0 28px; }
+.account-kicker { color: var(--brand); font-size: 11px; font-weight: 800; letter-spacing: .14em; margin-bottom: 6px; }
+.account-hero h1 { font-size: clamp(26px, 4vw, 36px); line-height: 1.24; letter-spacing: -.03em; }
+.account-hero > p:last-child { color: var(--ink-2); margin-top: 10px; font-size: 15px; }
+.auth-layout { display: grid; grid-template-columns: .92fr 1.08fr; background: var(--surface); border: 1px solid var(--line); border-radius: 20px; overflow: hidden; box-shadow: var(--shadow); }
+.auth-note { background: linear-gradient(145deg, #eef0ff 0%, #f7f8ff 64%, #fff 100%); padding: 38px; display: flex; flex-direction: column; align-items: flex-start; }
+.file-mark { width: 42px; height: 42px; border-radius: 13px; display: grid; place-items: center; margin-bottom: 22px; color: #fff; font-weight: 800; background: var(--brand-grad); box-shadow: 0 10px 24px rgba(70, 83, 240, .2); }
+.auth-note h2 { font-size: 21px; letter-spacing: -.02em; }
+.auth-note p { color: var(--ink-2); margin: 9px 0 24px; max-width: 280px; }
+.auth-card { box-shadow: none; border: 0; margin: 0; padding: 34px 38px; border-radius: 0; }
+.auth-tabs { display: flex; border-bottom: 1px solid var(--line); margin-bottom: 22px; }
+.auth-tab { padding: 0 0 10px; margin-right: 24px; color: var(--ink-3); font-weight: 700; border-bottom: 2px solid transparent; }
+.auth-tab.on { color: var(--brand); border-color: var(--brand); }
+.auth-card .field { margin-bottom: 15px; }
+.field label span { color: var(--ink-3); font-weight: 400; }
+.auth-submit { width: 100%; margin-top: 5px; }
+.form-message { min-height: 22px; margin-top: 10px; font-size: 12.5px; color: var(--ink-2); }
+.form-message.err { color: var(--danger); }
+.form-message.ok { color: var(--ok); }
+.account-summary { display: flex; justify-content: space-between; gap: 20px; align-items: center; padding: 20px 0; border-bottom: 1px solid var(--line); margin-bottom: 18px; }
+.account-summary h2 { font-size: 22px; letter-spacing: -.02em; }
+.account-summary > div > p:last-child { color: var(--ink-2); font-size: 13px; margin-top: 3px; }
+.account-grid { display: grid; grid-template-columns: 1.15fr .85fr; gap: 18px; align-items: start; }
+.model-card { background: linear-gradient(135deg, #fff 0%, #f8f9ff 100%); }
+.section-head { display: flex; justify-content: space-between; gap: 14px; align-items: flex-start; }
+.config-badge { flex: 0 0 auto; border: 1px solid var(--line); border-radius: 99px; padding: 3px 9px; color: var(--ink-3); font-size: 11px; font-weight: 700; }
+.config-badge.ok { border-color: #aee1cd; background: var(--ok-bg); color: var(--ok); }
+.model-state { display: flex; flex-direction: column; gap: 2px; border-left: 3px solid var(--brand); padding: 9px 12px; background: var(--tint); margin: 18px 0; font-size: 12.5px; }
+.model-state strong { font-family: var(--font-num); font-size: 13px; }
+.model-state span { color: var(--ink-2); }
+.model-form .field { margin-bottom: 14px; }
+.model-actions { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-top: 18px; }
+.security-copy { margin-top: 16px; padding-top: 14px; border-top: 1px dashed var(--line); color: var(--ink-3); font-size: 11.5px; line-height: 1.65; }
+
+@media (max-width: 720px) {
+  .auth-layout, .account-grid { grid-template-columns: 1fr; }
+  .auth-note, .auth-card { padding: 28px 24px; }
+  .account-summary { align-items: flex-start; flex-direction: column; }
+}
+
 .run-bar { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-top: 4px; }
 .btn-grad {
   background: var(--brand-grad); color: #fff; font-weight: 700;

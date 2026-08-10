@@ -3,7 +3,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from database import get_db
-from deps import get_current_user
+from deps import get_current_user, require_registered_user
 from models import User, SubRule
 from schemas import RuleIn, RuleOut
 
@@ -19,7 +19,7 @@ def list_rules(user: User = Depends(get_current_user)):
 def create_rule(
     body: RuleIn,
     db: Session = Depends(get_db),
-    user: User = Depends(get_current_user),
+    user: User = Depends(require_registered_user),
 ):
     rule = SubRule(user_id=user.id, **body.model_dump())
     db.add(rule)
@@ -33,7 +33,7 @@ def update_rule(
     rule_id: str,
     body: RuleIn,
     db: Session = Depends(get_db),
-    user: User = Depends(get_current_user),
+    user: User = Depends(require_registered_user),
 ):
     rule = db.get(SubRule, rule_id)
     if rule is None or rule.user_id != user.id:
@@ -49,7 +49,7 @@ def update_rule(
 def delete_rule(
     rule_id: str,
     db: Session = Depends(get_db),
-    user: User = Depends(get_current_user),
+    user: User = Depends(require_registered_user),
 ):
     rule = db.get(SubRule, rule_id)
     if rule is None or rule.user_id != user.id:

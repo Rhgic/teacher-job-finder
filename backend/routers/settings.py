@@ -4,7 +4,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from database import get_db
-from deps import get_current_user
+from deps import require_registered_user
 from models import User, UserSetting
 from schemas import SettingIn, SettingOut
 
@@ -28,7 +28,7 @@ def _ensure_key(key: str) -> None:
 def get_setting(
     key: str,
     db: Session = Depends(get_db),
-    user: User = Depends(get_current_user),
+    user: User = Depends(require_registered_user),
 ):
     _ensure_key(key)
     setting = db.scalar(
@@ -49,7 +49,7 @@ def put_setting(
     key: str,
     body: SettingIn,
     db: Session = Depends(get_db),
-    user: User = Depends(get_current_user),
+    user: User = Depends(require_registered_user),
 ):
     _ensure_key(key)
     setting = db.scalar(

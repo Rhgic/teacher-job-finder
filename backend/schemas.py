@@ -46,7 +46,8 @@ class ProfileIn(BaseModel):
 
 
 class ProfileOut(_ORM, ProfileIn):
-    id: str
+    # 新账号首次进入"我的"时，空档案是正常状态，不该靠 404 表达。
+    id: str | None = None
     updated_at: datetime | None = None
 
 

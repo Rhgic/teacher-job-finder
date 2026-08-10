@@ -1,10 +1,18 @@
 /* 教师求职 Demo · 共享脚本
    同源部署（FastAPI StaticFiles 挂载），fetch 直接打相对路径，无 CORS。 */
 
-/* 体验身份令牌：存在则所有请求自动携带；不存在时后端(dev 模式)回退 demo 用户 */
-const TOKEN_KEY = "tjf_guest_token";
-const getToken = () => localStorage.getItem(TOKEN_KEY);
-const clearToken = () => localStorage.removeItem(TOKEN_KEY);
+/* 登录令牌：兼容旧体验身份，新账号统一写入 session token key。 */
+const TOKEN_KEY = "tjf_session_token";
+const LEGACY_GUEST_TOKEN_KEY = "tjf_guest_token";
+const getToken = () => localStorage.getItem(TOKEN_KEY) || localStorage.getItem(LEGACY_GUEST_TOKEN_KEY);
+const saveToken = (token) => {
+  localStorage.setItem(TOKEN_KEY, token);
+  localStorage.removeItem(LEGACY_GUEST_TOKEN_KEY);
+};
+const clearToken = () => {
+  localStorage.removeItem(TOKEN_KEY);
+  localStorage.removeItem(LEGACY_GUEST_TOKEN_KEY);
+};
 
 class ApiError extends Error {
   constructor(status, message) {
@@ -30,17 +38,17 @@ const api = async (path, options = {}) => {
 async function ensureGuest() {
   if (getToken()) return getToken();
   const d = await api("/auth/guest", { method: "POST" });
-  localStorage.setItem(TOKEN_KEY, d.token);
+  saveToken(d.token);
   return d.token;
 }
 
 function showIdentityRequired(box, pageName) {
   // 生产密钥轮换后，浏览器里的旧令牌也会失效；先清掉，确保「我的」页
-  // 能重新展示“创建体验身份”按钮。这里不静默创建身份，仍由用户明确点击。
+  // 能重新展示注册/登录入口。这里不静默创建身份，仍由用户明确决定是否登录。
   clearToken();
   box.innerHTML = `<div class="state">
-    <div class="big">查看${esc(pageName)}前，请先创建体验身份</div>
-    <div>去<a class="cta-inline" href="me.html">「我的」页</a>点击“创建体验身份”，再回来查看</div>
+    <div class="big">查看${esc(pageName)}前，请先登录</div>
+    <div>去<a class="cta-inline" href="me.html">「我的」页</a>注册或登录后，再回来查看</div>
   </div>`;
 }
 
@@ -351,6 +359,202 @@ async function initJobsPage() {
     }).join("");
   }
   render();
+}
+
+/* ---------- 我的页（邮箱账户 + 模型配置） ---------- */
+
+function initAccountPage() {
+  const authArea = document.getElementById("authArea");
+  const guestNotice = document.getElementById("guestNotice");
+  const memberArea = document.getElementById("memberArea");
+  const authForm = document.getElementById("authForm");
+  const authMessage = document.getElementById("authMessage");
+  const authSubmit = document.getElementById("authSubmit");
+  const nicknameField = document.getElementById("nicknameField");
+  const deleteModelBtn = document.getElementById("deleteModelBtn");
+  let authMode = "register";
+  let modelConfigured = false;
+
+  const setMessage = (element, text = "", isError = false) => {
+    element.textContent = text;
+    element.classList.toggle("err", isError);
+    element.classList.toggle("ok", Boolean(text) && !isError);
+  };
+
+  const setAuthMode = (mode) => {
+    authMode = mode;
+    nicknameField.hidden = mode === "login";
+    authSubmit.textContent = mode === "register" ? "创建账号" : "登录并继续";
+    document.getElementById("authPassword").setAttribute(
+      "autocomplete", mode === "register" ? "new-password" : "current-password",
+    );
+    document.querySelectorAll(".auth-tab").forEach((tab) => {
+      const active = tab.dataset.authMode === mode;
+      tab.classList.toggle("on", active);
+      tab.setAttribute("aria-selected", String(active));
+    });
+    setMessage(authMessage);
+  };
+
+  const renderConfig = (config) => {
+    const badge = document.getElementById("configBadge");
+    const state = document.getElementById("modelState");
+    const keyInput = document.getElementById("modelKey");
+    const model = document.getElementById("modelSelect");
+    modelConfigured = Boolean(config.configured);
+    if (!config.configured) {
+      badge.textContent = "未配置";
+      badge.className = "config-badge";
+      state.innerHTML = "<strong>还没有配置 Key</strong><span>添加后，AI 匹配和公告问答才会调用你的 DeepSeek 账户。</span>";
+      keyInput.placeholder = "sk-...";
+      keyInput.required = true;
+      deleteModelBtn.hidden = true;
+      return;
+    }
+    badge.textContent = "已验证";
+    badge.className = "config-badge ok";
+    state.innerHTML = `<strong>${esc(config.masked_key)}</strong><span>模型：${esc(config.model)}${config.last_verified_at ? ` · 最近校验：${esc(new Date(config.last_verified_at).toLocaleString())}` : ""}</span>`;
+    model.value = config.model;
+    keyInput.placeholder = "不修改 Key 请留空";
+    keyInput.required = false;
+    deleteModelBtn.hidden = false;
+  };
+
+  const loadProfile = async () => {
+    try {
+      const profile = await api("/profile");
+      document.getElementById("profileName").value = profile.real_name || "";
+      document.getElementById("profileEducation").value = profile.education || "";
+      document.getElementById("profileMajor").value = profile.major || "";
+      document.getElementById("profileSubject").value = profile.subject || "";
+    } catch (error) {
+      if (error.status !== 404) setMessage(document.getElementById("profileMessage"), error.message, true);
+    }
+  };
+
+  const showMember = async (user) => {
+    authArea.hidden = true;
+    guestNotice.hidden = true;
+    memberArea.hidden = false;
+    document.getElementById("memberName").textContent = user.nickname || "我的工作台";
+    document.getElementById("memberEmail").textContent = user.email || "已使用微信身份登录";
+    const config = await api("/model-config");
+    renderConfig(config);
+    await loadProfile();
+  };
+
+  const showLoggedOut = (guest = false) => {
+    authArea.hidden = false;
+    memberArea.hidden = true;
+    guestNotice.hidden = !guest;
+    setAuthMode("register");
+  };
+
+  document.querySelectorAll(".auth-tab").forEach((tab) => {
+    tab.addEventListener("click", () => setAuthMode(tab.dataset.authMode));
+  });
+  document.getElementById("guestToRegister").addEventListener("click", () => {
+    authArea.scrollIntoView({ behavior: "smooth", block: "start" });
+    document.getElementById("authEmail").focus();
+  });
+
+  authForm.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const email = document.getElementById("authEmail").value.trim();
+    const password = document.getElementById("authPassword").value;
+    const nickname = document.getElementById("authNickname").value.trim();
+    authSubmit.disabled = true;
+    setMessage(authMessage, authMode === "register" ? "正在创建账号…" : "正在登录…");
+    try {
+      const body = authMode === "register" ? { email, password, nickname: nickname || null } : { email, password };
+      const result = await api(authMode === "register" ? "/auth/register" : "/auth/login", {
+        method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body),
+      });
+      saveToken(result.token);
+      authForm.reset();
+      await showMember(result);
+    } catch (error) {
+      setMessage(authMessage, error.message, true);
+    } finally {
+      authSubmit.disabled = false;
+    }
+  });
+
+  document.getElementById("logoutBtn").addEventListener("click", () => {
+    clearToken();
+    showLoggedOut();
+  });
+
+  document.getElementById("modelForm").addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const message = document.getElementById("modelMessage");
+    const keyInput = document.getElementById("modelKey");
+    const model = document.getElementById("modelSelect").value;
+    document.getElementById("saveModelBtn").disabled = true;
+    const newKey = keyInput.value.trim();
+    setMessage(message, newKey ? "正在向 DeepSeek 校验 Key…" : "正在更新默认模型…");
+    try {
+      if (!newKey && !modelConfigured) {
+        throw new Error("请先输入 DeepSeek API Key。");
+      }
+      const config = await api("/model-config", {
+        method: newKey ? "PUT" : "PATCH", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(newKey ? { api_key: newKey, model } : { model }),
+      });
+      keyInput.value = "";
+      renderConfig(config);
+      setMessage(message, newKey ? "已校验并加密保存。" : "默认模型已更新。", false);
+    } catch (error) {
+      setMessage(message, error.message, true);
+    } finally {
+      document.getElementById("saveModelBtn").disabled = false;
+    }
+  });
+
+  deleteModelBtn.addEventListener("click", async () => {
+    if (!confirm("删除后 AI 匹配与公告问答将不可用，确定删除这个 Key？")) return;
+    const message = document.getElementById("modelMessage");
+    try {
+      await api("/model-config", { method: "DELETE" });
+      document.getElementById("modelKey").value = "";
+      renderConfig({ configured: false });
+      setMessage(message, "Key 已删除。", false);
+    } catch (error) {
+      setMessage(message, error.message, true);
+    }
+  });
+
+  document.getElementById("profileForm").addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const message = document.getElementById("profileMessage");
+    setMessage(message, "正在保存资料…");
+    try {
+      await api("/profile", {
+        method: "PUT", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          real_name: document.getElementById("profileName").value.trim() || null,
+          education: document.getElementById("profileEducation").value || null,
+          major: document.getElementById("profileMajor").value.trim() || null,
+          subject: document.getElementById("profileSubject").value.trim() || null,
+        }),
+      });
+      setMessage(message, "资料已保存。", false);
+    } catch (error) {
+      setMessage(message, error.message, true);
+    }
+  });
+
+  if (!getToken()) {
+    showLoggedOut();
+    return;
+  }
+  api("/auth/me").then((user) => {
+    if (user.is_guest) showLoggedOut(true);
+    else showMember(user);
+  }).catch(() => {
+    clearToken();
+    showLoggedOut();
+  });
 }
 
 /* ---------- 推荐页（成绩单） ---------- */

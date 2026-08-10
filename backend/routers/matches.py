@@ -8,7 +8,7 @@ from sqlalchemy import case, select
 from sqlalchemy.orm import Session
 
 from database import get_db
-from deps import get_current_user, require_admin_token
+from deps import require_admin_token, require_registered_user
 from models import User, Job, MatchResult
 from schemas import MatchOut
 from services import pipeline, ratelimit, tasks
@@ -20,7 +20,7 @@ router = APIRouter(tags=["matches"])
 async def refresh_my_matches(
     request: Request,
     db: Session = Depends(get_db),
-    user: User = Depends(get_current_user),
+    user: User = Depends(require_registered_user),
 ):
     """只对当前用户的规则跑一遍匹配管道（规则粗筛 + LLM 精排）。
 
@@ -84,7 +84,7 @@ async def refresh_my_matches(
 @router.get("/matches/refresh/{task_id}")
 def refresh_status(
     task_id: str,
-    user: User = Depends(get_current_user),
+    user: User = Depends(require_registered_user),
 ):
     """轮询刷新任务进度。
 
@@ -103,7 +103,7 @@ def refresh_status(
 @router.get("/recommendations", response_model=list[MatchOut])
 def recommendations(
     db: Session = Depends(get_db),
-    user: User = Depends(get_current_user),
+    user: User = Depends(require_registered_user),
     include_expired: bool = Query(False),
 ):
     """本人命中的岗位：当前可投岗位优先，其次按匹配分。"""
@@ -148,7 +148,7 @@ def run_pipeline(
 def tailor_for_match(
     match_id: str,
     db: Session = Depends(get_db),
-    user: User = Depends(get_current_user),
+    user: User = Depends(require_registered_user),
 ):
     """为某条匹配按需生成改写简历草稿（draft，需用户审核）。"""
     match = db.get(MatchResult, match_id)

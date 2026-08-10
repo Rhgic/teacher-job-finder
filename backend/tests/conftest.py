@@ -8,7 +8,17 @@
 因此默认把每个用例都置于"Redis 不可用"状态；
 需要验证计数逻辑的用例自行注入假客户端（见 test_ratelimit.py）。
 """
+import os
+
 import pytest
+
+
+# main 在测试模块导入阶段就会加载 config；因此必须在任何 app import 之前
+# 显式提供测试专用 Fernet key，不能指望 autouse fixture（那时已经太晚）。
+os.environ.setdefault(
+    "APP_ENCRYPTION_KEY",
+    "MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY=",
+)
 
 
 @pytest.fixture(autouse=True)

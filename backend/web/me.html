@@ -11,11 +11,8 @@
 
 <header class="topbar">
   <div class="topbar-inner">
-    <a class="logo" href="index.html">
-      <span class="logo-mark">师</span>
-      <span class="logo-text">深圳教师求职助手</span>
-    </a>
-    <nav class="nav">
+    <a class="logo" href="index.html"><span class="logo-mark">师</span><span class="logo-text">深圳教师求职助手</span></a>
+    <nav class="nav" aria-label="主导航">
       <a href="index.html">岗位</a>
       <a href="recommend.html">推荐</a>
       <a href="ask.html">问答</a>
@@ -25,103 +22,91 @@
   </div>
 </header>
 
-<main class="wrap" style="max-width:820px">
-  <div class="console">
-    <div>
-      <h1>让 AI 匹配你自己</h1>
-      <div class="sub">免注册体验<span class="pipe">·</span>不收集手机号邮箱<span class="pipe">·</span>数据只在你的体验身份下</div>
-    </div>
-  </div>
+<main class="wrap account-wrap">
+  <section class="account-hero">
+    <p class="account-kicker">求职档案</p>
+    <h1>把你的资料和模型配置放在同一个工作台</h1>
+    <p>岗位可直接浏览；保存简历、求职偏好和使用你自己的 DeepSeek Key，需要先登录。</p>
+  </section>
 
-  <div id="guestArea">
-    <div class="card">
-      <h2>开始体验</h2>
-      <div class="desc">点击后创建一个匿名体验身份（存在你自己的浏览器里），之后填写的意向、粘贴的简历、跑出的匹配都只属于你。</div>
-      <button class="btn btn-grad" id="startBtn">创建体验身份</button>
+  <section id="authArea" class="auth-layout" aria-labelledby="authTitle">
+    <div class="auth-note">
+      <span class="file-mark" aria-hidden="true">档</span>
+      <h2 id="authTitle">先建立你的求职档案</h2>
+      <p>账号用于保存你的求职资料、投递记录和模型配置。API Key 仅加密保存在服务端，页面只会显示掩码。</p>
+      <a class="btn btn-ghost" href="index.html">先浏览岗位</a>
     </div>
-  </div>
+    <div class="card auth-card">
+      <div class="auth-tabs" role="tablist" aria-label="账号操作">
+        <button type="button" class="auth-tab on" data-auth-mode="register" role="tab" aria-selected="true">注册</button>
+        <button type="button" class="auth-tab" data-auth-mode="login" role="tab" aria-selected="false">登录</button>
+      </div>
+      <form id="authForm" novalidate>
+        <div class="field" id="nicknameField">
+          <label for="authNickname">称呼 <span>可选</span></label>
+          <input id="authNickname" autocomplete="nickname" maxlength="64" placeholder="例如：李老师">
+        </div>
+        <div class="field">
+          <label for="authEmail">邮箱</label>
+          <input id="authEmail" type="email" autocomplete="email" required placeholder="name@example.com">
+        </div>
+        <div class="field">
+          <label for="authPassword">密码</label>
+          <input id="authPassword" type="password" autocomplete="current-password" required minlength="8" placeholder="至少 8 位">
+        </div>
+        <button class="btn btn-primary auth-submit" type="submit" id="authSubmit">创建账号</button>
+        <p class="form-message" id="authMessage" aria-live="polite"></p>
+      </form>
+    </div>
+  </section>
 
-  <form id="meForm" hidden>
-    <div class="guest-banner">
+  <section id="guestNotice" class="guest-banner" hidden>
+    <div><div class="t">当前是体验身份</div><div class="s">体验身份可以浏览岗位，但不能保存资料或 API Key。注册后即可启用个人工作台。</div></div>
+    <button class="btn btn-primary" type="button" id="guestToRegister">注册账号</button>
+  </section>
+
+  <section id="memberArea" hidden>
+    <div class="account-summary">
       <div>
-        <div class="t">体验身份已就绪</div>
-        <div class="s">身份保存在本浏览器；退出即抛弃，所有数据一并作废</div>
+        <p class="account-kicker">已登录</p>
+        <h2 id="memberName">我的工作台</h2>
+        <p id="memberEmail"></p>
       </div>
-      <span class="quit" id="quitBtn">退出并抛弃体验身份</span>
+      <button class="btn btn-ghost" type="button" id="logoutBtn">退出登录</button>
     </div>
 
-    <div class="card">
-      <h2>基本信息</h2>
-      <div class="desc">给 AI 一个了解你的起点，评语会围绕这些信息展开</div>
-      <div class="form-grid">
-        <div class="field">
-          <label for="fName">称呼</label>
-          <input id="fName" placeholder="比如：李老师">
-        </div>
-        <div class="field">
-          <label for="fEdu">学历</label>
-          <select id="fEdu">
-            <option value="">请选择</option>
-            <option>大专</option><option>本科</option><option>硕士</option><option>博士</option>
-          </select>
-        </div>
-        <div class="field">
-          <label for="fMajor">专业</label>
-          <input id="fMajor" placeholder="比如：数学与应用数学">
-        </div>
-        <div class="field">
-          <label for="fSubject">想教的学科</label>
-          <input id="fSubject" placeholder="比如：数学">
-        </div>
-      </div>
+    <div class="account-grid">
+      <section class="card model-card" aria-labelledby="modelTitle">
+        <div class="section-head"><div><h2 id="modelTitle">模型配置</h2><p class="desc">使用你购买的官方 DeepSeek API；平台不会展示或返回完整 Key。</p></div><span id="configBadge" class="config-badge">未配置</span></div>
+        <div id="modelState" class="model-state"></div>
+        <form id="modelForm" class="model-form">
+          <div class="field"><label for="modelKey">DeepSeek API Key</label><input id="modelKey" type="password" autocomplete="off" spellcheck="false" placeholder="sk-..." required></div>
+          <div class="field"><label for="modelSelect">默认模型</label><select id="modelSelect"><option value="deepseek-chat">deepseek-chat</option><option value="deepseek-reasoner">deepseek-reasoner</option></select></div>
+          <div class="model-actions"><button class="btn btn-primary" type="submit" id="saveModelBtn">校验并保存</button><button class="btn btn-ghost" type="button" id="deleteModelBtn" hidden>删除 Key</button></div>
+          <p class="form-message" id="modelMessage" aria-live="polite"></p>
+        </form>
+        <p class="security-copy">Key 先校验，再用服务端加密保存；不会写入浏览器存储或接口响应。</p>
+      </section>
+
+      <section class="card profile-card" aria-labelledby="profileTitle">
+        <div class="section-head"><div><h2 id="profileTitle">求职资料</h2><p class="desc">先保存基础偏好，后续匹配会以这些信息作为参考。</p></div></div>
+        <form id="profileForm">
+          <div class="form-grid">
+            <div class="field"><label for="profileName">姓名</label><input id="profileName" maxlength="32" placeholder="例如：李明"></div>
+            <div class="field"><label for="profileEducation">学历</label><select id="profileEducation"><option value="">请选择</option><option>大专</option><option>本科</option><option>硕士</option><option>博士</option></select></div>
+            <div class="field"><label for="profileMajor">专业</label><input id="profileMajor" maxlength="64" placeholder="例如：数学与应用数学"></div>
+            <div class="field"><label for="profileSubject">意向学科</label><input id="profileSubject" maxlength="32" placeholder="例如：数学"></div>
+          </div>
+          <div class="model-actions"><button class="btn btn-primary" type="submit">保存资料</button></div>
+          <p class="form-message" id="profileMessage" aria-live="polite"></p>
+        </form>
+      </section>
     </div>
-
-    <div class="card">
-      <h2>简历</h2>
-      <div class="desc">AI 只会依据这里的内容评估，不会替你编造经历</div>
-
-      <div class="tabs" role="tablist">
-        <button type="button" class="tab on" data-mode="paste" role="tab">粘贴文本</button>
-        <button type="button" class="tab" data-mode="upload" role="tab">上传文件</button>
-      </div>
-
-      <div class="field full" id="pasteMode">
-        <textarea id="fResume" placeholder="粘贴你的简历正文：教育背景、证书、实习/工作经历、技能……"></textarea>
-        <span class="hint">留空也能跑匹配，但 AI 会如实告诉你"简历为空，无法评估"</span>
-      </div>
-
-      <div id="uploadMode" hidden>
-        <label class="drop" id="dropZone">
-          <div class="icon">📄</div>
-          <div class="main">把文件拖到这里，或<span class="link">点击选择</span></div>
-          <div class="types">支持 PDF、Word(.docx)、Markdown、txt · 最大 5MB</div>
-          <input type="file" id="fFile" accept=".pdf,.docx,.md,.markdown,.txt,.text">
-        </label>
-        <div id="uploadResult"></div>
-      </div>
-    </div>
-
-    <div class="card">
-      <h2>求职范围</h2>
-      <div class="desc">硬条件先由规则层确定性过滤，只有命中的岗位才会进入 AI 精排 ·
-        <a class="cta-inline" href="rules.html">管理多条订阅规则 →</a></div>
-      <div class="pickers" id="pickers"></div>
-      <div class="picked" id="pickedTags"></div>
-    </div>
-
-    <div class="run-bar">
-      <button class="btn btn-grad" type="submit" id="runBtn">保存并运行 AI 匹配</button>
-      <span class="run-note" id="runNote">匹配需要几秒——AI 会逐岗打分并写评语</span>
-    </div>
-  </form>
+  </section>
 </main>
 
-<footer class="foot">
-  技术演示项目 · 体验身份不收集任何真实身份信息，令牌只存于你的浏览器<br>
-  简历内容仅用于本次匹配演示 · 投递需人工确认，系统不做全自动投递
-</footer>
-
+<footer class="foot">教师求职助手 · 岗位资料与公告问答仅用于你的求职流程</footer>
 <script src="assets/app.js"></script>
-<script>initMePage();</script>
+<script>initAccountPage();</script>
 </body>
 </html>

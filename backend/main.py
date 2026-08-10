@@ -21,13 +21,17 @@ from fastapi.staticfiles import StaticFiles
 from sqlalchemy.exc import TimeoutError as PoolTimeout
 
 from database import init_db
+from services import crypto
 from observability import (
     ObservabilityMiddleware,
     metrics_endpoint,
     request_id_ctx,
     setup_logging,
 )
-from routers import jobs, profile, rules, matches, applications, auth, crawl, meta, settings, rag
+from routers import (
+    jobs, profile, rules, matches, applications, auth, crawl, meta, settings, rag,
+    model_config,
+)
 
 setup_logging(os.getenv("LOG_LEVEL", "INFO"))
 logger = logging.getLogger("app")
@@ -38,6 +42,10 @@ async def lifespan(_: FastAPI):
     # 再接管一次日志：uvicorn 在模块导入之后才装自己的 handler，
     # 不重新配置的话它会用原生格式把多行堆栈打进来，冲掉 JSON 结构。
     setup_logging(os.getenv("LOG_LEVEL", "INFO"))
+    # 用户 API Key 必须能加密存储，密钥缺失就不要起来。
+    # 放在建表之前：配置错误应该在做任何事之前暴露，而不是跑了一半才发现。
+    # 没有"未配置就明文存"的兜底分支——那种降级出事时没人会注意到。
+    crypto.verify_configured()
     # 开发期自动建表；生产请改用 Alembic 迁移，移除此调用。
     init_db()
     logger.info("startup", extra={"extra_fields": {"event": "app_started"}})
@@ -126,6 +134,7 @@ app.include_router(crawl.router)
 app.include_router(meta.router)
 app.include_router(settings.router)
 app.include_router(rag.router)
+app.include_router(model_config.router)
 
 # Web 演示前端：静态文件与 API 同源同端口，免配 CORS。
 # 用 __file__ 定位目录，uvicorn 从任意 cwd 启动都能找到。

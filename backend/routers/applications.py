@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from database import get_db
-from deps import get_current_user
+from deps import get_current_user, require_registered_user
 from models import (
     User, Job, MatchResult, Application, ApplicationStatus, MatchStatus,
     Resume, ResumeVersion,
@@ -70,7 +70,7 @@ def _send_one(db: Session, user: User, job: Job, body) -> Application:
 def create_application(
     body: ApplicationCreate,
     db: Session = Depends(get_db),
-    user: User = Depends(get_current_user),
+    user: User = Depends(require_registered_user),
 ):
     """单条确认投递。"""
     job = db.get(Job, body.job_id)
@@ -90,7 +90,7 @@ def create_application(
 def batch_confirm(
     body: BatchConfirm,
     db: Session = Depends(get_db),
-    user: User = Depends(get_current_user),
+    user: User = Depends(require_registered_user),
 ):
     """批量确认投递：高效但仍是用户主动确认这一批，不是全自动。"""
     apps = []
@@ -123,7 +123,7 @@ def update_application_status(
     application_id: str,
     body: ApplicationStatusUpdate,
     db: Session = Depends(get_db),
-    user: User = Depends(get_current_user),
+    user: User = Depends(require_registered_user),
 ):
     """人工更新投递状态。只改记录，不触发任何自动投递。"""
     app = db.get(Application, application_id)

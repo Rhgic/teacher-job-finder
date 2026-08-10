@@ -34,6 +34,23 @@ def get_current_user(
     raise HTTPException(401, "需要登录")
 
 
+def require_registered_user(user: User = Depends(get_current_user)) -> User:
+    """写操作的准入：访客只能读，不能保存任何个人数据。
+
+    拦在依赖层而不是每个接口里各写一遍 if——后者迟早会漏掉一个新接口，
+    而漏掉的那个就是数据越界的入口。
+
+    返回 401 而非 403：前端据此弹登录框。403 语义是"你已表明身份但无权"，
+    访客的正确出路是先注册，属于"尚未表明身份"。
+    """
+    if user.is_guest:
+        raise HTTPException(
+            401,
+            "体验身份不能保存数据，请先注册或登录",
+        )
+    return user
+
+
 def require_admin_token(x_admin_token: str | None = Header(default=None)) -> None:
     """生产环境保护后台任务入口，避免公开域名被外部反复调用。"""
     if settings.AUTH_DEV_MODE:

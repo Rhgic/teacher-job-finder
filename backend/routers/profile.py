@@ -3,7 +3,7 @@ from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 from sqlalchemy.orm import Session
 
 from database import get_db
-from deps import get_current_user
+from deps import get_current_user, require_registered_user
 from models import User, UserProfile, Resume, Template
 from schemas import (
     ProfileIn, ProfileOut, ResumeIn, ResumeOut, TemplateIn, TemplateOut,
@@ -18,7 +18,9 @@ router = APIRouter(tags=["profile"])
 @router.get("/profile", response_model=ProfileOut)
 def get_profile(user: User = Depends(get_current_user)):
     if user.profile is None:
-        raise HTTPException(404, "尚未填写求职信息")
+        # 空档案是"我的"页的正常初始状态；返回一个空对象，前端不必把首次
+        # 进入当成错误，也不会在浏览器控制台留下无意义的 404。
+        return ProfileOut()
     return user.profile
 
 
@@ -26,7 +28,7 @@ def get_profile(user: User = Depends(get_current_user)):
 def update_profile(
     body: ProfileIn,
     db: Session = Depends(get_db),
-    user: User = Depends(get_current_user),
+    user: User = Depends(require_registered_user),
 ):
     profile = user.profile or UserProfile(user_id=user.id)
     for k, v in body.model_dump(exclude_unset=True).items():
@@ -47,7 +49,7 @@ def list_resumes(user: User = Depends(get_current_user)):
 def create_resume(
     body: ResumeIn,
     db: Session = Depends(get_db),
-    user: User = Depends(get_current_user),
+    user: User = Depends(require_registered_user),
 ):
     data = body.model_dump()
     if data.get("structured_content") is None:
@@ -63,7 +65,7 @@ def create_resume(
 async def upload_resume(
     file: UploadFile = File(...),
     db: Session = Depends(get_db),
-    user: User = Depends(get_current_user),
+    user: User = Depends(require_registered_user),
 ):
     """上传简历文件，抽取文本并结构化。支持 PDF / Word(.docx) / Markdown / txt。
 
@@ -100,7 +102,7 @@ async def upload_resume(
 def delete_resume(
     resume_id: str,
     db: Session = Depends(get_db),
-    user: User = Depends(get_current_user),
+    user: User = Depends(require_registered_user),
 ):
     resume = db.get(Resume, resume_id)
     if resume is None or resume.user_id != user.id:
@@ -120,7 +122,7 @@ def list_templates(user: User = Depends(get_current_user)):
 def create_template(
     body: TemplateIn,
     db: Session = Depends(get_db),
-    user: User = Depends(get_current_user),
+    user: User = Depends(require_registered_user),
 ):
     tpl = Template(user_id=user.id, **body.model_dump())
     db.add(tpl)
@@ -133,7 +135,7 @@ def create_template(
 def delete_template(
     template_id: str,
     db: Session = Depends(get_db),
-    user: User = Depends(get_current_user),
+    user: User = Depends(require_registered_user),
 ):
     tpl = db.get(Template, template_id)
     if tpl is None or tpl.user_id != user.id:

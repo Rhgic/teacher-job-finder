@@ -144,11 +144,12 @@ def test_taxonomy_is_not_trimmed_by_data(client, seeded):
 
 # ---------------- 鉴权 ----------------
 
-def test_guest_login_issues_usable_token(client):
+def test_guest_login_can_browse_but_cannot_open_personal_recommendations(client):
     resp = client.post("/auth/guest")
     assert resp.status_code == 200
     token = resp.json()["token"]
-    assert client.get("/recommendations", headers=auth(token)).status_code == 200
+    assert client.get("/jobs", headers=auth(token)).status_code == 200
+    assert client.get("/recommendations", headers=auth(token)).status_code == 401
 
 
 def test_forged_token_is_rejected(client, seeded):

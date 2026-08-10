@@ -70,7 +70,18 @@ class User(Base):
     __tablename__ = "users"
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=gen_uuid)
-    openid: Mapped[str] = mapped_column(String(64), unique=True, index=True)  # 微信登录
+
+    # 三种身份来源并存，靠不同列区分，不另设 type 字段：
+    # - 微信用户：openid 有值，email 为空（历史用户，保留可登录）
+    # - 邮箱用户：email + password_hash 有值，is_guest=False
+    # - 访客：openid 为 guest_ 前缀，is_guest=True，不能保存任何个人数据
+    # openid 与 email 都放宽为可空，但各自唯一：唯一索引允许多个 NULL，
+    # 所以"一批微信用户 email 全为空"不会互相冲突。
+    openid: Mapped[str | None] = mapped_column(String(64), unique=True, index=True)
+    email: Mapped[str | None] = mapped_column(String(255), unique=True, index=True)
+    # 见 services/auth.py：scrypt$N$r$p$salt_b64$hash_b64，自描述参数便于日后升级
+    password_hash: Mapped[str | None] = mapped_column(String(255))
+    is_guest: Mapped[bool] = mapped_column(Boolean, default=False, server_default="0")
     nickname: Mapped[str | None] = mapped_column(String(64))
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
 
@@ -92,6 +103,51 @@ class User(Base):
     settings: Mapped[list["UserSetting"]] = relationship(
         back_populates="user", cascade="all, delete-orphan"
     )
+    model_config_row: Mapped["UserModelConfig | None"] = relationship(
+        back_populates="user", uselist=False, cascade="all, delete-orphan"
+    )
+
+
+# --------------------------------------------------------------------------- #
+# 1b. 用户自带模型配置（DeepSeek API Key，1:1）                                  #
+# --------------------------------------------------------------------------- #
+class UserModelConfig(Base):
+    """用户自带的 DeepSeek Key 与模型选择。
+
+    安全约定（改这张表前先读）：
+    - `encrypted_key` 是唯一的 Key 载体，Fernet 密文，明文绝不落库。
+    - `key_last4` 是明文，但只有 4 个字符，用于前端显示 sk-****abcd。
+      规格要求展示掩码，没有它就只能把密文解出来再截断，反而更危险。
+    - `key_fingerprint` 是 sha256(明文) 的前 32 位十六进制，用来判断
+      "用户这次是不是真的换了 Key"，不必解密即可比较。
+    - 这张表的任何字段都不得进日志、不得进任务载荷、不得原样进响应。
+    """
+
+    __tablename__ = "user_model_configs"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=gen_uuid)
+    user_id: Mapped[str] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), unique=True, index=True
+    )
+
+    encrypted_key: Mapped[str] = mapped_column(Text)
+    key_last4: Mapped[str] = mapped_column(String(4))
+    key_fingerprint: Mapped[str] = mapped_column(String(64))
+
+    # 只允许官方 DeepSeek 的两个模型，取值在 schemas 层用 Literal 卡死
+    model: Mapped[str] = mapped_column(String(32), default="deepseek-chat")
+
+    # 保存时做过一次轻量校验；之后每次真实调用也会回写状态
+    last_verified_at: Mapped[datetime | None] = mapped_column(DateTime)
+    last_call_status: Mapped[str | None] = mapped_column(String(32))
+    last_call_at: Mapped[datetime | None] = mapped_column(DateTime)
+
+    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime, server_default=func.now(), onupdate=func.now()
+    )
+
+    user: Mapped["User"] = relationship(back_populates="model_config_row")
 
 
 # --------------------------------------------------------------------------- #

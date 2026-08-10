@@ -105,7 +105,7 @@ flowchart TB
 | 爬虫 | httpx + 自研 `BaseCrawler` | robots、限速、缓存、去重做成基类能力 |
 | 可观测 | JSON 结构化日志 + `request_id` 全链路 + `/metrics` | 含 LLM 调用数与 token 消耗 |
 | 部署 | 云服务器 + systemd（API/worker/爬虫/备份）+ Nginx | |
-| 质量 | pytest 144 项 + ruff + GitHub Actions | 含 38 项穿过完整栈的接口测试 |
+| 质量 | pytest 148 项 + ruff + GitHub Actions | 含 38 项穿过完整栈的接口测试与邮箱/Key 安全测试 |
 
 > 仓库里的 `miniprogram/` 是早期的小程序版本，已不是主线，保留作演进记录。
 
@@ -118,13 +118,15 @@ cd backend
 python3 -m venv .venv
 .venv/bin/pip install -r requirements.txt
 docker compose up -d          # MySQL + Redis
+export APP_ENCRYPTION_KEY="$(.venv/bin/python -c 'from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())')"
 .venv/bin/alembic upgrade head
 .venv/bin/python seed.py
 .venv/bin/uvicorn main:app --reload --port 8000
 ```
 
 打开 <http://127.0.0.1:8000/> 即是 Web 前端。默认 `LLM_STUB_MODE=1`、
-`MAILER_DRY_RUN=1`、`AUTH_DEV_MODE=1`，**不配任何外部密钥就能端到端跑通**。
+`MAILER_DRY_RUN=1`、`AUTH_DEV_MODE=1`；无需平台模型 Key，但必须设置
+`APP_ENCRYPTION_KEY`，以便安全保存用户自行配置的 DeepSeek Key。
 
 异步匹配需要另起 worker（不起也能用，会自动退回同步执行）：
 
@@ -136,7 +138,7 @@ cd backend && .venv/bin/arq services.tasks.WorkerSettings
 
 ```bash
 cd backend
-.venv/bin/python -m pytest              # 144 项
+.venv/bin/python -m pytest              # 148 项
 .venv/bin/ruff check .
 .venv/bin/python scripts/eval_rag.py    # RAG 检索质量基线，出数字
 .venv/bin/python scripts/verify_backup_restore.py   # 备份恢复演练
@@ -223,7 +225,7 @@ backend/
   routers/           岗位、推荐、投递、档案、规则、爬虫、问答、状态
   services/          规则过滤、LLM 匹配、爬虫、简历改写、RAG、限流、任务队列
   web/               Web 前端（9 页 + assets）
-  tests/             pytest（144 项，含 38 项接口级）
+  tests/             pytest（148 项，含 38 项接口级）
   scripts/           RAG 评测、压测、备份、恢复演练、定时抓取、上线检查
   migrations/        Alembic 迁移
   deploy/            systemd / Nginx 模板
