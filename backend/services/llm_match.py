@@ -56,6 +56,33 @@ def _stub_result(resume_summary: str, jd_text: str) -> dict:
     }
 
 
+def _payload_for(system: str, user: str, json_mode: bool) -> dict:
+    payload = {
+        "model": settings.DEEPSEEK_MODEL,
+        "messages": [
+            {"role": "system", "content": system},
+            {"role": "user", "content": user},
+        ],
+        "temperature": 0.3,
+    }
+    if json_mode:
+        payload["response_format"] = {"type": "json_object"}
+    return payload
+
+
+def _cache_key_for(system: str, user: str, *, json_mode: bool = True) -> str:
+    """缓存键 = 整个请求体的指纹。
+
+    单独拎出来是为了让调用方也能算出同一个键——模型返回了解析不了的
+    内容时要能把这条坏缓存删掉，见 match_resume_to_job()。
+    """
+    import hashlib
+
+    raw = json.dumps(_payload_for(system, user, json_mode),
+                     ensure_ascii=False, sort_keys=True)
+    return hashlib.sha256(raw.encode("utf-8")).hexdigest()[:32]
+
+
 def _call_deepseek(system: str, user: str, *, json_mode: bool = True) -> str:
     """调用 DeepSeek chat completions，返回模型文本。需 httpx 与有效 API Key。
 
@@ -68,25 +95,10 @@ def _call_deepseek(system: str, user: str, *, json_mode: bool = True) -> str:
     - token 用量记账，供 /metrics 与成本核算
     - 5xx 与超时按指数退避重试；4xx 是请求本身有问题，重试无意义，立即抛出
     """
-    import hashlib
-    import json as _json
-
     import httpx
 
-    payload = {
-        "model": settings.DEEPSEEK_MODEL,
-        "messages": [
-            {"role": "system", "content": system},
-            {"role": "user", "content": user},
-        ],
-        "temperature": 0.3,
-    }
-    if json_mode:
-        payload["response_format"] = {"type": "json_object"}
-
-    cache_key = hashlib.sha256(
-        _json.dumps(payload, ensure_ascii=False, sort_keys=True).encode("utf-8")
-    ).hexdigest()[:32]
+    payload = _payload_for(system, user, json_mode)
+    cache_key = _cache_key_for(system, user, json_mode=json_mode)
     cached = ratelimit.cache_get(cache_key)
     if cached is not None:
         ratelimit.record_cache_event(hit=True)
@@ -175,8 +187,34 @@ def _normalize(data: dict) -> dict:
     }
 
 
+def _failed_result(reason: str) -> dict:
+    """兜底结果。
+
+    reason 是给用户看的固定文案，不拼接异常对象：异常原文里可能带
+    请求 URL 和鉴权失败细节，而这个字段会原样存进 match_results
+    再渲染到推荐页。真正的排查信息走日志，按 request_id 查。
+    """
+    return {
+        "score": None, "matched_points": [], "gaps": [],
+        "reason": reason, "cover_letter": None,
+    }
+
+
 def match_resume_to_job(resume_summary: str, jd_text: str, intent: dict | None = None) -> dict:
-    """对单个(简历, 岗位)产出结构化匹配结果。失败不抛，返回 score=None 兜底。"""
+    """对单个(简历, 岗位)产出结构化匹配结果。失败不抛，返回 score=None 兜底。
+
+    这里**不再**在 _call_deepseek 外面套一层重试。原先是
+    `for _ in range(2)` 包住整个调用，两个方向都算不上划算：
+
+    - 网络与 5xx：_call_deepseek 内部已按指数退避重试 LLM_MAX_ATTEMPTS 次。
+      再套一层把最坏尝试次数变成 2×3=6、单次超时 60s，一个岗位最坏要
+      拖几分钟，而管道是逐个岗位串行跑的。
+    - 解析失败：模型返回 200 时结果就已进缓存，重试会命中同一份坏内容
+      （见 _call_deepseek 的 cache_set），拿到的必然还是解析失败。
+
+    所以改成：调用失败直接兜底；解析失败先把那条坏缓存删掉再兜底，
+    否则它会被钉住一个 TTL，期间这对（简历, 岗位）永远失败。
+    """
     if settings.LLM_STUB_MODE:
         return _stub_result(resume_summary, jd_text)
 
@@ -186,13 +224,17 @@ def match_resume_to_job(resume_summary: str, jd_text: str, intent: dict | None =
         f"【岗位 JD】\n{jd_text}"
     )
 
-    last_err = None
-    for _ in range(2):  # 最多重试一次
-        try:
-            return _normalize(_extract_json(_call_deepseek(SYSTEM_PROMPT, user_prompt)))
-        except Exception as e:
-            last_err = e
-    return {
-        "score": None, "matched_points": [], "gaps": [],
-        "reason": f"LLM 匹配失败：{last_err}", "cover_letter": None,
-    }
+    try:
+        raw = _call_deepseek(SYSTEM_PROMPT, user_prompt)
+    except Exception as exc:  # noqa: BLE001 — 兜底不抛，管道要继续评下一个岗位
+        logger.warning("llm_match_call_failed", extra={"extra_fields": {
+            "error": type(exc).__name__, "detail": str(exc)[:200]}})
+        return _failed_result("模型调用失败，请稍后重试")
+
+    try:
+        return _normalize(_extract_json(raw))
+    except Exception as exc:  # noqa: BLE001 — 同上
+        ratelimit.cache_delete(_cache_key_for(SYSTEM_PROMPT, user_prompt))
+        logger.warning("llm_match_parse_failed", extra={"extra_fields": {
+            "error": type(exc).__name__, "raw_head": raw[:200]}})
+        return _failed_result("模型返回格式异常，已丢弃本次结果")

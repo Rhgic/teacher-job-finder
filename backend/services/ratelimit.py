@@ -137,6 +137,23 @@ def cache_set(key: str, value: str) -> None:
         pass
 
 
+def cache_delete(key: str) -> None:
+    """丢弃一条已缓存的模型输出。
+
+    缓存是在拿到 HTTP 200 时就写的，那时还没解析。所以一旦模型返回了
+    解析不了的内容，这份坏结果会被钉住 LLM_CACHE_TTL_SEC（默认 24h）：
+    之后同一对（简历, 岗位）每次都命中缓存、每次都解析失败，重试也没用。
+    解析失败时必须把它删掉，让下一次真的重新问模型。
+    """
+    client = get_client()
+    if client is None:
+        return
+    try:
+        client.delete(f"llmcache:{key}")
+    except Exception:  # noqa: BLE001
+        pass
+
+
 def usage_snapshot() -> dict:
     """当日用量快照，供 /metrics 与运维查看。"""
     client = get_client()

@@ -114,6 +114,53 @@ def test_records_token_usage(monkeypatch):
     assert recorded == [777]
 
 
+def test_match_does_not_stack_another_retry_layer(monkeypatch):
+    """match_resume_to_job 不得在 _call_deepseek 外面再套一层重试。
+
+    内层已经重试 LLM_MAX_ATTEMPTS 次；外面再包一层会让最坏尝试次数翻倍
+    （单次 timeout 60s，管道逐个岗位串行跑），这正是演示时"点了没反应"
+    的来源。断言总的 HTTP 次数就等于内层上限。
+    """
+    monkeypatch.setattr(llm_match.settings, "LLM_STUB_MODE", False)
+    calls = _patch_post(monkeypatch, [_Resp(status_code=500)])
+
+    result = llm_match.match_resume_to_job("简历", "岗位JD")
+
+    assert calls["n"] == llm_match.LLM_MAX_ATTEMPTS
+    assert result["score"] is None
+
+
+def test_match_failure_reason_does_not_leak_exception_text(monkeypatch):
+    """兜底文案会存进 match_results 并显示在推荐页，不能带异常原文。
+
+    原实现是 f"LLM 匹配失败：{last_err}"，401 时异常里带着请求 URL。
+    """
+    monkeypatch.setattr(llm_match.settings, "LLM_STUB_MODE", False)
+    _patch_post(monkeypatch, [_Resp(status_code=401)])
+
+    reason = llm_match.match_resume_to_job("简历", "岗位JD")["reason"]
+
+    assert "api.deepseek.com" not in reason
+    assert "HTTPStatusError" not in reason
+
+
+def test_unparseable_response_is_evicted_from_cache(monkeypatch):
+    """模型返回解析不了的内容时，不能把它留在缓存里。
+
+    缓存是拿到 200 就写的（那时还没解析）。不删的话这份坏结果会被钉住
+    一个 TTL，期间同一对（简历, 岗位）每次都命中缓存、每次都失败。
+    """
+    store: dict[str, str] = {}
+    monkeypatch.setattr(ratelimit, "cache_get", lambda k: store.get(k))
+    monkeypatch.setattr(ratelimit, "cache_set", lambda k, v: store.__setitem__(k, v))
+    monkeypatch.setattr(ratelimit, "cache_delete", lambda k: store.pop(k, None))
+    monkeypatch.setattr(llm_match.settings, "LLM_STUB_MODE", False)
+
+    _patch_post(monkeypatch, [_Resp(content="这不是 JSON")])
+    assert llm_match.match_resume_to_job("简历", "岗位JD")["score"] is None
+    assert store == {}, "坏结果仍留在缓存里，后续请求会一直复现同一个失败"
+
+
 def test_json_mode_toggles_response_format(monkeypatch):
     """rag_qa 走自然语言，必须不带 response_format，否则 DeepSeek 直接 400。"""
     seen: list[dict] = []
