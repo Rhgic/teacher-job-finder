@@ -1,0 +1,251 @@
+{
+  "name": "跨境退款 / 结算政策知识库",
+  "version": "v3",
+  "entries": [
+    {
+      "id": "kb-7day",
+      "title": "7 天无理由退货",
+      "lang": "zh",
+      "keywords": ["退货", "无理由", "7天", "7 天", "七天", "退款", "return", "refund", "7-day", "no reason", "退货政策", "不想要了", "不喜欢", "want to return", "free return"],
+      "text": "买家在签收后 7 个自然日内可申请无理由退货，商品需保持完好、不影响二次销售（未拆封/未使用/吊牌完整）。退款将原路返回，到账时效依支付渠道 3-15 个工作日。"
+    },
+    {
+      "id": "kb-timeout",
+      "title": "退款时效与超期规则",
+      "lang": "zh",
+      "keywords": ["时效", "超期", "超时", "超过", "45天", "过期", "退款", "退货", "timeout", "overdue", "expired", "到账", "受理"],
+      "text": "无理由退货窗口为签收后 7 天；超过 7 天但未达 15 天的质量问题可申请售后；超过 45 天原则上不再受理无理由退款，系统依据政策自动驳回。特殊大促商品以商品页标注为准。"
+    },
+    {
+      "id": "kb-shipping-fee",
+      "title": "退货运费规则",
+      "lang": "zh",
+      "keywords": ["运费", "退货运费", "shipping", "freight", "return shipping", "邮费", "承担", "退款", "退货", "谁出运费", "return label"],
+      "text": "质量问题/错发漏发由商家承担退货运费；无理由退货的跨境退货运费原则上由买家承担（可从退款金额中扣除）。具体以订单结算时的运费条款为准。"
+    },
+    {
+      "id": "kb-customs",
+      "title": "清关延误处理",
+      "lang": "zh",
+      "keywords": ["清关", "海关", "延误", "customs", "clearance", "delay", "滞留", "查验", "物流", "包裹", "查物流", "track", "关税", "交税", "vat", "tax", "进口税"],
+      "text": "跨境包裹在目的国海关查验属正常现象，通常 24-72 小时内放行。若滞留超过 72 小时，客服应主动告知买家并联系物流商加急；因清关导致的到达延迟不计入无理由退货时效。进口关税/VAT 由买家在清关时按目的国税率缴纳，非商家收取。"
+    },
+    {
+      "id": "kb-settlement",
+      "title": "跨境结算与平台佣金",
+      "lang": "zh",
+      "keywords": ["结算", "佣金", "settlement", "commission", "回款", "放款", "对公", "退款", "提现", "payout"],
+      "text": "卖家货款按周/双周结算，平台收取成交金额 8%-15% 佣金（类目不同）。结算前需完成对公账户授权与税务信息核验。结算金额 = 成交货款 − 平台佣金 − 已产生的退款/补偿。"
+    },
+    {
+      "id": "kb-risk",
+      "title": "异地 / 大额退款风控",
+      "lang": "zh",
+      "keywords": ["风控", "异地", "大额", "高风险", "risk", "fraud", "大额退款", "异常", "退款", "盗刷", "盗用"],
+      "text": "出现异地下单、收货地址频繁变更或单笔退款金额超过阈值时，系统标记高风险并升级人工审核。人工需核对支付账户与收货信息一致性、确认无盗刷嫌疑后再放款。"
+    },
+    {
+      "id": "kb-quality",
+      "title": "质量问题退换货",
+      "lang": "zh",
+      "keywords": ["质量", "损坏", "瑕疵", "quality", "defective", "broken", "坏", "照片", "退款", "退货", "换货", "货不对板", "描述不符", "not as described", "faulty"],
+      "text": "买家提供质量问题照片/视频后可申请换货或退款，不受 7 天无理由限制。建议优先补发或补偿券安抚，确需退款的走人工审核快速通道。"
+    },
+    {
+      "id": "kb-coupon",
+      "title": "优惠券 / 折扣码退款规则",
+      "lang": "zh",
+      "keywords": ["优惠券", "折扣", "折扣码", "coupon", "promo", "voucher", "折扣券", "满减", "退款", "退货", "优惠", "kode promo", "diskon"],
+      "text": "使用优惠券/折扣码的订单退货时，实付金额退款，优惠券本身不退还（已使用的折扣额度不恢复）。若整单仅部分商品退货，按商品实付占比退款，不重复享受优惠。叠加平台券的以平台规则为准。"
+    },
+    {
+      "id": "kb-exchange",
+      "title": "换货流程",
+      "lang": "zh",
+      "keywords": ["换货", "换货流程", "exchange", "换尺寸", "换颜色", "换货怎么弄", "换货地址", "replace"],
+      "text": "换货适用于尺寸/颜色不符或质量问题。客服生成换货单后，买家按提示寄回原商品，仓库签收并质检通过后 1-3 个工作日内寄出新商品。跨境换货运费：质量问题商家承担，非质量问题买家承担。"
+    },
+    {
+      "id": "kb-delivery-sla",
+      "title": "物流时效与送达预估",
+      "lang": "zh",
+      "keywords": ["物流", "物流时效", "多久到", "多久", "送达", "几天", "delivery", "shipping time", "eta", "预计送达", "什么时候到", "arrive", "lieferzeit", "pengiriman"],
+      "text": "标准跨境物流时效：东南亚 5-9 天、欧美 7-15 天、其他地区 10-20 天（均含清关）。大促/旺季顺延 3-5 天。下单页与物流轨迹均展示预计送达日期，以轨迹最新状态为准。"
+    },
+    {
+      "id": "kb-duty",
+      "title": "关税 / VAT 买家承担说明",
+      "lang": "zh",
+      "keywords": ["关税", "vat", "进口税", "交税", "税费", "customs duty", "import tax", "税多少", "完税", "duty", "zoll"],
+      "text": "跨境订单的进口关税与增值税（VAT）由买家在目的国清关时按当地税率缴纳，金额依商品申报价值与类目而定，非商家额外收费。若被税，物流商会通知买家线上支付后放行。"
+    },
+    {
+      "id": "kb-refund-status",
+      "title": "退款进度与到账查询",
+      "lang": "zh",
+      "keywords": ["退款", "退款进度", "到账", "查退款", "退款到哪了", "refund", "refund status", "where is my refund", "退款查询", "多久", "多久到账", "processing", "refund timeline"],
+      "text": "退款状态分：审核中 → 已批准 → 退款中 → 已到账。平台批准后 1 个工作日内原路退款，银行/钱包到账 3-15 个工作日。可在「我的订单-退款」查看实时进度，超期未到账可凭退款单号联系客服核查。"
+    },
+    {
+      "id": "kb-address",
+      "title": "收货地址错误 / 修改与改派",
+      "lang": "zh",
+      "keywords": ["地址", "改地址", "地址错了", "address", "wrong address", "改派", "地址修改", "redirect", "收不到", "派送失败"],
+      "text": "未发货前可在订单页自助修改收货地址；已发货但未派送的可联系客服向物流商发起改派（可能加收改派费）。已派送失败退回的，需重新下单或确认新地址后重发，运费依责任方承担。"
+    },
+    {
+      "id": "kb-snad",
+      "title": "商品与描述不符（货不对板）",
+      "lang": "zh",
+      "keywords": ["描述不符", "货不对板", "不一样", "not as described", "fake", "假货", "图文不符", "实物不符", "差异", "misdescription"],
+      "text": "若收到的商品与详情页描述/图片明显不符，买家可在签收后 15 天内申请「描述不符」售后，附对比照片。核实后支持全额退款或补发，往返运费由商家承担，严重者下架商品并补偿。"
+    },
+    {
+      "id": "kb-cancel-order",
+      "title": "未发货订单取消",
+      "lang": "zh",
+      "keywords": ["取消", "未发货", "取消订单", "cancel", "还没发货", "不想要了", "停止发货", "order cancel", "batalkan"],
+      "text": "订单在「未发货」状态下可一键取消，款项原路即时退回。已揽收/发货的订单无法取消，需走退货流程。预售/定制类商品以商品页取消规则为准。"
+    },
+    {
+      "id": "kb-partial-refund",
+      "title": "部分退款与协商补偿",
+      "lang": "zh",
+      "keywords": ["部分退款", "协商", "补偿", "少退", "partial refund", "折价", "补偿券", "小额", "协商退款", "goodwill"],
+      "text": "轻微瑕疵或轻微描述差异，可与买家协商部分退款或补偿券，无需退货。协商达成一致后由人工审核放款，既降本又保体验。建议补偿额度不超过商品实付的 30%。"
+    },
+    {
+      "id": "kb-warranty",
+      "title": "质保期与保修",
+      "lang": "zh",
+      "keywords": ["质保", "保修", "warranty", "保修期", "坏了", "非人为", "售后", "保质", "garansi"],
+      "text": "电子/电器类商品享 12 个月质保（非人为损坏）。质保期内故障支持免费维修或换货；人为损坏酌情收费。需提供购买凭证与故障视频，跨境返修运费由责任方承担。"
+    },
+    {
+      "id": "kb-en-refund",
+      "title": "7-Day Free Returns (EN)",
+      "lang": "en",
+      "keywords": ["return", "refund", "7-day", "no reason", "退货", "退款", "free return", "returns policy", "money back", "send it back"],
+      "text": "Buyers may request a return within 7 natural days after delivery if the item is unused and in original condition. Refunds are issued to the original payment method within 3-15 business days."
+    },
+    {
+      "id": "kb-en-quality",
+      "title": "Quality / Defective Item (EN)",
+      "lang": "en",
+      "keywords": ["quality", "defective", "broken", "faulty", "damaged", "not as described", "refund", "return", "photo", "quality issue", "bad item"],
+      "text": "If the item arrives defective or not as described, share a photo/video and we'll offer a replacement or refund outside the 7-day window. We prioritize reshipment or a compensation voucher, and route urgent refunds through express human review."
+    },
+    {
+      "id": "kb-en-coupon",
+      "title": "Coupon / Promo Refund (EN)",
+      "lang": "en",
+      "keywords": ["coupon", "promo", "voucher", "discount code", "refund", "return", "折扣码", "优惠", "kode promo"],
+      "text": "When returning an order placed with a coupon, we refund the amount actually paid; the coupon itself is not returned or re-credited. For partial returns, the refund is prorated by each item's net paid price."
+    },
+    {
+      "id": "kb-en-customs",
+      "title": "Customs Duties & Import VAT (EN)",
+      "lang": "en",
+      "keywords": ["customs", "duty", "vat", "import tax", "tariff", "clearance", "delay", "held", "清关", "关税", "tax"],
+      "text": "Import duties and VAT are collected by the destination country's customs based on declared value and category — not by the seller. If assessed, the carrier will notify you to pay online before release. Customs holds (usually 24-72h) don't count against the 7-day return window."
+    },
+    {
+      "id": "kb-en-delivery",
+      "title": "Estimated Delivery Time (EN)",
+      "lang": "en",
+      "keywords": ["delivery", "shipping time", "eta", "arrive", "how long", "when", "track", "estimated", "物流时效", "多久到"],
+      "text": "Standard cross-border delivery: SE Asia 5-9 days, Europe/US 7-15 days, other regions 10-20 days (customs included). Expect +3-5 days during peaks. The estimated delivery date shows on the product page and live tracking."
+    },
+    {
+      "id": "kb-en-exchange",
+      "title": "How to Exchange (EN)",
+      "lang": "en",
+      "keywords": ["exchange", "replace", "size", "color", "wrong size", "swap", "换货", "换尺寸"],
+      "text": "Exchanges cover wrong size/color or quality issues. After we issue an exchange, send the original item back; once the warehouse receives and inspects it, we ship the new item within 1-3 business days. Cross-border return shipping: on us for quality, on you otherwise."
+    },
+    {
+      "id": "kb-en-cancel",
+      "title": "Cancel Before Shipment (EN)",
+      "lang": "en",
+      "keywords": ["cancel", "cancellation", "unshipped", "before shipping", "stop order", "取消", "未发货"],
+      "text": "Orders in 'unshipped' status can be cancelled in one tap with an instant original-payment refund. Once picked up or shipped, cancellation isn't possible and the return process applies. Pre-order/custom items follow the listing's cancel policy."
+    },
+    {
+      "id": "kb-de-settlement",
+      "title": "Rückerstattung & Abrechnung (DE)",
+      "lang": "de",
+      "keywords": ["rückerstattung", "refund", "abrechnung", "settlement", "zurück", "erstattung", "退款", "退货", "auszahlung"],
+      "text": "Erstattungen erfolgen auf die ursprüngliche Zahlungsmethode. Bei automatischen Abrechnungen werden Plattformgebühren vom Bruttobetrag abgezogen."
+    },
+    {
+      "id": "kb-de-quality",
+      "title": "Qualitätsmangel / Defekt (DE)",
+      "lang": "de",
+      "keywords": ["qualität", "qualitätsmangel", "defekt", "beschädigt", "quality", "defective", "refund", "retoure", "质量", "瑕疵"],
+      "text": "Bei defekten oder abweichenden Artikeln sende ein Foto/Video — Ersatz oder Rückerstattung sind auch außerhalb von 7 Tagen möglich. Express-Rücksendungen werden bevorzugt bearbeitet."
+    },
+    {
+      "id": "kb-de-customs",
+      "title": "Zoll & Einfuhrumsatzsteuer (DE)",
+      "lang": "de",
+      "keywords": ["zoll", "einfuhrumsatzsteuer", "vat", "steuer", "customs", "duty", "关税", "清关", "import"],
+      "text": "Einfuhrzoll und Umsatzsteuer werden vom Zoll des Bestimmungslands erhoben, nicht vom Verkäufer. Der Versanddienstleister informiert dich zur Zahlung vor der Freigabe."
+    },
+    {
+      "id": "kb-de-delivery",
+      "title": "Lieferzeit (DE)",
+      "lang": "de",
+      "keywords": ["lieferzeit", "lieferung", "delivery", "versand", "eta", "wann", "物流时效", "多久到"],
+      "text": "Standard-Versand: EU/US 7-15 Tage, andere Regionen 10-20 Tage (Zoll inbegriffen). In Spitzenzeiten +3-5 Tage. Das Lieferdatum steht auf der Produktseite und in der Sendungsverfolgung."
+    },
+    {
+      "id": "kb-de-coupon",
+      "title": "Gutschein / Rabattcode (DE)",
+      "lang": "de",
+      "keywords": ["gutschein", "rabattcode", "coupon", "voucher", "refund", "retoure", "优惠券", "折扣码"],
+      "text": "Bei Rücksendung einer Bestellung mit Gutschein erstatten wir den tatsächlich gezahlten Betrag; der Gutschein wird nicht zurückerstattet oder neu gutgeschrieben."
+    },
+    {
+      "id": "kb-id-refund",
+      "title": "Pengembalian & Refund (ID)",
+      "lang": "id",
+      "keywords": ["refund", "pengembalian", "retur", "kembali", "garansi", "7 hari", "退款", "退货", "uang kembali"],
+      "text": "Pembeli dapat mengajukan retur dalam 7 hari setelah barang diterima jika kondisinya baik. Dana dikembalikan ke metode pembayaran awal dalam 3-15 hari kerja."
+    },
+    {
+      "id": "kb-id-quality",
+      "title": "Barang Cacat / Kualitas (ID)",
+      "lang": "id",
+      "keywords": ["cacat", "kualitas", "rusak", "quality", "defective", "refund", "retur", "foto", "质量", "瑕疵", "tidak sesuai"],
+      "text": "Jika barang cacat atau tidak sesuai deskripsi, kirim foto/video — kami beri penggantian atau refund di luar batas 7 hari. Prioritas resi ulang atau voucher kompensasi."
+    },
+    {
+      "id": "kb-id-customs",
+      "title": "Bea Cukai & Pajak (ID)",
+      "lang": "id",
+      "keywords": ["bea cukai", "pajak", "customs", "duty", "vat", "tarif", "清关", "关税", "ditahan"],
+      "text": "Bea masuk dan PPN dibayar ke pabean negara tujuan berdasarkan nilai dan kategori barang — bukan oleh penjual. Jika dikenakan, kurir akan meminta pembayaran online sebelum barang dilepas."
+    },
+    {
+      "id": "kb-id-delivery",
+      "title": "Estimasi Waktu Pengiriman (ID)",
+      "lang": "id",
+      "keywords": ["pengiriman", "estimasi", "lama", "sampai", "delivery", "eta", "track", "物流时效", "多久到", "kapan"],
+      "text": "Pengiriman lintas batas standar: Asia Tenggara 5-9 hari, Eropa/AS 7-15 hari, wilayah lain 10-20 hari (termasuk bea cukai). Saat promo +3-5 hari. Estimasi ada di halaman produk dan pelacakan."
+    },
+    {
+      "id": "kb-id-coupon",
+      "title": "Voucher / Kode Promo (ID)",
+      "lang": "id",
+      "keywords": ["voucher", "kode promo", "diskon", "coupon", "refund", "retur", "优惠券", "折扣码", "potongan"],
+      "text": "Saat mengembalikan pesanan pakai voucher, kami kembalikan dana yang benar-benar dibayar; voucher tidak dikembalikan atau dikreditkan ulang. Untuk retur sebagian, refund dihitung sesuai harga netti masing-masing barang."
+    },
+    {
+      "id": "kb-id-exchange",
+      "title": "Tukar Barang (ID)",
+      "lang": "id",
+      "keywords": ["tukar", "exchange", "ganti ukuran", "ganti warna", "replace", "换货", "salah ukuran"],
+      "text": "Penukaran berlaku untuk salah ukuran/warna atau masalah kualitas. Setelah kami buat tiket tukar, kirim barang asli; setelah gudang terima dan cek, kami kirim barang baru 1-3 hari kerja."
+    }
+  ]
+}
