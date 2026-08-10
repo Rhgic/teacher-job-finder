@@ -398,18 +398,43 @@ def test_duplicate_refresh_reuses_task_and_consumes_quota_once(
 # ---------------- 静态前端挂载 ----------------
 
 def test_root_redirects_to_web(client):
+    """根路由跳到改版后的单页入口，且跳过去必须真的能打开。
+
+    只断言 location 字符串会让"跳到一个不存在的页面"照样绿；
+    这次跳转目标从 /web/ 改成 /web/redesign.html 时测试没跟着改，
+    红了才发现——所以这里连着把落地页取一次。
+    """
     resp = client.get("/", follow_redirects=False)
     assert resp.status_code == 307
-    assert resp.headers["location"] == "/web/"
+    target = resp.headers["location"]
+    assert target == "/web/redesign.html"
+    assert client.get(target).status_code == 200
 
 
 @pytest.mark.parametrize("page", [
-    "", "recommend.html", "ask.html", "applications.html",
+    "", "redesign.html", "recommend.html", "ask.html", "applications.html",
     "me.html", "job.html", "apply.html", "rules.html",
 ])
 def test_web_pages_are_served(client, page):
-    """八个页面都要能被后端托管——漏挂一个就是线上 404。"""
+    """每个页面都要能被后端托管——漏挂一个就是线上 404。
+
+    页数会变，所以不在 docstring 里写死数字；数量本身由下面那条守。
+    """
     assert client.get(f"/web/{page}").status_code == 200
+
+
+def test_web_page_count_matches_disk():
+    """挂载目录里的 html 数量要和上面的清单对得上。
+
+    线上 demo 曾经缺 redesign.html 而本地有，正是因为没有任何一条
+    测试盯着"页面集合"这件事——只要清单和磁盘对不上就该红。
+    """
+    from pathlib import Path
+
+    served = {"redesign.html", "recommend.html", "ask.html", "applications.html",
+              "me.html", "job.html", "apply.html", "rules.html", "index.html"}
+    on_disk = {p.name for p in (Path(__file__).parent.parent / "web").glob("*.html")}
+    assert on_disk == served
 
 
 # ---------------- 可观测性 ----------------
