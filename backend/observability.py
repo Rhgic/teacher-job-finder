@@ -151,14 +151,24 @@ metrics = Metrics()
 logger = logging.getLogger("app.request")
 
 
+# 没匹配到任何路由时统一记到这个标签下。取一个不可能与真实路由撞名的值。
+UNMATCHED_ROUTE = "<unmatched>"
+
+
 def _route_template(request: Request) -> str:
     """取路由模板而非真实路径。
 
     /jobs/abc-123 与 /jobs/def-456 必须归并成 /jobs/{job_id}，
     否则每个 ID 都会生成一条独立时间序列，把指标基数撑爆。
+
+    没匹配到路由时**不能**退回真实路径：公网上的扫描器会不停地试
+    /.env、/.git/config、/admin/... 每一条都会在进程内存里留下一个
+    永不过期的计数器。线上实测 353 个 route 标签里 334 个来自这类 404，
+    /metrics 输出被撑到 5095 行——既是内存泄漏，也让指标没法看。
+    真实路径仍然进 JSON 日志的 path 字段，排查时按 request_id 查得到。
     """
     route = request.scope.get("route")
-    return getattr(route, "path", None) or request.url.path
+    return getattr(route, "path", None) or UNMATCHED_ROUTE
 
 
 class ObservabilityMiddleware(BaseHTTPMiddleware):
