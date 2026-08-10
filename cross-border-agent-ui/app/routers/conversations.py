@@ -13,6 +13,7 @@ from app.models import Conversation, Draft, KnowledgeArticle, Message, Order, Us
 from app.routers.auth import get_current_user
 from app.schemas import (
     AcceptDraftResponse,
+    AgentTraceStepOut,
     ArticleOut,
     ConversationDetail,
     ConversationOut,
@@ -138,6 +139,15 @@ async def create_message(
         message=MessageOut.model_validate(outcome.message),
         draft=DraftOut.model_validate(outcome.draft),
         citations=[ArticleOut.model_validate(a) for a in cited],
+        agent_trace=[
+            AgentTraceStepOut(
+                stage=step.stage,
+                status=step.status,
+                summary=step.summary,
+                meta=step.meta,
+            )
+            for step in outcome.trace
+        ],
         human_review_required=outcome.human_review_required,
         risk_type=risk_type_label(outcome.risk_type) if outcome.risk_type else None,
         review_task_id=outcome.review_task.id if outcome.review_task else None,

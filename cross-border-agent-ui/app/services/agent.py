@@ -136,6 +136,21 @@ _INTENT_RULES: list[tuple[str, tuple[str, ...]]] = [
     ),
 ]
 
+_LANG_LABELS = {"zh": "中文", "en": "英语", "de": "德语", "id": "印尼语"}
+_INTENT_LABELS = {
+    "logistics": "物流咨询",
+    "quality": "质量问题",
+    "refund": "退款诉求",
+    "coupon": "优惠咨询",
+    "settlement": "结算咨询",
+    "general": "一般咨询",
+}
+_GENERATOR_LABELS = {
+    llm.GENERATOR_DETERMINISTIC: "确定性草稿生成器",
+    llm.GENERATOR_DEEPSEEK: "DeepSeek 草稿生成器",
+    llm.GENERATOR_FALLBACK: "DeepSeek 回退后的确定性草稿生成器",
+}
+
 
 def classify_intent(text: str) -> str:
     t = (text or "").lower()
@@ -146,6 +161,95 @@ def classify_intent(text: str) -> str:
 
 
 # ── 管道 ───────────────────────────────────────────────────────────
+
+
+@dataclass(frozen=True)
+class TraceStep:
+    """仅供 Demo 展示的本次运行轨迹。
+
+    轨迹不是调试转储：摘要和 meta 都由服务端固定生成，绝不携带买家原文、
+    订单号、工具参数、知识库正文或模型输入。这样“可解释”不会变成泄露面。
+    """
+
+    stage: str
+    status: str
+    summary: str
+    meta: dict[str, str | int]
+
+
+def _build_trace(
+    *,
+    lang: str,
+    intent: str,
+    risk_level: str,
+    order_queried: bool,
+    order_found: bool,
+    logistics_queried: bool,
+    logistics_found: bool,
+    citations_count: int,
+    generator: str,
+    human_review_required: bool,
+) -> list[TraceStep]:
+    """构造安全、真实且可讲述的管道摘要，不回显任何工具参数。"""
+
+    trace = [
+        TraceStep(
+            stage="language_intent",
+            status="completed",
+            summary=f"识别为{_LANG_LABELS.get(lang, lang)} · {_INTENT_LABELS.get(intent, intent)}",
+            meta={"language": lang, "intent": intent},
+        ),
+        TraceStep(
+            stage="risk_check",
+            status="blocked" if risk_level == HIGH else "completed",
+            summary="风险规则判定：需人工审核"
+            if risk_level == HIGH
+            else "风险规则判定：可生成客服草稿",
+            meta={"risk_level": risk_level},
+        ),
+        TraceStep(
+            stage="order_query",
+            status=("hit" if order_found else "miss") if order_queried else "skipped",
+            summary=("演示订单工具：命中订单" if order_found else "演示订单工具：未命中订单")
+            if order_queried
+            else "演示订单工具：未提供订单号，已跳过",
+            meta={},
+        ),
+        TraceStep(
+            stage="logistics_query",
+            status=("hit" if logistics_found else "miss") if logistics_queried else "skipped",
+            summary=(
+                "演示物流工具：命中物流状态"
+                if logistics_found
+                else "演示物流工具：未命中物流状态"
+            )
+            if logistics_queried
+            else "演示物流工具：当前意图无需查询，已跳过",
+            meta={},
+        ),
+        TraceStep(
+            stage="knowledge_search",
+            status="hit" if citations_count else "miss",
+            summary=f"知识库关键词检索：命中 {citations_count} 条引用",
+            meta={"citations_count": citations_count},
+        ),
+        TraceStep(
+            stage="draft_generation",
+            status="completed",
+            summary=f"草稿生成：{_GENERATOR_LABELS.get(generator, generator)}",
+            meta={"generator": generator},
+        ),
+    ]
+    if human_review_required:
+        trace.append(
+            TraceStep(
+                stage="human_review",
+                status="blocked",
+                summary="已创建人工审核单；系统未执行退款、外部消息或平台写操作",
+                meta={"risk_level": risk_level},
+            )
+        )
+    return trace
 
 
 @dataclass
@@ -160,6 +264,7 @@ class PipelineOutcome:
     risk_type: str | None
     citations: list[int]
     generator: str
+    trace: list[TraceStep]
 
     @property
     def human_review_required(self) -> bool:
@@ -335,4 +440,16 @@ async def process_buyer_message(
         risk_type=final_risk_type,
         citations=citations,
         generator=draft.generator,
+        trace=_build_trace(
+            lang=lang,
+            intent=intent,
+            risk_level=draft.risk_level,
+            order_queried=bool(order_no),
+            order_found=bool(order_info.get("found")),
+            logistics_queried=bool(order_no and intent == "logistics"),
+            logistics_found=bool(logistics_info.get("found")),
+            citations_count=len(citations),
+            generator=draft.generator,
+            human_review_required=review_task is not None,
+        ),
     )

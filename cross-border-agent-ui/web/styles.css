@@ -16,3 +16,14 @@
 /* 提示语用醒目底色：这条边界不能被读者一眼滑过去 */
 .blueprint .notice { margin-top:14px; padding:9px 12px; border:1px solid #f1ce71; border-radius:8px; background:#fff9e7; color:#745409; font-weight:700; }
 @media (max-width:960px) { .integration-grid { grid-template-columns:1fr; } }
+
+/* Agent 执行轨迹：默认折叠，面试演示时展开即可说明真实调用链。 */
+.agent-trace { margin-top:14px; padding:11px 12px; border:1px solid var(--line); border-radius:8px; background:#fbfcff; }
+.agent-trace summary { cursor:pointer; color:var(--blue); font-weight:800; }
+.agent-trace p { margin:9px 0 6px; font-size:12px; }
+.agent-trace ol { display:grid; gap:7px; margin:8px 0 0; padding-left:0; list-style:none; }
+.trace-step { display:grid; grid-template-columns:78px 1fr; gap:8px; align-items:start; }
+.trace-status { border-radius:99px; padding:2px 7px; background:#eef2f7; color:var(--muted); font-size:11px; font-weight:800; text-align:center; }
+.trace-step.hit .trace-status,.trace-step.completed .trace-status { background:#eaf8ef; color:var(--green); }
+.trace-step.blocked .trace-status { background:var(--red-soft); color:var(--red); }
+.trace-step.skipped .trace-status,.trace-step.miss .trace-status { background:#f1f3f6; color:var(--muted); }

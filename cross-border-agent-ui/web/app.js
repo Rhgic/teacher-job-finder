@@ -23,6 +23,11 @@ function escapeHtml(value = "") {
 
 function time(value) { return value ? new Date(value).toLocaleString("zh-CN", { hour12: false }) : ""; }
 function riskTag(draft) { return draft.risk_level === "high" ? '<span class="tag high">需人工审核</span>' : '<span class="tag low">低风险草稿</span>'; }
+function renderAgentTrace(trace = [], runId = "") {
+  if (!trace.length) return "";
+  const steps = trace.map((step) => `<li class="trace-step ${escapeHtml(step.status)}"><span class="trace-status">${escapeHtml(step.status)}</span><span>${escapeHtml(step.summary)}</span></li>`).join("");
+  return `<details class="agent-trace"><summary>Agent 执行轨迹（演示）</summary><p class="muted">本次运行：<code>${escapeHtml(runId)}</code>。仅展示安全摘要，不含原文、工具参数或密钥。</p><ol>${steps}</ol></details>`;
+}
 
 async function login(event) {
   event.preventDefault();
@@ -54,11 +59,11 @@ function renderOrder(order) {
   return `<dl><dt>订单</dt><dd>${escapeHtml(order.order_no)}（演示）</dd><dt>平台</dt><dd>${escapeHtml(order.platform)}</dd><dt>状态</dt><dd>${escapeHtml(order.status)}</dd><dt>物流</dt><dd>${escapeHtml(order.shipping_summary || "暂无")}</dd></dl>${steps ? `<ol>${steps}</ol>` : ""}`;
 }
 
-function renderDraft(draft, citations = []) {
+function renderDraft(draft, citations = [], trace = [], runId = "") {
   currentDraft = draft;
   const citationHtml = citations.length ? `<h3>引用来源</h3><ul>${citations.map((article) => `<li><b>${escapeHtml(article.title)}</b><br>${escapeHtml(article.body)}</li>`).join("")}</ul>` : "<p class=\"muted\">未命中店铺政策：草稿仅请求人工确认，不作政策承诺。</p>";
   const accept = draft.status === "pending_agent" ? `<button id="accept-draft">采纳为待发送记录</button>` : "";
-  $("#draft-panel").innerHTML = `<article class="draft"><div>${riskTag(draft)} <span class="muted">${escapeHtml(draft.generator)}</span></div><p>${escapeHtml(draft.body)}</p><small>状态：${escapeHtml(draft.status)}。V1 不对接外部消息平台，系统不会发送。</small>${accept}${citationHtml}</article>`;
+  $("#draft-panel").innerHTML = `<article class="draft"><div>${riskTag(draft)} <span class="muted">${escapeHtml(draft.generator)}</span></div><p>${escapeHtml(draft.body)}</p><small>状态：${escapeHtml(draft.status)}。V1 不对接外部消息平台，系统不会发送。</small>${accept}${renderAgentTrace(trace, runId)}${citationHtml}</article>`;
   const acceptButton = $("#accept-draft");
   if (acceptButton) acceptButton.addEventListener("click", acceptDraft);
 }
@@ -83,7 +88,7 @@ async function createMessage(event) {
     const response = await api(`/conversations/${selectedConversationId}/messages`, { method: "POST", body: JSON.stringify({ text: $("#buyer-message").value }) });
     $("#buyer-message").value = "";
     await selectConversation(selectedConversationId);
-    renderDraft(response.draft, response.citations);
+    renderDraft(response.draft, response.citations, response.agent_trace, response.run_id);
     if (response.human_review_required) alert(`该诉求已创建人工审核单（${response.risk_type}）。系统未执行任何外部操作。`);
     await loadReviews();
   } catch (err) { alert(err.message); } finally { button.disabled = false; }

@@ -32,6 +32,27 @@ def test_low_risk_draft_acceptance_writes_audit(client, agent_headers, db):
     body = response.json()
     assert body["human_review_required"] is False
     assert body["draft"]["citations"]
+    trace = body["agent_trace"]
+    assert [step["stage"] for step in trace] == [
+        "language_intent",
+        "risk_check",
+        "order_query",
+        "logistics_query",
+        "knowledge_search",
+        "draft_generation",
+    ]
+    assert trace[2]["status"] == "hit"
+    assert trace[3]["status"] == "hit"
+    assert trace[4] == {
+        "stage": "knowledge_search",
+        "status": "hit",
+        "summary": "知识库关键词检索：命中 3 条引用",
+        "meta": {"citations_count": 3},
+    }
+    # 轨迹只展示固定安全摘要，不能把原文、订单号或工具参数带回响应。
+    trace_text = str(trace)
+    assert "Where is order" not in trace_text
+    assert "#CB-20512" not in trace_text
     accepted = client.post(
         f"/api/conversations/{conversation_id}/drafts/{body['draft']['id']}/accept",
         headers=agent_headers,
@@ -59,6 +80,12 @@ def test_high_risk_creates_review_agent_cannot_approve_admin_can_decide(
     body = created.json()
     assert body["human_review_required"] is True
     assert body["review_task_id"]
+    assert body["agent_trace"][-1] == {
+        "stage": "human_review",
+        "status": "blocked",
+        "summary": "已创建人工审核单；系统未执行退款、外部消息或平台写操作",
+        "meta": {"risk_level": "high"},
+    }
     review_id = body["review_task_id"]
     assert (
         client.post(

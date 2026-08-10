@@ -105,11 +105,30 @@ class CreateMessageRequest(BaseModel):
     text: str = Field(min_length=1, max_length=2000)
 
 
+class AgentTraceStepOut(BaseModel):
+    """单次管道的安全演示摘要，不是原始工具调用日志。"""
+
+    stage: Literal[
+        "language_intent",
+        "risk_check",
+        "order_query",
+        "logistics_query",
+        "knowledge_search",
+        "draft_generation",
+        "human_review",
+    ]
+    status: Literal["completed", "hit", "miss", "skipped", "blocked"]
+    summary: str
+    # 只允许管道写入语言、意图、风险、引用计数和生成器等非敏感元数据。
+    meta: dict[str, str | int] = Field(default_factory=dict)
+
+
 class CreateMessageResponse(BaseModel):
     run_id: str
     message: MessageOut
     draft: DraftOut
     citations: list[ArticleOut]
+    agent_trace: list[AgentTraceStepOut]
     human_review_required: bool
     risk_type: str | None = None
     review_task_id: int | None = None
