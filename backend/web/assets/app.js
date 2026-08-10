@@ -931,7 +931,10 @@ async function pollRefresh(taskId, onProgress) {
     misses = 0;
     onProgress(s.done || 0, s.total || 0);
     if (s.status === "done") return s;
-    if (s.status === "failed") throw new Error(s.error || "匹配任务执行失败");
+    if (s.status === "stalled") {
+      throw new Error(s.message || "后台处理服务异常，请稍后重试");
+    }
+    if (s.status === "failed") throw new Error("匹配任务执行失败，请稍后重试");
   }
   throw new Error("匹配任务超时。它可能仍在后台跑，稍后到推荐页看看");
 }

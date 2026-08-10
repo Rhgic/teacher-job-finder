@@ -1,5 +1,6 @@
 """推荐 / 匹配管道接口。"""
 import asyncio
+import time
 from datetime import date
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
@@ -40,8 +41,33 @@ async def refresh_my_matches(
     if not ratelimit.check_ip_rate(ip):
         raise HTTPException(429, "请求过于频繁，请稍后再试")
 
-    # 配额在入队时就扣，不等任务真正执行：否则同一个人可以瞬间塞满队列，
-    # 等 worker 逐个跑起来才发现超额，钱已经花掉一部分了。
+    enqueue = await tasks.enqueue_refresh(user.id)
+    if enqueue:
+        # 只有确认创建了新任务才扣配额；重复点击只继续轮询原任务。
+        if enqueue.is_new:
+            verdict = ratelimit.check_and_consume_llm_quota(user.id)
+            if not verdict.allowed:
+                tasks.set_state(
+                    enqueue.task_id, status="rejected",
+                    message="今日匹配额度已用完，请明天再来",
+                )
+                raise HTTPException(429, (
+                    "今日匹配次数已用完，请明天再来"
+                    if verdict.reason == "user_quota_exceeded"
+                    else "演示环境今日额度已用完，请明天再来"
+                ))
+            tasks.set_state(
+                enqueue.task_id, status="queued", queued_at=int(time.time()),
+            )
+        state = tasks.read_state(enqueue.task_id) or {}
+        if state.get("status") == "rejected":
+            raise HTTPException(429, state.get("message") or "今日匹配额度已用完")
+        return {
+            "mode": "async", "task_id": enqueue.task_id,
+            "status": state.get("status", "queued"),
+        }
+
+    # 队列不可用但仍要跑同步任务，因此同样要扣一次配额。
     verdict = ratelimit.check_and_consume_llm_quota(user.id)
     if not verdict.allowed:
         raise HTTPException(429, (
@@ -49,10 +75,6 @@ async def refresh_my_matches(
             if verdict.reason == "user_quota_exceeded"
             else "演示环境今日额度已用完，请明天再来"
         ))
-
-    task_id = await tasks.enqueue_refresh(user.id)
-    if task_id:
-        return {"mode": "async", "task_id": task_id, "status": "queued"}
 
     # 同步兜底。放线程里跑，别把事件循环卡死拖累其它请求。
     stats = await asyncio.to_thread(pipeline.run_pipeline, db, None, user.id)

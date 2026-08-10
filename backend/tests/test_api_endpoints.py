@@ -338,6 +338,63 @@ def test_refresh_status_returns_own_task(client, seeded, monkeypatch):
     assert (body["done"], body["total"]) == (3, 10)
 
 
+@pytest.mark.parametrize("stuck_status", ["queued", "authorizing"])
+def test_refresh_status_marks_old_task_as_stalled(
+    client, seeded, monkeypatch, stuck_status,
+):
+    """queued 和 authorizing 都要能判停滞。
+
+    authorizing 是"已入队、配额还没扣完"的中间态。API 若在这两步之间挂掉，
+    状态就永远停在那里，前端一直轮询——这正是本次要修的"转圈不结束"，
+    只是换了个状态名。只覆盖 queued 等于把同一个洞留了一半。
+    """
+    import time
+    from services import ratelimit
+
+    class OldState:
+        def hgetall(self, _key):
+            return {
+                "status": stuck_status, "user_id": seeded["user_id"],
+                "done": "0", "total": "0", "queued_at": str(int(time.time()) - 600),
+            }
+
+    monkeypatch.setattr(ratelimit, "get_client", lambda: OldState())
+    body = client.get("/matches/refresh/stuck", headers=auth(seeded["token"])).json()
+
+    assert body["status"] == "stalled"
+    assert body["message"] == "后台处理服务异常，请稍后重试"
+
+
+def test_duplicate_refresh_reuses_task_and_consumes_quota_once(
+    client, seeded, monkeypatch,
+):
+    from services import ratelimit, tasks
+
+    calls = 0
+    results = iter([
+        tasks.EnqueueResult("refresh:mine", is_new=True),
+        tasks.EnqueueResult("refresh:mine", is_new=False),
+    ])
+
+    async def enqueue(_user_id):
+        return next(results)
+
+    def consume(_user_id):
+        nonlocal calls
+        calls += 1
+        return ratelimit.QuotaVerdict(allowed=True)
+
+    monkeypatch.setattr(tasks, "enqueue_refresh", enqueue)
+    monkeypatch.setattr(tasks, "read_state", lambda _task_id: {"status": "queued"})
+    monkeypatch.setattr(ratelimit, "check_and_consume_llm_quota", consume)
+
+    first = client.post("/matches/refresh", headers=auth(seeded["token"])).json()
+    second = client.post("/matches/refresh", headers=auth(seeded["token"])).json()
+
+    assert first["task_id"] == second["task_id"] == "refresh:mine"
+    assert calls == 1
+
+
 # ---------------- 静态前端挂载 ----------------
 
 def test_root_redirects_to_web(client):

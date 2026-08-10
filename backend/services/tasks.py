@@ -18,6 +18,8 @@ from __future__ import annotations
 import asyncio
 import logging
 import os
+import time
+from dataclasses import dataclass
 
 from services import ratelimit
 
@@ -30,6 +32,8 @@ TASK_TTL_SEC = int(os.getenv("TASK_TTL_SEC", "3600"))
 # 单个任务最长执行时间。几十个岗位逐个调模型可能要几分钟，
 # 设太短会在快跑完时被杀掉，那次调用的钱就白花了。
 JOB_TIMEOUT_SEC = int(os.getenv("TASK_JOB_TIMEOUT_SEC", "600"))
+# 任务一直没被 worker 领取时，读状态时判定为停滞。
+STALL_THRESHOLD_SEC = int(os.getenv("TASK_STALL_THRESHOLD_SEC", "90"))
 
 _pool = None
 _pool_failed = False
@@ -54,7 +58,7 @@ def set_state(task_id: str, **fields) -> None:
 
 # 数值字段单独列出来做类型还原：Redis 哈希里一切都是字符串，
 # 前端拿到 "12" 和 12 的行为不一样（进度条算比例会变字符串拼接）。
-_INT_FIELDS = ("done", "total", "rules", "jobs", "new_matches")
+_INT_FIELDS = ("done", "total", "rules", "jobs", "new_matches", "skipped", "queued_at")
 
 
 def read_state(task_id: str) -> dict | None:
@@ -76,6 +80,18 @@ def read_state(task_id: str) -> dict | None:
                 state[field] = int(state[field])
             except ValueError:
                 pass
+    queued_at = state.get("queued_at")
+    # authorizing 也要判停滞，不能只看 queued。
+    # authorizing 是"已入队、配额还没扣完"的中间态：API 若在这两步之间挂掉，
+    # 状态就永远停在这里——而这正是本次要修的那个"转圈不结束"的症状，
+    # 只是换了个状态名。两个状态都能挂，就都要能被发现。
+    if (
+        state.get("status") in {"queued", "authorizing"}
+        and isinstance(queued_at, int)
+        and time.time() - queued_at > STALL_THRESHOLD_SEC
+    ):
+        state["status"] = "stalled"
+        state["message"] = "后台处理服务异常，请稍后重试"
     return state
 
 
@@ -107,23 +123,36 @@ def reset_pool_for_tests() -> None:
     _pool_failed = False
 
 
-async def enqueue_refresh(user_id: str) -> str | None:
-    """把一次匹配刷新入队。返回任务 ID；队列不可用时返回 None。"""
+@dataclass(frozen=True)
+class EnqueueResult:
+    task_id: str
+    is_new: bool
+
+
+async def enqueue_refresh(user_id: str) -> EnqueueResult | None:
+    """把一次匹配刷新入队。同用户在途任务复用同一 ID。"""
     pool = await _get_pool()
     if pool is None:
         return None
+    task_id = f"refresh:{user_id}"
     try:
-        job = await pool.enqueue_job("refresh_matches", user_id)
+        # 稍延一秒领取，给 API 足够时间在确认新入队后完成配额扣减。
+        # worker 会核对 authorizing/rejected，避免超额任务已入队却继续花钱。
+        job = await pool.enqueue_job(
+            "refresh_matches", user_id, _job_id=task_id, _defer_by=1,
+        )
     except Exception as exc:  # noqa: BLE001
         logger.warning("enqueue failed, falls back to sync",
                        extra={"extra_fields": {"error": str(exc)}})
         return None
-    if job is None:  # 同 job_id 已在队列里，arq 返回 None
-        return None
-    # 立刻落一条 queued 状态：既让前端第一次轮询就有东西可读，
-    # 也把归属写死，防止拿到别人的 task_id 就能读别人的结果。
-    set_state(job.job_id, status="queued", user_id=user_id, done=0, total=0)
-    return job.job_id
+    if job is None:
+        # 显式 job_id 已存在：返回它继续轮询，不能回落到同步再跑一次。
+        return EnqueueResult(task_id=task_id, is_new=False)
+    # 先写归属和配额校验中状态；API 确认扣额成功后再转为 queued。
+    # queued_at 在这里就落下：authorizing 同样可能卡住，没有时间戳就无从判定停滞。
+    set_state(job.job_id, status="authorizing", user_id=user_id,
+              done=0, total=0, queued_at=int(time.time()))
+    return EnqueueResult(task_id=job.job_id, is_new=True)
 
 
 # ---------------- worker 侧 ----------------
@@ -145,6 +174,14 @@ def _run_blocking(task_id: str, user_id: str) -> dict:
 
 async def refresh_matches(ctx, user_id: str) -> dict:
     task_id = ctx["job_id"]
+    state = read_state(task_id)
+    if state and state.get("status") in {"authorizing", "rejected"}:
+        logger.warning("refresh task skipped before quota authorization", extra={
+            "extra_fields": {"task_id": task_id, "user_id": user_id},
+        })
+        if state.get("status") == "authorizing":
+            set_state(task_id, status="failed", error="任务未完成配额校验，请重试")
+        return {"rules": 0, "jobs": 0, "new_matches": 0, "skipped": 0}
     set_state(task_id, status="running")
     try:
         stats = await asyncio.to_thread(_run_blocking, task_id, user_id)
@@ -205,3 +242,5 @@ class WorkerSettings:
     # 失败不自动重试：这些任务每次都真金白银调模型，
     # 自动重跑等于自动重复付费，且失败原因多半是配置或额度，重试也不会好。
     max_tries = 1
+    # 结果状态由我们的 Redis 哈希保留；arq 结果键会阻止稳定 job_id 再次入队。
+    keep_result = 0
