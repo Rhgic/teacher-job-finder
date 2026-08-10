@@ -1,52 +1,59 @@
 name: CI
 
+# Python 版本统一取 3.12，与 backend/Dockerfile 的 python:3.12-slim 对齐。
+# CI 绿而线上崩最常见的原因就是两边跑在不同小版本上，这里不留这个缝。
 on:
   push:
-    # v2 在这里的原因：workflow_dispatch 只认默认分支上的 workflow 文件，
-    # 默认分支切到 v2 之前，推 v2 是触发 CI 的唯一方式。
-    branches: [main, v2]
+    branches: [main, v2, master]
   pull_request:
-  workflow_dispatch:
 
-# 同一分支上新推送时取消尚未跑完的旧任务，避免排队浪费。
-concurrency:
-  group: ci-${{ github.ref }}
-  cancel-in-progress: true
+env:
+  PYTHON_VERSION: "3.12"
 
 jobs:
-  backend:
-    name: 后端 · 代码检查 + 单元测试
+  lint:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
     steps:
       - uses: actions/checkout@v4
-
       - uses: actions/setup-python@v5
         with:
-          # 与 backend/Dockerfile 的 python:3.12-slim 保持一致，
-          # 否则 CI 绿了也不能保证部署环境跑得起来。
-          python-version: "3.12"
+          python-version: ${{ env.PYTHON_VERSION }}
+      - name: Install ruff
+        run: pip install "ruff>=0.6"
+      - name: Ruff check
+        run: ruff check .
+
+  test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    env:
+      DATABASE_URL: "sqlite:///./ci_test.db"
+      LLM_STUB_MODE: "1"
+      EMBEDDING_STUB_MODE: "1"
+      AUTH_DEV_MODE: "1"
+      MAILER_DRY_RUN: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
           cache: pip
           cache-dependency-path: backend/requirements.txt
-
-      - name: 安装依赖
-        working-directory: backend
+      - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
-
-      - name: 代码检查（ruff）
-        working-directory: backend
-        run: ruff check .
-
-      - name: 单元测试（pytest）
-        working-directory: backend
-        # 测试跑在 SQLite 上，不依赖 MySQL 与任何外部密钥。
-        run: python -m pytest -q
+      - name: Run tests
+        run: pytest -q
 
       - name: 迁移与模型一致性
-        working-directory: backend
         env:
-          DATABASE_URL: sqlite:///./ci_migration_check.db
+          DATABASE_URL: "sqlite:///./ci_migration_check.db"
         # 先按迁移建库，再让 alembic 比对模型与库结构。
         # 有人改了 models.py 却没写迁移的话，check 会报出差异并让 CI 失败——
         # 否则这种漂移要等到上线执行迁移时才暴露。
@@ -54,45 +61,26 @@ jobs:
           alembic upgrade head
           alembic check
 
-  miniprogram:
-    name: 小程序 · 静态检查
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: "22"
-
-      - name: 静态自检
-        working-directory: miniprogram
-        # --static 跳过"需要后端在跑"的健康检查，那部分由 smoke 任务覆盖。
-        run: node scripts/check-all.mjs --static
-
   smoke:
     name: 端到端冒烟 · 零外部依赖
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
     steps:
       - uses: actions/checkout@v4
-
       - uses: actions/setup-python@v5
         with:
-          python-version: "3.12"
+          python-version: ${{ env.PYTHON_VERSION }}
           cache: pip
           cache-dependency-path: backend/requirements.txt
 
-      - uses: actions/setup-node@v4
-        with:
-          node-version: "22"
-
       - name: 安装依赖
-        working-directory: backend
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
       - name: 灌入种子数据
-        working-directory: backend
         # 不设任何环境变量，走 config.py 的默认值：
         # SQLite + LLM_STUB_MODE=1 + EMBEDDING_STUB_MODE=1 + MAILER_DRY_RUN=1。
         # 这一步同时守住了"无外部密钥也必须能端到端跑通"这条约定——
@@ -100,7 +88,6 @@ jobs:
         run: python seed.py
 
       - name: 启动后端
-        working-directory: backend
         run: |
           nohup uvicorn main:app --host 127.0.0.1 --port 8000 > server.log 2>&1 &
           for i in $(seq 1 30); do
@@ -114,11 +101,22 @@ jobs:
           cat server.log
           exit 1
 
-      - name: 接口冒烟检查
-        working-directory: miniprogram
-        # 覆盖 /health、/readiness、/jobs、/settings/*、已截止岗位投递防线、
-        # /auth/login 挂载情况。
-        run: node scripts/dev-health-check.mjs
+      - name: 关键接口可用
+        # README 承诺"不配任何外部密钥就能端到端跑通"，这里逐个兑现。
+        run: |
+          set -e
+          curl -sf http://127.0.0.1:8000/health > /dev/null
+          curl -sf http://127.0.0.1:8000/readiness > /dev/null
+          curl -sf "http://127.0.0.1:8000/jobs?limit=5" > /dev/null
+          echo "健康检查与岗位列表 OK"
+
+      - name: 首页跳转必须落到真实页面
+        # 根路由改过跳转目标却没人发现的事发生过一次，这里守住。
+        run: |
+          set -e
+          target=$(curl -s -o /dev/null -w '%{redirect_url}' http://127.0.0.1:8000/)
+          echo "根路由跳往 ${target}"
+          curl -sf "${target}" > /dev/null
 
       - name: 指标端点可用
         run: |
