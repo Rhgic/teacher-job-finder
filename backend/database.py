@@ -40,18 +40,34 @@ def _engine_kwargs() -> dict:
       再多要先调大 MySQL 侧上限。
     - 把等待超时压到 5 秒。宁可让超载请求快速失败让客户端重试，
       也不要让用户干等一分钟——与 Redis 那层"降级优先于保护"同一原则。
-    """
-    if IS_SQLITE:
-        # SQLite 是本地文件，没有网络连接池语义；只需允许跨线程使用。
-        return {"connect_args": {"check_same_thread": False}}
 
-    kwargs = {
-        "pool_pre_ping": True,
-        "pool_recycle": int(os.getenv("DB_POOL_RECYCLE", "3600")),
+    **容量与超时对所有后端一视同仁，不能只配给 MySQL。**
+    这里原先对 SQLite 直接 `return {"connect_args": ...}`，理由写的是
+    "SQLite 是本地文件，没有网络连接池语义"。这个说法站不住：
+    文件型 SQLite 在 SQLAlchemy 里照样走 QueuePool，跳过这几个参数
+    只会让 SQLAlchemy 的默认值生效——**pool_size=5、max_overflow=10、
+    pool_timeout=30**。于是不带 DATABASE_URL 启动（也就是 README 教的
+    默认开发命令）时，上面那套"5 秒快速失败"根本没生效，
+    过载表现回到 30 秒挂起，正是这次调整想消灭的"慢性死亡"。
+    2026-08-10 实测：56 并发下 P50 30.0 秒、QPS 3.7。
+    """
+    kwargs: dict = {
         "pool_size": int(os.getenv("DB_POOL_SIZE", "20")),
         "max_overflow": int(os.getenv("DB_MAX_OVERFLOW", "30")),
         "pool_timeout": int(os.getenv("DB_POOL_TIMEOUT", "5")),
     }
+
+    if IS_SQLITE:
+        # 内存库用的是 StaticPool / SingletonThreadPool，不接受容量参数，
+        # 传进去会直接 TypeError；它本来也只有一条连接，无池可言。
+        if ":memory:" in DATABASE_URL:
+            return {"connect_args": {"check_same_thread": False}}
+        kwargs["connect_args"] = {"check_same_thread": False}
+        return kwargs
+
+    # 以下两项只对网络型数据库有意义
+    kwargs["pool_pre_ping"] = True
+    kwargs["pool_recycle"] = int(os.getenv("DB_POOL_RECYCLE", "3600"))
     if IS_MYSQL and "charset=" not in DATABASE_URL:
         # URL 未显式带 charset 时兜底，避免中文/emoji 落库变成 ?
         kwargs["connect_args"] = {"charset": "utf8mb4"}
