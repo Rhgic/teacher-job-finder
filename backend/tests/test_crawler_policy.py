@@ -144,3 +144,94 @@ def test_empty_crawl_is_reported_not_silent(monkeypatch, tmp_path, caplog):
 
     assert result["empty_sources"] == ["fake"]
     assert "crawl_returned_nothing" in caplog.text
+
+
+# --------------------------------------------------------------------------- #
+# 正文级复检：标题过闸后，正文仍可能暴露这不是招聘公告                             #
+# --------------------------------------------------------------------------- #
+
+def test_body_check_rejects_result_announcements():
+    """标题里"公开招聘教师"字样俱全，只有正文才看得出是在公布成绩。"""
+    from services.crawler import is_recruitment_body
+
+    cases = [
+        ("深圳市龙岗区第二外国语学校",
+         "深圳市龙岗区第二外国语学校（集团）2026年上半年赴北京面向2026年应届毕业生"
+         "公开招聘教师面试工作已结束。现将总成绩及入围体检人员名单予以公布"),
+        ("深圳市第七高级中学",
+         "经体检、考察等程序合格，现将深圳市公办中小学公开招聘教师拟聘人员名单予以公示"),
+        ("深圳市龙岗区教育局",
+         "深圳市龙岗区教育局2026年上半年公开招聘教师资格复审工作已于5月26日结束"),
+    ]
+    for name, desc in cases:
+        assert not is_recruitment_body(name, desc), f"没拦住：{name}"
+
+
+def test_body_check_rejects_commercial_ads():
+    """教师求职站点上混着机构转让、加盟这类帖子。"""
+    from services.crawler import is_recruitment_body
+
+    assert not is_recruitment_body(
+        "龙华艺术机构转让",
+        "龙华有家艺术机构，证件齐全。目前课消每月15万左右，主理人出国想转让",
+    )
+
+
+def test_body_check_keeps_real_postings_with_similar_words():
+    """**这条是重点**：真实招聘公告的表格里就有"拟聘岗位""拟聘人数"这类表头。
+
+    只按"拟聘"两个字过滤，会把下面这两条真岗位一起杀掉——
+    所以判据必须是短语，不能是孤立关键词。
+    """
+    from services.crawler import is_recruitment_body
+
+    keepers = [
+        ("招10人！深圳市光明区中等职业技术学校",
+         "深圳市光明区中等职业技术学校，是隶属于光明区教育局的公办中职学校。"
+         "因办学需要，现面向社会公开招聘教师，拟聘岗位及人数如下"),
+        ("深圳中学大鹏学校",
+         "深圳中学大鹏学校2026年6月面向社会人员公开招聘教师 一、招聘岗位及相关要求："
+         "初中语文1名、初中数学2名、初中英语1名 岗位名称 拟聘 人数"),
+    ]
+    for name, desc in keepers:
+        assert is_recruitment_body(name, desc), f"误伤了真岗位：{name}"
+
+
+def test_body_check_only_looks_at_the_head():
+    """只检查开头一段。
+
+    真实招聘公告的正文后半段常引用往届公示（"参见2025年拟聘人员名单"），
+    全文扫描会把它们误判成结果公告。
+    """
+    from services.crawler import is_recruitment_body
+
+    desc = "现面向社会公开招聘初中数学教师2名。" + "岗位职责说明。" * 40 + "参见去年拟聘人员名单"
+    assert is_recruitment_body("某中学", desc)
+
+
+def test_upsert_rejects_and_reports_count():
+    """入库处要拦下来，并把拦截数单独报出来。
+
+    抓到 20 条入库 14 条时，要能一眼看出是源站没更新还是被过滤器拦了。
+    """
+    from sqlalchemy import create_engine
+    from sqlalchemy.orm import sessionmaker
+
+    from models import Base
+    from services.crawler import RawJob, upsert_jobs
+
+    engine = create_engine("sqlite://", future=True,
+                           connect_args={"check_same_thread": False})
+    Base.metadata.create_all(engine)
+    db = sessionmaker(bind=engine, future=True)()
+    try:
+        stats = upsert_jobs(db, [
+            RawJob(source="t", external_id="1", source_url="u1",
+                   school_name="真岗位中学", description="现面向社会公开招聘初中数学教师2名"),
+            RawJob(source="t", external_id="2", source_url="u2",
+                   school_name="某中学", description="经体检、考察等程序合格，现将拟聘人员名单予以公示"),
+        ])
+        assert stats["new"] == 1
+        assert stats["rejected"] == 1
+    finally:
+        db.close()

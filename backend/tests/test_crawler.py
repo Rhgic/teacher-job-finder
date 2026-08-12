@@ -44,13 +44,13 @@ def test_upsert_jobs_deduplicates_and_updates(tmp_path):
 
     with Session() as db:
         first = make_raw_job()
-        assert upsert_jobs(db, [first]) == {"new": 1, "updated": 0}
+        assert upsert_jobs(db, [first]) == {"new": 1, "updated": 0, "rejected": 0}
 
         second = make_raw_job(
             description="班主任经验优先，能带校队。",
             salary_min=18000,
         )
-        assert upsert_jobs(db, [second]) == {"new": 0, "updated": 1}
+        assert upsert_jobs(db, [second]) == {"new": 0, "updated": 1, "rejected": 0}
 
         jobs = db.scalars(select(Job)).all()
         assert len(jobs) == 1
