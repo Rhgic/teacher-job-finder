@@ -118,7 +118,8 @@ def test_unknown_user_matches_nothing(db):
 
     stats = run_pipeline(db, user_id="no-such-user")
 
-    assert stats == {"rules": 0, "jobs": 1, "new_matches": 0, "skipped": 0}
+    assert stats == {"rules": 0, "jobs": 1, "new_matches": 0, "skipped": 0,
+                     "skipped_no_key": 0}
 
 
 def test_concurrent_unique_conflict_skips_only_one_and_keeps_paid_results(db, monkeypatch):
@@ -139,7 +140,7 @@ def test_concurrent_unique_conflict_skips_only_one_and_keeps_paid_results(db, mo
     conflict_job_id = jobs[1].id
     injected = False
 
-    def concurrent_match(_resume, description, _intent):
+    def concurrent_match(_resume, description, _intent, **_kw):
         nonlocal injected
         if description == "conflict" and not injected:
             injected = True

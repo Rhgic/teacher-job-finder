@@ -7,6 +7,11 @@ import httpx
 import pytest
 
 from services import llm_match, ratelimit
+from services.llm_credentials import LLMCredential
+
+# 测试用凭据：显式给出，不依赖任何全局配置。
+# 这正是这次改造的目的——调用方必须说清用谁的 Key。
+CRED = LLMCredential(api_key="sk-test-key", model="deepseek-chat")
 
 
 class _Resp:
@@ -51,19 +56,19 @@ def _patch_post(monkeypatch, responses):
 
 def test_succeeds_on_first_try(monkeypatch):
     calls = _patch_post(monkeypatch, [_Resp(content="hello")])
-    assert llm_match._call_deepseek("sys", "user") == "hello"
+    assert llm_match._call_deepseek("sys", "user", cred=CRED) == "hello"
     assert calls["n"] == 1
 
 
 def test_retries_on_server_error_then_succeeds(monkeypatch):
     calls = _patch_post(monkeypatch, [_Resp(status_code=503), _Resp(content="recovered")])
-    assert llm_match._call_deepseek("sys", "user") == "recovered"
+    assert llm_match._call_deepseek("sys", "user", cred=CRED) == "recovered"
     assert calls["n"] == 2
 
 
 def test_retries_on_timeout(monkeypatch):
     calls = _patch_post(monkeypatch, [httpx.ReadTimeout("slow"), _Resp(content="ok")])
-    assert llm_match._call_deepseek("sys", "user") == "ok"
+    assert llm_match._call_deepseek("sys", "user", cred=CRED) == "ok"
     assert calls["n"] == 2
 
 
@@ -71,14 +76,14 @@ def test_does_not_retry_client_error(monkeypatch):
     """4xx 立即抛出：参数或鉴权问题重试无意义。"""
     calls = _patch_post(monkeypatch, [_Resp(status_code=400)])
     with pytest.raises(httpx.HTTPStatusError):
-        llm_match._call_deepseek("sys", "user")
+        llm_match._call_deepseek("sys", "user", cred=CRED)
     assert calls["n"] == 1
 
 
 def test_gives_up_after_max_attempts(monkeypatch):
     calls = _patch_post(monkeypatch, [_Resp(status_code=500)])
     with pytest.raises(httpx.HTTPStatusError):
-        llm_match._call_deepseek("sys", "user")
+        llm_match._call_deepseek("sys", "user", cred=CRED)
     assert calls["n"] == llm_match.LLM_MAX_ATTEMPTS
 
 
@@ -89,8 +94,8 @@ def test_cache_hit_skips_network(monkeypatch):
     monkeypatch.setattr(ratelimit, "cache_set", lambda k, v: store.__setitem__(k, v))
 
     calls = _patch_post(monkeypatch, [_Resp(content="cached-answer")])
-    assert llm_match._call_deepseek("sys", "same") == "cached-answer"
-    assert llm_match._call_deepseek("sys", "same") == "cached-answer"
+    assert llm_match._call_deepseek("sys", "same", cred=CRED) == "cached-answer"
+    assert llm_match._call_deepseek("sys", "same", cred=CRED) == "cached-answer"
     assert calls["n"] == 1
 
 
@@ -100,8 +105,8 @@ def test_different_prompt_misses_cache(monkeypatch):
     monkeypatch.setattr(ratelimit, "cache_set", lambda k, v: store.__setitem__(k, v))
 
     calls = _patch_post(monkeypatch, [_Resp(content="a"), _Resp(content="b")])
-    llm_match._call_deepseek("sys", "prompt-1")
-    llm_match._call_deepseek("sys", "prompt-2")
+    llm_match._call_deepseek("sys", "prompt-1", cred=CRED)
+    llm_match._call_deepseek("sys", "prompt-2", cred=CRED)
     assert calls["n"] == 2
 
 
@@ -110,7 +115,7 @@ def test_records_token_usage(monkeypatch):
     recorded: list[int] = []
     monkeypatch.setattr(ratelimit, "record_tokens", recorded.append)
     _patch_post(monkeypatch, [_Resp(usage={"total_tokens": 777})])
-    llm_match._call_deepseek("sys", "user")
+    llm_match._call_deepseek("sys", "user", cred=CRED)
     assert recorded == [777]
 
 
@@ -121,10 +126,9 @@ def test_match_does_not_stack_another_retry_layer(monkeypatch):
     （单次 timeout 60s，管道逐个岗位串行跑），这正是演示时"点了没反应"
     的来源。断言总的 HTTP 次数就等于内层上限。
     """
-    monkeypatch.setattr(llm_match.settings, "LLM_STUB_MODE", False)
     calls = _patch_post(monkeypatch, [_Resp(status_code=500)])
 
-    result = llm_match.match_resume_to_job("简历", "岗位JD")
+    result = llm_match.match_resume_to_job("简历", "岗位JD", cred=CRED)
 
     assert calls["n"] == llm_match.LLM_MAX_ATTEMPTS
     assert result["score"] is None
@@ -135,10 +139,9 @@ def test_match_failure_reason_does_not_leak_exception_text(monkeypatch):
 
     原实现是 f"LLM 匹配失败：{last_err}"，401 时异常里带着请求 URL。
     """
-    monkeypatch.setattr(llm_match.settings, "LLM_STUB_MODE", False)
     _patch_post(monkeypatch, [_Resp(status_code=401)])
 
-    reason = llm_match.match_resume_to_job("简历", "岗位JD")["reason"]
+    reason = llm_match.match_resume_to_job("简历", "岗位JD", cred=CRED)["reason"]
 
     assert "api.deepseek.com" not in reason
     assert "HTTPStatusError" not in reason
@@ -154,10 +157,9 @@ def test_unparseable_response_is_evicted_from_cache(monkeypatch):
     monkeypatch.setattr(ratelimit, "cache_get", lambda k: store.get(k))
     monkeypatch.setattr(ratelimit, "cache_set", lambda k, v: store.__setitem__(k, v))
     monkeypatch.setattr(ratelimit, "cache_delete", lambda k: store.pop(k, None))
-    monkeypatch.setattr(llm_match.settings, "LLM_STUB_MODE", False)
 
     _patch_post(monkeypatch, [_Resp(content="这不是 JSON")])
-    assert llm_match.match_resume_to_job("简历", "岗位JD")["score"] is None
+    assert llm_match.match_resume_to_job("简历", "岗位JD", cred=CRED)["score"] is None
     assert store == {}, "坏结果仍留在缓存里，后续请求会一直复现同一个失败"
 
 
@@ -170,7 +172,7 @@ def test_json_mode_toggles_response_format(monkeypatch):
         return _Resp()
 
     monkeypatch.setattr(httpx, "post", fake_post)
-    llm_match._call_deepseek("sys", "u", json_mode=True)
-    llm_match._call_deepseek("sys", "u", json_mode=False)
+    llm_match._call_deepseek("sys", "u", cred=CRED, json_mode=True)
+    llm_match._call_deepseek("sys", "u", cred=CRED, json_mode=False)
     assert "response_format" in seen[0]
     assert "response_format" not in seen[1]

@@ -3,6 +3,9 @@ from sqlalchemy.orm import sessionmaker
 
 from models import Base, Job
 from services import rag_index, rag_qa
+from services.llm_credentials import LLMCredential
+
+STUB_CRED = LLMCredential(api_key="", model="deepseek-chat", is_stub=True)
 
 
 def make_session(tmp_path):
@@ -37,7 +40,7 @@ def test_retrieve_returns_expected_job_chunk(tmp_path):
     with Session() as db:
         seed_indexed_job(db)
 
-        chunks = rag_qa.retrieve(db, "报名材料需要准备什么", k=3)
+        chunks = rag_qa.retrieve(db, "报名材料需要准备什么", k=3, cred=STUB_CRED)
 
     assert chunks
     assert any(chunk.source_title == "南山区第二实验学校" for chunk in chunks)
@@ -58,7 +61,7 @@ def test_ask_not_found_does_not_call_llm(tmp_path, monkeypatch):
 
     with Session() as db:
         seed_indexed_job(db)
-        result = rag_qa.ask(db, "火星基地包住宿吗")
+        result = rag_qa.ask(db, "火星基地包住宿吗", cred=STUB_CRED)
 
     assert result["found"] is False
     assert "未提及" in result["answer"]
@@ -70,7 +73,7 @@ def test_stub_lexical_gate_rejects_unrelated_question(tmp_path):
     Session = make_session(tmp_path)
     with Session() as db:
         seed_indexed_job(db)
-        result = rag_qa.ask(db, "火星基地包住宿吗")
+        result = rag_qa.ask(db, "火星基地包住宿吗", cred=STUB_CRED)
 
     assert result["found"] is False
     assert "未提及" in result["answer"]
@@ -98,7 +101,7 @@ def test_stub_ask_returns_answer_with_real_sources(tmp_path):
     Session = make_session(tmp_path)
     with Session() as db:
         seed_indexed_job(db)
-        result = rag_qa.ask(db, "报名材料需要准备什么")
+        result = rag_qa.ask(db, "报名材料需要准备什么", cred=STUB_CRED)
 
     assert result["found"] is True
     assert "占位回答" in result["answer"]

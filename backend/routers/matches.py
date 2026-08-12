@@ -1,5 +1,6 @@
 """推荐 / 匹配管道接口。"""
 import asyncio
+import functools
 import time
 from datetime import date
 
@@ -11,7 +12,8 @@ from database import get_db
 from deps import require_admin_token, require_registered_user
 from models import User, Job, MatchResult
 from schemas import MatchOut
-from services import pipeline, ratelimit, tasks
+from services import llm_credentials, pipeline, ratelimit, tasks
+from services.llm_errors import raise_for_missing_key
 
 router = APIRouter(tags=["matches"])
 
@@ -40,6 +42,10 @@ async def refresh_my_matches(
     ip = request.client.host if request.client else ""
     if not ratelimit.check_ip_rate(ip):
         raise HTTPException(429, "请求过于频繁，请稍后再试")
+
+    # 入队前先确认凭据可用。否则任务进了队列、worker 才发现没 Key，
+    # 用户看到的是一个跑了很久然后失败的任务，而不是当场的引导。
+    raise_for_missing_key(lambda: llm_credentials.resolve_for_user(db, user.id))
 
     enqueue = await tasks.enqueue_refresh(user.id)
     if enqueue:
@@ -77,7 +83,9 @@ async def refresh_my_matches(
         ))
 
     # 同步兜底。放线程里跑，别把事件循环卡死拖累其它请求。
-    stats = await asyncio.to_thread(pipeline.run_pipeline, db, None, user.id)
+    cred = raise_for_missing_key(lambda: llm_credentials.resolve_for_user(db, user.id))
+    stats = await asyncio.to_thread(
+        functools.partial(pipeline.run_pipeline, db, None, user.id, cred=cred))
     return {"mode": "sync", "status": "done", **stats}
 
 
@@ -155,7 +163,9 @@ def tailor_for_match(
     if match is None or match.user_id != user.id:
         raise HTTPException(404, "匹配不存在")
     try:
-        version = pipeline.generate_tailored_resume(db, match)
+        cred = raise_for_missing_key(
+            lambda: llm_credentials.resolve_for_user(db, user.id))
+        version = pipeline.generate_tailored_resume(db, match, cred=cred)
     except ValueError as e:
         raise HTTPException(400, str(e)) from e
     return {

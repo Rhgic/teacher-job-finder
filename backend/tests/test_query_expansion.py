@@ -9,7 +9,11 @@ import json
 
 import pytest
 
-from services import rag_qa, ratelimit
+from services import ratelimit, rag_qa
+from services.llm_credentials import LLMCredential
+
+CRED = LLMCredential(api_key="sk-test-key", model="deepseek-chat")
+STUB_CRED = LLMCredential(api_key="", model="deepseek-chat", is_stub=True)
 
 
 @pytest.fixture
@@ -23,13 +27,13 @@ def _fake_expand(monkeypatch, reply):
 
 def test_expands_colloquial_question(monkeypatch, real_llm_mode):
     _fake_expand(monkeypatch, "薪酬、待遇、年薪、月薪")
-    assert rag_qa.expand_query("工资多少？") == {"薪酬", "待遇", "年薪", "月薪"}
+    assert rag_qa.expand_query("工资多少？", cred=CRED) == {"薪酬", "待遇", "年薪", "月薪"}
 
 
 def test_drops_single_chars_and_long_junk(monkeypatch, real_llm_mode):
     """单字太宽泛会把无关片段全放进来；超长的多半是模型没听话输出了句子。"""
     _fake_expand(monkeypatch, "薪、酬、薪酬、这是一句模型没有听懂指令时输出的完整句子")
-    assert rag_qa.expand_query("工资多少？") == {"薪酬"}
+    assert rag_qa.expand_query("工资多少？", cred=CRED) == {"薪酬"}
 
 
 def test_stub_mode_skips_expansion(monkeypatch):
@@ -40,7 +44,7 @@ def test_stub_mode_skips_expansion(monkeypatch):
         raise AssertionError("stub 模式不该调用 LLM")
 
     monkeypatch.setattr(rag_qa, "_call_deepseek", boom)
-    assert rag_qa.expand_query("工资多少？") == set()
+    assert rag_qa.expand_query("工资多少？", cred=CRED) == set()
 
 
 def test_expansion_failure_degrades_to_empty(monkeypatch, real_llm_mode):
@@ -49,7 +53,7 @@ def test_expansion_failure_degrades_to_empty(monkeypatch, real_llm_mode):
         raise RuntimeError("api down")
 
     monkeypatch.setattr(rag_qa, "_call_deepseek", boom)
-    assert rag_qa.expand_query("工资多少？") == set()
+    assert rag_qa.expand_query("工资多少？", cred=CRED) == set()
 
 
 def test_expansion_is_cached(monkeypatch, real_llm_mode):
@@ -64,8 +68,8 @@ def test_expansion_is_cached(monkeypatch, real_llm_mode):
         return "薪酬、待遇"
 
     monkeypatch.setattr(rag_qa, "_call_deepseek", counted)
-    first = rag_qa.expand_query("工资多少？")
-    second = rag_qa.expand_query("工资多少？")
+    first = rag_qa.expand_query("工资多少？", cred=CRED)
+    second = rag_qa.expand_query("工资多少？", cred=CRED)
     assert first == second == {"薪酬", "待遇"}
     assert calls["n"] == 1
 
@@ -101,8 +105,8 @@ def test_expansion_rescues_vocabulary_mismatch(db, monkeypatch, real_llm_mode):
     """核心场景：问"工资多少"，公告只写"薪酬待遇"，不扩展则召回不到。"""
     monkeypatch.setattr(rag_qa, "_call_deepseek", lambda *a, **k: "薪酬、待遇、年薪")
 
-    without = rag_qa.retrieve(db, "工资多少？", expand=False)
-    with_expand = rag_qa.retrieve(db, "工资多少？", expand=True)
+    without = rag_qa.retrieve(db, "工资多少？", expand=False, cred=CRED)
+    with_expand = rag_qa.retrieve(db, "工资多少？", expand=True, cred=CRED)
 
     assert without == []
     assert [c.source_title for c in with_expand] == ["A 校"]
@@ -117,7 +121,7 @@ def test_scores_by_lexical_hit_not_dot_product(db, monkeypatch, real_llm_mode):
     monkeypatch.setattr(rag_qa, "_call_deepseek", lambda *a, **k: "薪酬、待遇")
     monkeypatch.setattr(rag_qa, "MIN_SCORE", 99.0)   # 点积路径下会全灭
 
-    got = rag_qa.retrieve(db, "工资多少？")
+    got = rag_qa.retrieve(db, "工资多少？", cred=CRED)
 
     assert [c.source_title for c in got] == ["A 校"]
     assert got[0].score > 0

@@ -13,6 +13,7 @@ import time
 
 from config import settings
 from services import ratelimit
+from services.llm_credentials import LLMCredential
 
 logger = logging.getLogger("llm")
 
@@ -56,9 +57,9 @@ def _stub_result(resume_summary: str, jd_text: str) -> dict:
     }
 
 
-def _payload_for(system: str, user: str, json_mode: bool) -> dict:
+def _payload_for(system: str, user: str, json_mode: bool, model: str) -> dict:
     payload = {
-        "model": settings.DEEPSEEK_MODEL,
+        "model": model,
         "messages": [
             {"role": "system", "content": system},
             {"role": "user", "content": user},
@@ -70,21 +71,32 @@ def _payload_for(system: str, user: str, json_mode: bool) -> dict:
     return payload
 
 
-def _cache_key_for(system: str, user: str, *, json_mode: bool = True) -> str:
-    """缓存键 = 整个请求体的指纹。
+def _cache_key_for(system: str, user: str, *, json_mode: bool = True,
+                   model: str | None = None) -> str:
+    """缓存键 = 请求体指纹（含模型名）。
 
     单独拎出来是为了让调用方也能算出同一个键——模型返回了解析不了的
     内容时要能把这条坏缓存删掉，见 match_resume_to_job()。
+
+    **不把 api_key 掺进缓存键**：缓存的是"同样的问题问同一个模型得到的
+    答案"，与谁付费无关，掺进去只会让每个用户各缓存一份、白花钱。
+    但 model 必须进——deepseek-chat 与 deepseek-reasoner 的输出不可互换。
     """
     import hashlib
 
-    raw = json.dumps(_payload_for(system, user, json_mode),
+    raw = json.dumps(_payload_for(system, user, json_mode,
+                                  model or settings.DEEPSEEK_MODEL),
                      ensure_ascii=False, sort_keys=True)
     return hashlib.sha256(raw.encode("utf-8")).hexdigest()[:32]
 
 
-def _call_deepseek(system: str, user: str, *, json_mode: bool = True) -> str:
-    """调用 DeepSeek chat completions，返回模型文本。需 httpx 与有效 API Key。
+def _call_deepseek(system: str, user: str, *, cred: LLMCredential,
+                   json_mode: bool = True) -> str:
+    """调用 DeepSeek chat completions，返回模型文本。
+
+    cred 是**必填**参数，不给默认值：漏改的调用点会在这里直接 TypeError，
+    而不是静默地退回服务器全局 Key 继续跑（那样账单照出、结果照常，
+    没有任何迹象表明这条路径没改到）。
 
     json_mode 仅在期望结构化输出时开启（匹配评分、简历改写）。
     DeepSeek 规定 response_format=json_object 时 prompt 里必须出现 "json" 字样，
@@ -97,8 +109,13 @@ def _call_deepseek(system: str, user: str, *, json_mode: bool = True) -> str:
     """
     import httpx
 
-    payload = _payload_for(system, user, json_mode)
-    cache_key = _cache_key_for(system, user, json_mode=json_mode)
+    if cred.is_stub:
+        raise RuntimeError(
+            "stub 凭据不应走到真实网络调用；调用方需在 is_stub 时返回占位结果"
+        )
+
+    payload = _payload_for(system, user, json_mode, cred.model)
+    cache_key = _cache_key_for(system, user, json_mode=json_mode, model=cred.model)
     cached = ratelimit.cache_get(cache_key)
     if cached is not None:
         ratelimit.record_cache_event(hit=True)
@@ -107,7 +124,7 @@ def _call_deepseek(system: str, user: str, *, json_mode: bool = True) -> str:
     ratelimit.record_cache_event(hit=False)
 
     url = f"{settings.DEEPSEEK_BASE_URL}/chat/completions"
-    headers = {"Authorization": f"Bearer {settings.DEEPSEEK_API_KEY}"}
+    headers = {"Authorization": f"Bearer {cred.api_key}"}
     last_exc: Exception | None = None
     for attempt in range(LLM_MAX_ATTEMPTS):
         started = time.perf_counter()
@@ -132,7 +149,7 @@ def _call_deepseek(system: str, user: str, *, json_mode: bool = True) -> str:
         total = int(usage.get("total_tokens") or 0)
         ratelimit.record_tokens(total)
         logger.info("llm_call", extra={"extra_fields": {
-            "model": settings.DEEPSEEK_MODEL,
+            "model": cred.model,
             "json_mode": json_mode,
             "prompt_tokens": usage.get("prompt_tokens"),
             "completion_tokens": usage.get("completion_tokens"),
@@ -200,8 +217,12 @@ def _failed_result(reason: str) -> dict:
     }
 
 
-def match_resume_to_job(resume_summary: str, jd_text: str, intent: dict | None = None) -> dict:
+def match_resume_to_job(resume_summary: str, jd_text: str, intent: dict | None = None,
+                        *, cred: LLMCredential) -> dict:
     """对单个(简历, 岗位)产出结构化匹配结果。失败不抛，返回 score=None 兜底。
+
+    cred 必填，由调用方按"这次跑的是谁的任务"解析出来（见
+    services/llm_credentials.resolve_for_user）。
 
     这里**不再**在 _call_deepseek 外面套一层重试。原先是
     `for _ in range(2)` 包住整个调用，两个方向都算不上划算：
@@ -215,7 +236,7 @@ def match_resume_to_job(resume_summary: str, jd_text: str, intent: dict | None =
     所以改成：调用失败直接兜底；解析失败先把那条坏缓存删掉再兜底，
     否则它会被钉住一个 TTL，期间这对（简历, 岗位）永远失败。
     """
-    if settings.LLM_STUB_MODE:
+    if cred.is_stub:
         return _stub_result(resume_summary, jd_text)
 
     user_prompt = (
@@ -225,7 +246,7 @@ def match_resume_to_job(resume_summary: str, jd_text: str, intent: dict | None =
     )
 
     try:
-        raw = _call_deepseek(SYSTEM_PROMPT, user_prompt)
+        raw = _call_deepseek(SYSTEM_PROMPT, user_prompt, cred=cred)
     except Exception as exc:  # noqa: BLE001 — 兜底不抛，管道要继续评下一个岗位
         logger.warning("llm_match_call_failed", extra={"extra_fields": {
             "error": type(exc).__name__, "detail": str(exc)[:200]}})
@@ -234,7 +255,8 @@ def match_resume_to_job(resume_summary: str, jd_text: str, intent: dict | None =
     try:
         return _normalize(_extract_json(raw))
     except Exception as exc:  # noqa: BLE001 — 同上
-        ratelimit.cache_delete(_cache_key_for(SYSTEM_PROMPT, user_prompt))
+        ratelimit.cache_delete(
+            _cache_key_for(SYSTEM_PROMPT, user_prompt, model=cred.model))
         logger.warning("llm_match_parse_failed", extra={"extra_fields": {
             "error": type(exc).__name__, "raw_head": raw[:200]}})
         return _failed_result("模型返回格式异常，已丢弃本次结果")

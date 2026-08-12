@@ -4,8 +4,10 @@ from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from database import get_db
-from deps import require_admin_token
-from services import rag_index, rag_qa, ratelimit
+from deps import require_admin_token, require_registered_user
+from models import User
+from services import llm_credentials, rag_index, rag_qa, ratelimit
+from services.llm_errors import raise_for_missing_key
 
 router = APIRouter(prefix="/rag", tags=["rag"])
 
@@ -28,6 +30,7 @@ def ask_rag(
     body: AskIn,
     request: Request,
     db: Session = Depends(get_db),
+    user: User = Depends(require_registered_user),
 ):
     """基于已索引公告片段回答问题；默认 stub 模式不调用真实 LLM。
 
@@ -38,12 +41,15 @@ def ask_rag(
     if not ratelimit.check_ip_rate(ip):
         raise HTTPException(429, "请求过于频繁，请稍后再试")
 
-    identity = request.headers.get("authorization", "")[-24:] or ip
-    verdict = ratelimit.check_and_consume_llm_quota(identity)
+    verdict = ratelimit.check_and_consume_llm_quota(user.id)
     if not verdict.allowed:
         raise HTTPException(429, (
             "今日问答次数已用完，请明天再来"
             if verdict.reason == "user_quota_exceeded"
             else "演示环境今日额度已用完，请明天再来"
         ))
-    return rag_qa.ask(db, body.question)
+
+    # 先解析凭据再问：没配 Key 就不该走检索也不该假装有答案，
+    # 直接回一个前端能识别的引导码。
+    cred = raise_for_missing_key(lambda: llm_credentials.resolve_for_user(db, user.id))
+    return rag_qa.ask(db, body.question, cred=cred)

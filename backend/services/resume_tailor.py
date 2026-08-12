@@ -11,6 +11,7 @@ import json
 from pathlib import Path
 
 from config import settings
+from services.llm_credentials import LLMCredential
 from services.llm_match import _call_deepseek, _extract_json
 
 SYSTEM_PROMPT = """你是简历优化助手。根据岗位 JD，把候选人的结构化简历改写得更贴合该岗位。
@@ -70,9 +71,13 @@ def _strip_fabricated_keys(original: dict, tailored: dict) -> dict:
     return tailored
 
 
-def tailor_resume(structured_content: dict, jd_text: str) -> dict:
-    """产出改写后的简历 + 改动清单（draft，需人工审核后才可投递）。"""
-    if settings.LLM_STUB_MODE:
+def tailor_resume(structured_content: dict, jd_text: str, *,
+                  cred: LLMCredential) -> dict:
+    """产出改写后的简历 + 改动清单（draft，需人工审核后才可投递）。
+
+    cred 必填，与匹配、问答同一套：改写也花用户自己的额度。
+    """
+    if cred.is_stub:
         return _stub_result(structured_content)
 
     user_prompt = (
@@ -80,7 +85,7 @@ def tailor_resume(structured_content: dict, jd_text: str) -> dict:
         f"【岗位 JD】\n{jd_text}"
     )
     try:
-        data = _extract_json(_call_deepseek(SYSTEM_PROMPT, user_prompt))
+        data = _extract_json(_call_deepseek(SYSTEM_PROMPT, user_prompt, cred=cred))
         tailored = _strip_fabricated_keys(structured_content, data.get("tailored_content") or {})
         summary = list(data.get("change_summary") or [])
         # 若发生了字段裁剪，追加一条提示供用户知晓

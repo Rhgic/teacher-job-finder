@@ -1,6 +1,9 @@
 import json
 
 import services.resume_tailor as resume_tailor
+from services.llm_credentials import LLMCredential
+
+CRED = LLMCredential(api_key="sk-test-key", model="deepseek-chat")
 
 
 def test_strip_fabricated_keys_removes_nested_extra_fields():
@@ -50,7 +53,7 @@ def test_tailor_resume_strips_fabricated_keys_when_llm_returns_extra(monkeypatch
     monkeypatch.setattr(
         resume_tailor,
         "_call_deepseek",
-        lambda system, user: json.dumps(fake_payload, ensure_ascii=False),
+        lambda system, user, **kw: json.dumps(fake_payload, ensure_ascii=False),
     )
 
     result = resume_tailor.tailor_resume(
@@ -59,6 +62,7 @@ def test_tailor_resume_strips_fabricated_keys_when_llm_returns_extra(monkeypatch
             "experience": [{"school": "A校", "role": "语文老师"}],
         },
         "小学语文教师岗位",
+        cred=CRED,
     )
 
     assert result["tailored_content"] == {

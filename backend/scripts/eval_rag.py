@@ -28,7 +28,7 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from database import SessionLocal
-from services import rag_qa
+from services import llm_credentials, rag_qa
 
 # 每题给出"含答案的片段里必然出现的词"。
 # 用关键词而非精确答案，是因为语料会随爬虫更新，
@@ -66,13 +66,18 @@ UNANSWERABLE = [
 ]
 
 
-def evaluate(expand: bool) -> dict:
+def evaluate(expand: bool, cred=None) -> dict:
+    """cred 不给时用 stub 凭据：评测默认只量化检索层，不花钱调模型。
+
+    要评真实模型答案时传一个真实用户的凭据（配合 --with-llm）。
+    """
+    cred = cred or llm_credentials.stub_credential()
     db = SessionLocal()
     try:
         recalled = p1 = p3 = 0
         zero_recall = []
         for question, must in ANSWERABLE:
-            chunks = rag_qa.retrieve(db, question, k=3, expand=expand)
+            chunks = rag_qa.retrieve(db, question, k=3, expand=expand, cred=cred)
             if not chunks:
                 zero_recall.append(question)
                 continue
@@ -85,7 +90,7 @@ def evaluate(expand: bool) -> dict:
         refused = 0
         wrongly_answered = []
         for question in UNANSWERABLE:
-            result = rag_qa.ask(db, question, k=3)
+            result = rag_qa.ask(db, question, k=3, cred=cred)
             if not result["found"] or "未提及" in result["answer"]:
                 refused += 1
             else:

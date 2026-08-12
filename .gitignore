@@ -69,3 +69,8 @@ docs/superpowers/
 overview.md
 cross-border-agent-ui/
 求职事实核验表.md
+
+# 其它工具/项目留下的目录，同样不属于本仓库
+.playwright-cli/
+output/
+salespilot/

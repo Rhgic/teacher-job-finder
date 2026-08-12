@@ -14,6 +14,7 @@ from config import settings
 from models import DocChunk
 from services import ratelimit
 from services.embedding import embed
+from services.llm_credentials import LLMCredential
 from services.llm_match import _call_deepseek
 
 logger = logging.getLogger("rag")
@@ -88,7 +89,7 @@ EXPAND_PROMPT = """你把求职者的口语提问，翻译成招聘公告里会�
 答：编制、事业单位、员额、聘用制、在编"""
 
 
-def expand_query(question: str) -> set[str]:
+def expand_query(question: str, *, cred: LLMCredential | None = None) -> set[str]:
     """把口语问法扩展成公告里的书面用词，用于加宽词法召回。
 
     公告写"薪酬待遇"，用户问"工资多少"；公告写"资格复审"，用户问"要审什么"。
@@ -98,7 +99,7 @@ def expand_query(question: str) -> set[str]:
     任何一步失败都返回空集合，退回原有的词法召回，不让问答挂掉。
     """
     q = (question or "").strip()
-    if not q or settings.LLM_STUB_MODE:
+    if not q or cred is None or cred.is_stub:
         return set()
 
     cache_key = "qx:" + hashlib.sha256(q.encode("utf-8")).hexdigest()[:32]
@@ -107,7 +108,8 @@ def expand_query(question: str) -> set[str]:
         return {t for t in cached.split("、") if t}
 
     try:
-        raw = _call_deepseek(EXPAND_PROMPT, f"问：{q}\n答：", json_mode=False)
+        raw = _call_deepseek(EXPAND_PROMPT, f"问：{q}\n答：",
+                             cred=cred, json_mode=False)
     except Exception as exc:  # noqa: BLE001 - 扩展失败不该影响主流程
         logger.warning("query_expand_failed", extra={"extra_fields": {"error": str(exc)}})
         return set()
@@ -122,7 +124,7 @@ def expand_query(question: str) -> set[str]:
 
 
 def retrieve(db: Session, question: str, k: int = DEFAULT_TOP_K,
-             expand: bool = True) -> list[RetrievedChunk]:
+             expand: bool = True, *, cred: LLMCredential | None = None) -> list[RetrievedChunk]:
     """全量加载 doc_chunks，用点积近似余弦相似度取 top-k。
 
     expand=True 时先用 LLM 把口语问法扩展成公告用词再做词法召回，
@@ -132,7 +134,9 @@ def retrieve(db: Session, question: str, k: int = DEFAULT_TOP_K,
     if not q:
         return []
     q_vec = embed([q])[0]
-    extra_terms = expand_query(q) if expand else set()
+    # cred 为 None 时 expand_query 直接返回空集：检索照常做，只是不做
+    # LLM 查询扩展。检索层本身不该因为「用户没配 Key」而完全不可用。
+    extra_terms = expand_query(q, cred=cred) if expand else set()
 
     all_terms = _query_terms(q) | extra_terms
     scored: list[RetrievedChunk] = []
@@ -218,20 +222,27 @@ def _stub_answer(question: str, chunks: list[RetrievedChunk]) -> str:
     )
 
 
-def ask(db: Session, question: str, k: int = DEFAULT_TOP_K) -> dict:
-    """RAG 问答入口。未命中不调用 LLM，避免编造。"""
-    chunks = retrieve(db, question, k=k)
+def ask(db: Session, question: str, k: int = DEFAULT_TOP_K,
+        *, cred: LLMCredential) -> dict:
+    """RAG 问答入口。未命中不调用 LLM，避免编造。
+
+    cred 必填：问答花的是用户自己的额度，不能落回服务器全局 Key。
+    """
+    chunks = retrieve(db, question, k=k, cred=cred)
     if not chunks:
         return {"answer": NOT_FOUND_ANSWER, "found": False, "sources": []}
 
     sources = _sources(chunks)
-    if settings.LLM_STUB_MODE:
+    if cred.is_stub:
         return {"answer": _stub_answer(question, chunks), "found": True, "sources": sources}
 
     user_prompt = build_user_prompt(question, chunks)
     try:
         # 问答要自然语言而非 JSON；json_mode 会因 prompt 不含 "json" 被 DeepSeek 拒掉
-        answer = _call_deepseek(SYSTEM_PROMPT, user_prompt, json_mode=False).strip()
+        answer = _call_deepseek(SYSTEM_PROMPT, user_prompt,
+                                cred=cred, json_mode=False).strip()
     except Exception as exc:  # noqa: BLE001 - 单次问答失败不应导致服务崩溃
-        answer = f"公告问答生成失败：{exc}"
+        logger.warning("rag_answer_failed", extra={"extra_fields": {
+            "error": type(exc).__name__}})
+        answer = "公告问答暂时不可用，请稍后重试"
     return {"answer": answer or NOT_FOUND_ANSWER, "found": True, "sources": sources}
