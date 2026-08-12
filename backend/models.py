@@ -126,8 +126,14 @@ class UserModelConfig(Base):
     __tablename__ = "user_model_configs"
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=gen_uuid)
+    # 唯一性由 __table_args__ 里的 UniqueConstraint 表达，这里只声明普通索引。
+    # 写成 unique=True 会让 SQLAlchemy 把 ix_ 索引本身建成唯一索引，
+    # 而迁移 a421 建的是「普通索引 + 独立唯一约束」，两者对不上，
+    # CI 的 alembic check 会判为模型漂移而失败。
+    # 选择改模型而不是加一个改索引的迁移：语义完全等价（唯一性照样有），
+    # 但在 MySQL 上重建这个索引要先绕开外键对索引的依赖（errno 1553）。
     user_id: Mapped[str] = mapped_column(
-        ForeignKey("users.id", ondelete="CASCADE"), unique=True, index=True
+        ForeignKey("users.id", ondelete="CASCADE"), index=True
     )
 
     encrypted_key: Mapped[str] = mapped_column(Text)
@@ -148,6 +154,12 @@ class UserModelConfig(Base):
     )
 
     user: Mapped["User"] = relationship(back_populates="model_config_row")
+
+    # 一个用户一份配置。刻意不给名字：迁移 a421 里写的是匿名
+    # sa.UniqueConstraint("user_id")，SQLite 把它编译进 CREATE TABLE 的
+    # 内联 UNIQUE，反射不回名字。这边一旦命名，alembic check 就会把它
+    # 判成「新增了一个约束」而让 CI 变红。
+    __table_args__ = (UniqueConstraint("user_id"),)
 
 
 # --------------------------------------------------------------------------- #
