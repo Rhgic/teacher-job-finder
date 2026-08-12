@@ -1,11 +1,11 @@
 """Meta/operations endpoints that expose non-sensitive readiness state."""
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 from pathlib import Path
 
 from fastapi import APIRouter, Depends
-from sqlalchemy import func, select
+from sqlalchemy import func, or_, select, true as sa_true
 from sqlalchemy.orm import Session
 
 from config import settings
@@ -28,6 +28,66 @@ def get_taxonomy():
         "stages": list(taxonomy.STAGES),
         "districts": list(taxonomy.DISTRICTS),
         "school_types": list(taxonomy.SCHOOL_TYPES),
+    }
+
+
+@router.get("/taxonomy/facets")
+def get_taxonomy_facets(
+    include_expired: bool = False,
+    db: Session = Depends(get_db),
+):
+    """标准表 + 每个取值下的真实岗位数，供岗位页渲染筛选器。
+
+    为什么不让前端把选项写死：写死过一次，代价是**库里 7 个体育岗位、
+    3 个历史岗位在界面上根本点不到**——数据和接口都是好的，只是没人
+    给它们做按钮。2026-08-12 实测 105 个岗位里有 41 个属于被漏掉的学科。
+
+    与 /taxonomy 的分工：
+    - /taxonomy 给订阅规则用，返回完整标准表（将来会爬到的岗位也要能表达意向）。
+    - 这里给岗位浏览用，多带一个 count，让前端把 0 结果的选项置灰。
+      置灰而不是隐藏：用户需要知道"这个学科现在没有岗位"，
+      而不是以为这个平台压根不收这类岗位。
+    """
+    # 未过期条件与 /jobs 的默认筛选保持一致，否则计数会和列表对不上：
+    # 用户看到"体育 7"点进去却只有 3 条，比不显示数字更糟。
+    scope = sa_true() if include_expired else or_(
+        Job.deadline.is_(None), Job.deadline >= date.today()
+    )
+
+    def counts_for(column):
+        rows = db.execute(
+            select(column, func.count(Job.id)).where(scope).group_by(column)
+        ).all()
+        return {k: n for k, n in rows if k}
+
+    # 库里存的可能是旧写法（"心理"），标准表已改叫"心理健康"。
+    # 在展示层归一化合并，而不是去改历史数据——同一个学科不该出现两个 chip。
+    subject_counts: dict[str, int] = {}
+    for raw, n in counts_for(Job.subject).items():
+        key = taxonomy.normalize_subject(raw) or raw
+        subject_counts[key] = subject_counts.get(key, 0) + n
+    stage_counts = counts_for(Job.stage)
+    district_counts = counts_for(Job.district)
+
+    def merge(names, counts):
+        # 标准表里的顺序优先；库里出现了标准表没有的值也一并列出，
+        # 否则那些岗位同样会变成点不到的孤儿。
+        known = [{"value": n, "count": counts.get(n, 0)} for n in names]
+        extra = [{"value": k, "count": v} for k, v in sorted(counts.items())
+                 if k not in set(names)]
+        return known + extra
+
+    total = db.scalar(select(func.count(Job.id)).where(scope))
+    return {
+        "subjects": merge(taxonomy.SUBJECTS, subject_counts),
+        "stages": merge(taxonomy.STAGES, stage_counts),
+        "districts": merge(taxonomy.DISTRICTS, district_counts),
+        "total": total,
+        # 学科未识别的岗位数。单列出来是因为它是爬虫质量问题，
+        # 不是"没有这类岗位"——藏起来就没人会去修。
+        "unclassified_subject": db.scalar(
+            select(func.count(Job.id)).where(Job.subject.is_(None), scope)
+        ),
     }
 
 
