@@ -2,7 +2,7 @@
 from datetime import date
 
 from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy import case, select
+from sqlalchemy import case, or_, select
 from sqlalchemy.orm import Session
 
 from database import get_db
@@ -31,12 +31,18 @@ def list_jobs(
     if stage:
         q = q.where(Job.stage == stage)
     if subject:
-        # 筛选器展示的是标准名（"心理健康"），但库里可能存着旧写法（"心理"）。
-        # 只按标准名精确匹配的话，点进去会是 0 条——而 chip 上明明写着有 1 个。
-        # 这里把所有归一到该标准名的写法一并匹配。
-        aliases = [raw for raw, canon in taxonomy.SUBJECT_ALIASES.items()
-                   if canon == subject]
-        q = q.where(Job.subject.in_([subject, *aliases]))
+        # 一个公告可能同时招多个学科，所以主要匹配 subjects（竖线包裹的串）。
+        # 同时兼容两种历史数据：
+        # - subjects 尚未回填的老行 → 回退到单值 subject
+        # - 单值里存着旧写法（"心理"而非"心理健康"）→ 别名一并匹配
+        canon = taxonomy.normalize_subject(subject) or subject
+        aliases = [raw for raw, c in taxonomy.SUBJECT_ALIASES.items() if c == canon]
+        q = q.where(
+            or_(
+                Job.subjects.like(taxonomy.like_pattern(canon)),
+                Job.subject.in_([canon, *aliases]),
+            )
+        )
     if is_establishment is not None:
         q = q.where(Job.is_establishment == is_establishment)
     if not include_expired:

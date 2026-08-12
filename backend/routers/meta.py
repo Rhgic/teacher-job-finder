@@ -60,12 +60,19 @@ def get_taxonomy_facets(
         ).all()
         return {k: n for k, n in rows if k}
 
-    # 库里存的可能是旧写法（"心理"），标准表已改叫"心理健康"。
-    # 在展示层归一化合并，而不是去改历史数据——同一个学科不该出现两个 chip。
+    # 学科计数必须按 subjects（多学科）算，不能按单值 subject：
+    # 一个同时招语文和数学的岗位，在两边都该被数进去。
+    # 单值只作为 subjects 未回填时的兜底，并顺带把旧写法归一。
     subject_counts: dict[str, int] = {}
-    for raw, n in counts_for(Job.subject).items():
-        key = taxonomy.normalize_subject(raw) or raw
-        subject_counts[key] = subject_counts.get(key, 0) + n
+    for packed, single in db.execute(
+        select(Job.subjects, Job.subject).where(scope)
+    ).all():
+        names = taxonomy.unpack_subjects(packed)
+        if not names:
+            one = taxonomy.normalize_subject(single)
+            names = [one] if one else []
+        for name in names:
+            subject_counts[name] = subject_counts.get(name, 0) + 1
     stage_counts = counts_for(Job.stage)
     district_counts = counts_for(Job.district)
 
@@ -86,7 +93,9 @@ def get_taxonomy_facets(
         # 学科未识别的岗位数。单列出来是因为它是爬虫质量问题，
         # 不是"没有这类岗位"——藏起来就没人会去修。
         "unclassified_subject": db.scalar(
-            select(func.count(Job.id)).where(Job.subject.is_(None), scope)
+            select(func.count(Job.id)).where(
+                Job.subjects.is_(None), Job.subject.is_(None), scope
+            )
         ),
     }
 

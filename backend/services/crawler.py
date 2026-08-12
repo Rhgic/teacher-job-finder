@@ -35,6 +35,7 @@ class RawJob:
     district: str | None = None
     stage: str | None = None
     subject: str | None = None
+    subjects: str | None = None
     is_establishment: bool | None = None
     salary_min: int | None = None
     salary_max: int | None = None
@@ -280,7 +281,9 @@ class ShenzhenEduBureauCrawler(BaseCrawler):
         description = _compact_text(text)
         district = _guess_district(title + "\n" + description)
         stage = _guess_stage(title + "\n" + description)
-        subject = _guess_subject(title + "\n" + description)
+        _subj_text = title + "\n" + description
+        subject = _guess_subject(_subj_text)
+        subjects = taxonomy.pack_subjects(_guess_subjects(_subj_text))
         school_name = _guess_school_name(title)
         email = _guess_email(description)
         is_establishment = (
@@ -298,6 +301,7 @@ class ShenzhenEduBureauCrawler(BaseCrawler):
             district=district,
             stage=stage,
             subject=subject,
+            subjects=subjects,
             is_establishment=is_establishment,
             recruiter_email=email,
             description=description,
@@ -403,6 +407,7 @@ class ShenzhenTeacherTalentCrawler(BaseCrawler):
             district=_guess_district(combined) or _guess_district_from_path(path),
             stage=_guess_stage(combined),
             subject=_guess_subject(combined),
+            subjects=taxonomy.pack_subjects(_guess_subjects(combined)),
             is_establishment=is_establishment,
             salary_min=_guess_salary_min(description),
             salary_max=_guess_salary_max(description),
@@ -524,6 +529,8 @@ class ShenzhenTeacherRecruitCrawler(BaseCrawler):
             district=_guess_district(title) or _guess_district(description),
             stage=_guess_stage(title) or _guess_stage(description),
             subject=_guess_subject(title) or _guess_subject(description),
+            subjects=taxonomy.pack_subjects(
+                _guess_subjects(title) or _guess_subjects(description)),
             is_establishment=is_establishment,
             salary_min=_guess_salary_min(description),
             salary_max=_guess_salary_max(description),
@@ -699,11 +706,36 @@ def _guess_stage(text: str) -> str | None:
     return None
 
 
-def _guess_subject(text: str) -> str | None:
+def _guess_subjects(text: str) -> list[str]:
+    """找出文本里出现的**全部**学科。
+
+    公告经常一次招多个学科（"语文、数学、英语教师各 1 名"）。
+    原实现按标准表顺序返回第一个命中，而"语文"恰好排在第一位——
+    实测 12 条被标成"语文"的岗位有 11 条其实是多学科招聘。
+    后果不是标签难看，是数学老师筛"数学"时这些岗位全都不出现。
+
+    别名也要认：公告写"思想政治"，标准名是"政治"。
+    """
+    if not text:
+        return []
+    found: list[str] = []
     for subject in taxonomy.SUBJECTS:
-        if subject in text:
-            return subject
-    return None
+        if subject in text and subject not in found:
+            found.append(subject)
+    for alias, canon in taxonomy.SUBJECT_ALIASES.items():
+        if alias in text and canon not in found:
+            found.append(canon)
+    return found
+
+
+def _guess_subject(text: str) -> str | None:
+    """单学科兜底：只有在**恰好命中一个**学科时才给值。
+
+    多学科时返回 None 而不是挑一个——挑出来的那个是错的，
+    而错标签比没标签更有害：它会让岗位出现在不相关的筛选结果里。
+    """
+    found = _guess_subjects(text)
+    return found[0] if len(found) == 1 else None
 
 
 def _guess_email(text: str) -> str | None:

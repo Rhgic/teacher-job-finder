@@ -38,6 +38,39 @@ def normalize_subject(raw: str | None) -> str | None:
     return SUBJECT_ALIASES.get(raw.strip(), raw.strip())
 
 
+# 一个岗位公告经常同时招多个学科（"语文、数学、英语教师各 1 名"）。
+# 存成竖线包裹的串而不是 JSON，是为了能在 SQL 里用 LIKE 精确筛：
+#   subjects LIKE '%|数学|%'
+# JSON 的包含查询在 SQLite 与 MySQL 上语法不同，而筛选必须落在 SQL 里
+# （要分页、要计数），不能捞回内存再过滤。
+# 首尾都带竖线，避免 '|数学|' 误命中 '|高等数学|' 这类子串。
+SUBJECT_SEP = "|"
+
+
+def pack_subjects(subjects) -> str | None:
+    """['语文','数学'] → '|语文|数学|'。空列表返回 None。"""
+    cleaned = []
+    for s in subjects or []:
+        c = normalize_subject(s)
+        if c and c not in cleaned:
+            cleaned.append(c)
+    if not cleaned:
+        return None
+    return SUBJECT_SEP + SUBJECT_SEP.join(cleaned) + SUBJECT_SEP
+
+
+def unpack_subjects(packed: str | None) -> list[str]:
+    """'|语文|数学|' → ['语文','数学']。"""
+    if not packed:
+        return []
+    return [s for s in packed.split(SUBJECT_SEP) if s]
+
+
+def like_pattern(subject: str) -> str:
+    """给定标准学科名，返回用于 SQL LIKE 的模式。"""
+    return f"%{SUBJECT_SEP}{subject}{SUBJECT_SEP}%"
+
+
 # 按学段顺序排列。"中小学"是爬虫无法判定具体学段时的兜底值，
 # 属数据产物而非求职意向，故不列为可选项。
 STAGES: tuple[str, ...] = ("幼儿园", "小学", "初中", "高中", "中职")

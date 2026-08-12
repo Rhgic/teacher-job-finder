@@ -130,3 +130,97 @@ def test_values_present_in_data_but_not_in_taxonomy_still_listed(client, session
 
     subjects = _by_value(client.get("/taxonomy/facets").json()["subjects"])
     assert subjects.get("书法") == 1
+
+
+# --------------------------------------------------------------------------- #
+# 多学科：一个公告常同时招多科                                                   #
+# --------------------------------------------------------------------------- #
+
+def test_guess_subjects_returns_all_not_just_first():
+    """原实现按标准表顺序返回第一个命中，而"语文"恰好排第一。
+
+    实测 105 个岗位里有 69 个因此被误标——"深圳中学招语文/数学/英语/物理/
+    政治/科学教师"整条被打成语文，数学老师筛"数学"根本看不到它。
+    """
+    from services.crawler import _guess_subjects
+
+    found = _guess_subjects("招聘语文、数学、英语教师各 1 名")
+    assert set(found) == {"语文", "数学", "英语"}
+
+
+def test_guess_single_subject_returns_none_when_ambiguous():
+    """多学科时单值必须为空，不能挑一个。
+
+    错标签比没标签更有害：它会让岗位出现在不相关的筛选结果里。
+    """
+    from services.crawler import _guess_subject, _guess_subjects
+
+    assert _guess_subject("只招数学教师") == "数学"
+    assert _guess_subject("招语文、数学教师") is None
+    assert len(_guess_subjects("招语文、数学教师")) == 2
+
+
+def test_multi_subject_job_counted_under_every_subject(client, session_factory):
+    """同时招语文和数学的岗位，两个 chip 上都要各计 1。"""
+    from datetime import date, timedelta
+
+    db = session_factory()
+    try:
+        db.add(Job(school_name="多科校", subjects="|语文|数学|", stage="初中",
+                   district="南山区", deadline=date.today() + timedelta(days=10)))
+        db.commit()
+    finally:
+        db.close()
+
+    counts = _by_value(client.get("/taxonomy/facets").json()["subjects"])
+    assert counts["语文"] == 1
+    assert counts["数学"] == 1
+
+
+def test_multi_subject_job_is_findable_by_each_subject(client, session_factory):
+    """按任一学科筛都要能筛到——这是整件事的意义所在。"""
+    from datetime import date, timedelta
+
+    db = session_factory()
+    try:
+        db.add(Job(school_name="多科校", subjects="|语文|数学|", stage="初中",
+                   district="南山区", deadline=date.today() + timedelta(days=10)))
+        db.commit()
+    finally:
+        db.close()
+
+    for subject in ("语文", "数学"):
+        got = client.get(f"/jobs?subject={subject}&size=100").json()
+        assert len(got) == 1, f"按 {subject} 筛不到这个多学科岗位"
+        assert got[0]["subjects"] == ["语文", "数学"]
+
+
+def test_subject_like_does_not_match_substring(client, session_factory):
+    """竖线包裹是为了防子串误命中：筛"科学"不该命中"信息科学技术"这类值。"""
+    from datetime import date, timedelta
+
+    db = session_factory()
+    try:
+        db.add(Job(school_name="X校", subjects="|信息科学技术|", stage="高中",
+                   district="南山区", deadline=date.today() + timedelta(days=10)))
+        db.commit()
+    finally:
+        db.close()
+
+    assert client.get("/jobs?subject=科学&size=100").json() == []
+
+
+def test_api_returns_subjects_as_list_not_packed_string(client, session_factory):
+    """存储格式（竖线串）不能泄给前端。"""
+    from datetime import date, timedelta
+
+    db = session_factory()
+    try:
+        db.add(Job(school_name="Y校", subjects="|体育|音乐|", stage="小学",
+                   district="南山区", deadline=date.today() + timedelta(days=10)))
+        db.commit()
+    finally:
+        db.close()
+
+    job = client.get("/jobs?size=100").json()[0]
+    assert job["subjects"] == ["体育", "音乐"]

@@ -6,7 +6,7 @@
 from __future__ import annotations
 
 from datetime import datetime, date
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, field_validator
 
 
 class _ORM(BaseModel):
@@ -22,11 +22,27 @@ class JobOut(_ORM):
     district: str | None = None
     stage: str | None = None
     subject: str | None = None
+    # 该公告实际招聘的全部学科。一个公告常同时招多科，
+    # 只回单值会让前端把多学科岗位显示成单科。
+    subjects: list[str] = []
     is_establishment: bool | None = None
     salary_min: int | None = None
     salary_max: int | None = None
     recruiter_email: str | None = None
     deadline: date | None = None
+
+
+    @field_validator("subjects", mode="before")
+    @classmethod
+    def _unpack_subjects(cls, v):
+        """库里存的是竖线包裹的串（'|语文|数学|'），对外回列表。
+
+        存串是为了能在 SQL 里用 LIKE 筛（见 services/taxonomy），
+        但接口不该把这个存储细节泄给前端。
+        """
+        if isinstance(v, str):
+            return [s for s in v.split("|") if s]
+        return v or []
 
 
 class JobDetailOut(JobOut):

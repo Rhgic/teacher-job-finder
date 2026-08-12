@@ -241,7 +241,15 @@ class Job(Base):
     school_type: Mapped[SchoolType | None] = mapped_column(Enum(SchoolType))
     district: Mapped[str | None] = mapped_column(String(32), index=True)  # 区域
     stage: Mapped[str | None] = mapped_column(String(32), index=True)     # 学段
-    subject: Mapped[str | None] = mapped_column(String(32), index=True)   # 学科
+    # 单学科字段。历史遗留：早期假设"一个岗位一个学科"，靠在公告全文里
+    # 找第一个命中的学科名来填。这个假设是错的——实测 12 条标为"语文"的
+    # 岗位有 11 条其实是多学科招聘，只因为"语文"在标准表里排第一。
+    # 保留它是为了去重指纹与老数据兼容；**筛选与展示一律用下面的 subjects**。
+    subject: Mapped[str | None] = mapped_column(String(32), index=True)
+    # 该公告实际招聘的全部学科，竖线包裹：'|语文|数学|'。
+    # 见 services/taxonomy.pack_subjects——存串不存 JSON 是为了能在 SQL 里
+    # 用 LIKE 筛，JSON 的包含查询在 SQLite 与 MySQL 上语法不一致。
+    subjects: Mapped[str | None] = mapped_column(String(255), index=True)
     is_establishment: Mapped[bool | None] = mapped_column(Boolean)        # 是否编制
     salary_min: Mapped[int | None] = mapped_column(Integer)
     salary_max: Mapped[int | None] = mapped_column(Integer)

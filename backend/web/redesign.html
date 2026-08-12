@@ -291,7 +291,9 @@ function fmtDeadline(d) {
   return (expired ? '已截止 ' : '截止 ') + `${m}-${day}`;
 }
 function jobTitle(j) {
-  if (j.stage && j.subject) return `${j.stage}${j.subject}教师`;
+  const subs = j.subjects && j.subjects.length ? j.subjects : (j.subject ? [j.subject] : []);
+  if (j.stage && subs.length === 1) return `${j.stage}${subs[0]}教师`;
+  if (j.stage && subs.length > 1) return `${j.stage}教师（${subs.length} 个学科）`;
   return j.school_name || '教师岗位';
 }
 function jobCard(j) {
@@ -302,7 +304,8 @@ function jobCard(j) {
   else if (j.is_establishment === false) tags.push('<span class="tag">非编制</span>');
   if (j.district) tags.push(`<span class="tag">${j.district.replace('区','')}</span>`);
   if (j.stage) tags.push(`<span class="tag">${j.stage}</span>`);
-  if (j.subject) tags.push(`<span class="tag">${j.subject}</span>`);
+  (j.subjects && j.subjects.length ? j.subjects : (j.subject ? [j.subject] : []))
+    .forEach(s => tags.push(`<span class="tag">${s}</span>`));
   return `<article class="job" data-job-id="${j.id}">
     <div><h3>${title}</h3><div class="org">${org}${typeLabel[j.school_type] ? ' · ' + typeLabel[j.school_type] : ''}</div></div>
     <div class="tags">${tags.join('')}</div>
@@ -314,7 +317,7 @@ function renderJobs() {
   const q = $('#jobSearch').value.trim().toLowerCase();
   const list = allJobs.filter(j => {
     if (!q) return true;
-    const hay = (j.school_name + ' ' + j.district + ' ' + j.subject + ' ' + j.stage).toLowerCase();
+    const hay = (j.school_name + ' ' + j.district + ' ' + (j.subjects || []).join(' ') + ' ' + (j.subject || '') + ' ' + j.stage).toLowerCase();
     return hay.includes(q);
   });
   $('#jobCount').innerHTML = `共 <b class="num">${allJobs.length}</b> 个岗位 · 当前显示 <b class="num">${list.length}</b> 个`;
@@ -423,7 +426,7 @@ function scorecard(m) {
     </div>
     <div class="sc-body">
       <h3>${title}</h3>
-      <div class="org">${(j.is_establishment ? '编制内' : '非编制')} · ${j.district || ''} · ${j.stage || ''} · ${j.subject || ''}</div>
+      <div class="org">${(j.is_establishment ? '编制内' : '非编制')} · ${j.district || ''} · ${j.stage || ''} · ${(j.subjects && j.subjects.length ? j.subjects.join('、') : (j.subject || ''))}</div>
       <span class="grade ${g.cls}">${g.txt}</span>
       <p class="reason">${reason}</p>
       ${pts.length ? `<ul class="points">${pts.join('')}</ul>` : ''}
@@ -516,7 +519,8 @@ function jobTags(j) {
   else if (j.is_establishment === false) tags.push('<span class="tag">非编制</span>');
   if (j.district) tags.push(`<span class="tag">${j.district.replace('区','')}</span>`);
   if (j.stage) tags.push(`<span class="tag">${j.stage}</span>`);
-  if (j.subject) tags.push(`<span class="tag">${j.subject}</span>`);
+  (j.subjects && j.subjects.length ? j.subjects : (j.subject ? [j.subject] : []))
+    .forEach(s => tags.push(`<span class="tag">${s}</span>`));
   return tags.join('');
 }
 async function openJob(id) {
