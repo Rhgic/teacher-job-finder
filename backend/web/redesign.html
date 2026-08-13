@@ -76,6 +76,12 @@ h1.display{font-weight:700;font-size:var(--fs-2xl);line-height:1.2;letter-spacin
   border:1px solid var(--line-strong);font-size:var(--fs-sm);color:var(--ink-soft);background:var(--surface);transition:var(--t-fast)}
 .chip:hover{border-color:var(--primary);color:var(--primary-700)}
 .chip[aria-pressed="true"]{background:var(--primary);border-color:var(--primary);color:#fff}
+.panel-title{font-size:var(--fs-xl,1.5rem);font-weight:650;margin:0 0 var(--s2)}
+.panel-sub{color:var(--muted);margin:0 0 var(--s5);max-width:60ch}
+.authbox{margin-left:var(--s4)}
+.btn-auth{display:inline-flex;align-items:center;padding:6px var(--s3);border:1px solid var(--line);
+  border-radius:var(--r-pill);color:var(--fg);text-decoration:none;font-size:var(--fs-sm);white-space:nowrap}
+.btn-auth:hover{border-color:var(--primary);color:var(--primary-700)}
 .chip[disabled]{opacity:.38;cursor:not-allowed;border-color:var(--line);color:var(--muted)}
 .chip[disabled]:hover{border-color:var(--line);color:var(--muted)}
 .chip .cnt{font-size:11px;opacity:.65;font-variant-numeric:tabular-nums}
@@ -174,10 +180,12 @@ h1.display{font-weight:700;font-size:var(--fs-2xl);line-height:1.2;letter-spacin
     </a>
     <nav class="nav" aria-label="主导航">
       <a href="#" data-nav="jobs" aria-current="page">岗位</a>
-      <a href="#" data-nav="recommend">推荐</a>
-      <a href="#" data-nav="ask">问答</a>
+      <a href="#" data-nav="recommend">AI 匹配</a>
+      <a href="#" data-nav="ask">公告问答</a>
       <a href="#" data-nav="apps">投递</a>
+      <a href="me.html">我的</a>
     </nav>
+    <div class="authbox" id="authBox"><a class="btn-auth" href="me.html">登录 / 注册</a></div>
     <button class="icon-btn" id="themeBtn" aria-label="切换深浅主题" title="切换深浅主题">
       <svg id="themeIcon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
         <circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>
@@ -187,19 +195,13 @@ h1.display{font-weight:700;font-size:var(--fs-2xl);line-height:1.2;letter-spacin
 </header>
 
 <main class="wrap">
-  <p class="eyebrow">深圳教师求职助手</p>
-  <h1 class="display">让找工作的每一步都看得清</h1>
-  <p class="lede">规则层先按硬条件粗筛，再由大模型逐岗打分写评语。所有数据均来自真实后端接口。</p>
-
-  <div class="tabs" role="tablist" aria-label="主功能" style="margin-top:var(--s6)">
-    <button class="tab" role="tab" aria-selected="true"  data-tab="jobs"     id="tab-jobs">岗位浏览</button>
-    <button class="tab" role="tab" aria-selected="false" data-tab="recommend" id="tab-recommend">AI 匹配成绩单</button>
-    <button class="tab" role="tab" aria-selected="false" data-tab="ask"      id="tab-ask">公告问答</button>
-    <button class="tab" role="tab" aria-selected="false" data-tab="apps"     id="tab-apps">投递记录</button>
-  </div>
+  <!-- 页内不再重复一排 Tab：顶部导航已经是唯一的一套。
+       每个面板自带标题，进来就知道自己在哪一页。 -->
 
   <!-- 岗位 -->
   <section class="panel active" id="panel-jobs" role="tabpanel" aria-labelledby="tab-jobs">
+    <h1 class="panel-title">岗位浏览</h1>
+    <p class="panel-sub">深圳公开教师招聘岗位，数据来自真实抓取。</p>
     <div class="search">
       <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="9" r="6"/><path d="M13.5 13.5 17.5 17.5" stroke-linecap="round"/></svg>
       <input type="search" id="jobSearch" placeholder="搜学校、区域、学科，如「南山 语文」" aria-label="搜索岗位">
@@ -219,7 +221,8 @@ h1.display{font-weight:700;font-size:var(--fs-2xl);line-height:1.2;letter-spacin
 
   <!-- 推荐 -->
   <section class="panel" id="panel-recommend" role="tabpanel" aria-labelledby="tab-recommend">
-    <p class="lede" style="margin-top:0">规则层先按硬条件粗筛，DeepSeek 再逐岗打分写评语。投递始终由你最终确认。</p>
+    <h1 class="panel-title">AI 匹配</h1>
+    <p class="panel-sub">规则层先按硬条件粗筛，DeepSeek 再逐岗打分写评语。投递始终由你最终确认。</p>
     <div class="sc-actions" style="margin-top:var(--s4)">
       <button class="btn btn-primary" id="rescoreBtn">重新评分</button>
       <span id="rescoreStatus" style="color:var(--muted);font-size:var(--fs-sm)"></span>
@@ -229,6 +232,8 @@ h1.display{font-weight:700;font-size:var(--fs-2xl);line-height:1.2;letter-spacin
 
   <!-- 问答 -->
   <section class="panel" id="panel-ask" role="tabpanel" aria-labelledby="tab-ask">
+    <h1 class="panel-title">公告问答</h1>
+    <p class="panel-sub">只依据已收录的公告内容作答，每条回答都给出出处。</p>
     <div class="askbar">
       <input type="text" id="askInput" placeholder="问公告里的事，比如报名材料、面试比例、资格条件…" aria-label="向公告提问">
       <button class="btn btn-primary" id="askBtn">提问</button>
@@ -244,6 +249,8 @@ h1.display{font-weight:700;font-size:var(--fs-2xl);line-height:1.2;letter-spacin
 
   <!-- 投递记录 -->
   <section class="panel" id="panel-apps" role="tabpanel" aria-labelledby="tab-apps">
+    <h1 class="panel-title">投递记录</h1>
+    <p class="panel-sub">你确认过的投递，及其当前状态。</p>
     <p class="lede" style="margin-top:0">你确认投递过的岗位都记在这里。投递动作默认由你主动触发，系统不会全自动群发。</p>
     <div class="sc-actions" style="margin-top:var(--s4)">
       <button class="btn btn-ghost" id="refreshApps">刷新投递记录</button>
@@ -263,11 +270,18 @@ h1.display{font-weight:700;font-size:var(--fs-2xl);line-height:1.2;letter-spacin
 <script>
 const root = document.documentElement;
 const $ = (s, el=document) => el.querySelector(s);
-const token = localStorage.getItem('tf_token');
+/* 与 assets/app.js 用同一个 key。此前这里读的是 'tf_token'，
+   而登录流程写的是 'tjf_session_token'——两边对不上，本页的 token 永远是 null，
+   推荐/问答/投递全靠 AUTH_DEV_MODE 回落到 demo 用户才有数据，
+   生产环境（AUTH_DEV_MODE=0）会三个页签一起 401。 */
+const TOKEN_KEY = 'tjf_session_token';
+const getToken = () => localStorage.getItem(TOKEN_KEY);
 
 async function api(path, opts={}) {
   const headers = {'Content-Type': 'application/json'};
-  if (token) headers.Authorization = `Bearer ${token}`;
+  // 每次调用时现取：登录/登出后不必刷新整页
+  const t = getToken();
+  if (t) headers.Authorization = `Bearer ${t}`;
   const res = await fetch(path, {...opts, headers});
   if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
   return res.json();
@@ -480,23 +494,48 @@ function animateRings() {
   });
 }
 
-/* ---------- Tabs / 主题 ---------- */
+/* ---------- 面板切换 / 主题 ---------- */
+/* 只有一套导航：顶部那排。原先顶部链接只是去点页内的二级 Tab，
+   两排东西说同一件事，占地方还让人不知道该点哪个。 */
 const panels = { jobs: 'panel-jobs', recommend: 'panel-recommend', ask: 'panel-ask', apps: 'panel-apps' };
-const tabs = document.querySelectorAll('.tab');
-tabs.forEach(t => t.addEventListener('click', () => {
-  tabs.forEach(x => x.setAttribute('aria-selected', 'false'));
-  t.setAttribute('aria-selected', 'true');
+
+function showPanel(name, { push = true } = {}) {
+  if (!panels[name]) name = 'jobs';
   Object.values(panels).forEach(id => $('#' + id).classList.remove('active'));
-  $('#' + panels[t.dataset.tab]).classList.add('active');
-  if (t.dataset.tab === 'recommend') loadRecommendations();
-  if (t.dataset.tab === 'apps') loadApps();
-}));
-document.querySelectorAll('.nav a').forEach(a => a.addEventListener('click', e => {
+  $('#' + panels[name]).classList.add('active');
+  document.querySelectorAll('.nav a[data-nav]').forEach(a => {
+    a.toggleAttribute('aria-current', a.dataset.nav === name);
+    if (a.dataset.nav === name) a.setAttribute('aria-current', 'page');
+  });
+  // 反映到地址栏：刷新后还停在同一页，也能把链接发给别人
+  if (push && location.hash !== '#' + name) history.replaceState(null, '', '#' + name);
+  if (name === 'recommend') loadRecommendations();
+  if (name === 'apps') loadApps();
+}
+
+document.querySelectorAll('.nav a[data-nav]').forEach(a => a.addEventListener('click', e => {
   e.preventDefault();
-  document.querySelectorAll('.nav a').forEach(x => x.removeAttribute('aria-current'));
-  a.setAttribute('aria-current', 'page');
-  document.querySelector(`.tab[data-tab="${a.dataset.nav}"]`).click();
+  showPanel(a.dataset.nav);
 }));
+
+/* ---------- 顶栏登录态 ---------- */
+async function refreshAuthBox() {
+  const box = $('#authBox');
+  if (!getToken()) {
+    box.innerHTML = '<a class="btn-auth" href="me.html">登录 / 注册</a>';
+    return;
+  }
+  try {
+    const me = await api('/auth/me');
+    // 访客身份也算"已登录"，但要标清楚——它存不了任何数据
+    box.innerHTML = me.is_guest
+      ? '<a class="btn-auth" href="me.html">体验中 · 去注册</a>'
+      : `<a class="btn-auth" href="me.html">${me.nickname || me.email}</a>`;
+  } catch {
+    // 令牌过期或无效：退回未登录态，不要卡在一个假的已登录显示上
+    box.innerHTML = '<a class="btn-auth" href="me.html">登录 / 注册</a>';
+  }
+}
 const themeBtn = $('#themeBtn');
 const sun = '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>';
 const moon = '<path d="M21 12.8A9 9 0 1 1 11.2 3 7 7 0 0 0 21 12.8z"/>';
@@ -664,6 +703,8 @@ $('#recList').addEventListener('click', e => { const b = e.target.closest('[data
 /* 先渲染筛选项再拉岗位；两者独立失败，任一挂掉另一个仍可用 */
 loadFacets();
 loadJobs();
+refreshAuthBox();
+showPanel((location.hash || '#jobs').slice(1), { push: false });
 </script>
 </body>
 </html>
