@@ -71,8 +71,14 @@
         <p class="account-kicker">已登录</p>
         <h2 id="memberName">我的工作台</h2>
         <p id="memberEmail"></p>
+        <p class="account-meta" id="memberSince"></p>
       </div>
-      <button class="btn btn-ghost" type="button" id="logoutBtn">退出登录</button>
+      <div class="account-actions">
+        <!-- 修改密码尚未实现。按规格明确标注，而不是放一个点了没反应的按钮。 -->
+        <button class="btn btn-ghost" type="button" disabled
+                title="修改密码功能尚未开放">修改密码（未开放）</button>
+        <button class="btn btn-ghost" type="button" id="logoutBtn">退出登录</button>
+      </div>
     </div>
 
     <div class="account-grid">
@@ -101,13 +107,43 @@
           <p class="form-message" id="profileMessage" aria-live="polite"></p>
         </form>
       </section>
+
+      <section class="card" aria-labelledby="appsTitle">
+        <div class="section-head">
+          <div><h2 id="appsTitle">我的投递</h2><p class="desc">你确认过的投递及其当前状态。</p></div>
+          <button class="btn btn-ghost" type="button" id="reloadAppsBtn">刷新</button>
+        </div>
+        <div id="myApps" class="apps-list"></div>
+      </section>
+
+      <section class="card" aria-labelledby="privacyTitle">
+        <div class="section-head">
+          <div><h2 id="privacyTitle">数据与隐私</h2><p class="desc">这个账号在服务端保存了哪些东西。</p></div>
+        </div>
+        <ul class="privacy-list">
+          <li><b>账号</b>邮箱与密码哈希（scrypt，不可逆；明文密码从不落库）</li>
+          <li><b>求职资料</b>姓名、学历、专业、意向学科等你自己填写的内容</li>
+          <li><b>简历</b>你上传或粘贴的简历文本</li>
+          <li><b>投递记录</b>投递过的岗位、状态与时间</li>
+          <li><b>问答会话</b>你问过的问题、AI 的回答与其引用的公告</li>
+          <li><b>DeepSeek API Key</b>加密后保存，接口只返回掩码，不写日志、
+            不写浏览器存储、不进后台任务参数</li>
+        </ul>
+        <div class="privacy-actions">
+          <button class="btn btn-ghost" type="button" id="privacyDeleteKeyBtn">删除 API Key</button>
+          <!-- 账户注销未实现。规格要求明确标注，不能伪造按钮效果。 -->
+          <button class="btn btn-ghost" type="button" disabled
+                  title="账户注销功能尚未开放">账户注销（暂未开放）</button>
+        </div>
+        <p class="form-message" id="privacyMessage" aria-live="polite"></p>
+      </section>
     </div>
   </section>
 </main>
 
 <footer class="foot">教师求职助手 · 岗位资料与公告问答仅用于你的求职流程</footer>
 <!-- 账号页依赖输入错误格式化；带版本号避免浏览器继续使用修复前的旧脚本。 -->
-<script src="assets/app.js?v=20260810-2"></script>
+<script src="assets/app.js?v=20260812-1"></script>
 <script>initAccountPage();</script>
 </body>
 </html>

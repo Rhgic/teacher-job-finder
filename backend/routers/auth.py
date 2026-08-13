@@ -76,6 +76,7 @@ def _session_payload(user: User) -> dict:
         "email": user.email,
         "nickname": user.nickname,
         "is_guest": user.is_guest,
+        "created_at": user.created_at.isoformat() if user.created_at else None,
     }
 
 

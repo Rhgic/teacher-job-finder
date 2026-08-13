@@ -748,3 +748,27 @@ button { font: inherit; cursor: pointer; border: 0; background: none; color: inh
 .rule-cond .none { font-size: 12.5px; color: var(--ink-3); }
 
 .rule-form { margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--line); }
+
+
+/* ---- 「我的」页：投递记录与隐私说明 ---- */
+.account-actions{display:flex;gap:.5rem;flex-wrap:wrap;align-items:center}
+.account-meta{color:var(--muted,#6b7280);font-size:.85rem;margin:.2rem 0 0}
+.apps-list{display:flex;flex-direction:column;gap:.75rem}
+.app-row{display:flex;justify-content:space-between;gap:1rem;align-items:flex-start;
+  padding:.75rem 0;border-bottom:1px solid var(--line,#e5e7eb)}
+.app-row:last-child{border-bottom:none}
+.app-main h3{margin:0 0 .25rem;font-size:1rem;font-weight:600}
+.app-main h3 a{color:inherit;text-decoration:none}
+.app-main h3 a:hover{text-decoration:underline}
+.app-side{display:flex;flex-direction:column;align-items:flex-end;gap:.25rem;
+  flex-shrink:0;text-align:right}
+.privacy-list{list-style:none;padding:0;margin:0 0 1rem;display:flex;
+  flex-direction:column;gap:.5rem;font-size:.9rem;line-height:1.6}
+.privacy-list li{padding-left:.75rem;border-left:2px solid var(--line,#e5e7eb)}
+.privacy-list b{display:inline-block;min-width:7.5em;font-weight:600}
+.privacy-actions{display:flex;gap:.5rem;flex-wrap:wrap}
+@media (max-width:640px){
+  .app-row{flex-direction:column;gap:.35rem}
+  .app-side{align-items:flex-start;text-align:left;flex-direction:row;gap:.75rem}
+  .privacy-list b{min-width:0;display:block}
+}

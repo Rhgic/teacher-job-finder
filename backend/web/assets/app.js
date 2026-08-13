@@ -448,10 +448,85 @@ function initAccountPage() {
     memberArea.hidden = false;
     document.getElementById("memberName").textContent = user.nickname || "我的工作台";
     document.getElementById("memberEmail").textContent = user.email || "已使用微信身份登录";
+    const since = document.getElementById("memberSince");
+    if (since) {
+      since.textContent = user.created_at
+        ? `注册于 ${new Date(user.created_at).toLocaleDateString("zh-CN")}`
+        : "";
+    }
     const config = await api("/model-config");
     renderConfig(config);
     await loadProfile();
+    await loadMyApplications();
   };
+
+  /* ---------- 我的投递 ---------- */
+  const APP_STATUS = { PENDING: "待发送", SENT: "已发送", DELIVERED: "已送达",
+                       FAILED: "发送失败", BOUNCED: "被退回" };
+
+  async function loadMyApplications() {
+    const box = document.getElementById("myApps");
+    if (!box) return;
+    box.innerHTML = '<p class="desc">加载中…</p>';
+    try {
+      const list = await api("/applications");
+      if (!list.length) {
+        box.innerHTML = '<p class="desc">还没有投递记录。在<a href="index.html">岗位页</a>点开岗位即可投递。</p>';
+        return;
+      }
+      // 岗位标题要另外取：投递记录只存 job_id。并发取，避免逐条串行等待。
+      const jobs = await Promise.all(list.map(a =>
+        api(`/jobs/${a.job_id}`).catch(() => null)));
+      box.innerHTML = list.map((a, i) => {
+        const j = jobs[i];
+        const title = j ? `${j.school_name}` : `岗位 ${a.job_id.slice(0, 8)}`;
+        const subs = j && j.subjects && j.subjects.length ? j.subjects.join("、") : "";
+        const when = a.sent_at
+          ? new Date(a.sent_at).toLocaleString("zh-CN",
+              { month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" })
+          : "尚未发送";
+        // 岗位可能已被清理（如识别为非招聘内容而删除），此时不给链接，
+        // 但投递记录本身要留着——那是用户做过的事。
+        const link = j
+          ? `<a href="job.html?id=${a.job_id}">${title}</a>`
+          : `${title}<span class="desc">（岗位已下架）</span>`;
+        return `<article class="app-row">
+          <div class="app-main">
+            <h3>${link}</h3>
+            <p class="desc">${subs ? subs + " · " : ""}${a.recipient_email || ""}</p>
+            ${a.error_msg ? `<p class="form-message error">${a.error_msg}</p>` : ""}
+          </div>
+          <div class="app-side">
+            <span class="config-badge">${APP_STATUS[a.status] || a.status}</span>
+            <span class="desc">${when}</span>
+          </div>
+        </article>`;
+      }).join("");
+    } catch (err) {
+      box.innerHTML = `<p class="form-message error">投递记录加载失败：${err.message}</p>`;
+    }
+  }
+
+  const reloadAppsBtn = document.getElementById("reloadAppsBtn");
+  if (reloadAppsBtn) reloadAppsBtn.addEventListener("click", loadMyApplications);
+
+  /* ---------- 数据与隐私 ---------- */
+  const privacyDeleteKeyBtn = document.getElementById("privacyDeleteKeyBtn");
+  if (privacyDeleteKeyBtn) {
+    privacyDeleteKeyBtn.addEventListener("click", async () => {
+      const msg = document.getElementById("privacyMessage");
+      msg.className = "form-message";
+      msg.textContent = "";
+      try {
+        await api("/model-config", { method: "DELETE" });
+        renderConfig(await api("/model-config"));
+        msg.textContent = "API Key 已删除。AI 匹配与公告问答在重新添加前不可用。";
+      } catch (err) {
+        msg.className = "form-message error";
+        msg.textContent = "删除失败：" + err.message;
+      }
+    });
+  }
 
   const showLoggedOut = (guest = false) => {
     authArea.hidden = false;
