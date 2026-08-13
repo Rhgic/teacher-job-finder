@@ -30,7 +30,7 @@ from observability import (
 )
 from routers import (
     jobs, profile, rules, matches, applications, auth, crawl, meta, settings, rag,
-    model_config,
+    model_config, qa,
 )
 
 setup_logging(os.getenv("LOG_LEVEL", "INFO"))
@@ -135,6 +135,7 @@ app.include_router(meta.router)
 app.include_router(settings.router)
 app.include_router(rag.router)
 app.include_router(model_config.router)
+app.include_router(qa.router)
 
 # Web 演示前端：静态文件与 API 同源同端口，免配 CORS。
 # 用 __file__ 定位目录，uvicorn 从任意 cwd 启动都能找到。

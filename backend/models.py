@@ -163,6 +163,64 @@ class UserModelConfig(Base):
 
 
 # --------------------------------------------------------------------------- #
+# 1c. 公告问答会话                                                              #
+# --------------------------------------------------------------------------- #
+class QASession(Base):
+    """一次公告问答的会话。
+
+    做成持久化而不是纯前端状态：用户换台设备、或者只是刷新了页面，
+    之前问过什么、AI 依据哪条公告回答的，都该还在。
+    """
+
+    __tablename__ = "qa_sessions"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=gen_uuid)
+    user_id: Mapped[str] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), index=True
+    )
+    # 会话标题取自第一个问题，便于在列表里认出来
+    title: Mapped[str | None] = mapped_column(String(128))
+    # 从岗位详情页进来的会话记住是哪个岗位，后续提问自动带上该公告上下文。
+    # 岗位被清理（如识别为非招聘内容）时置空而不是连带删会话——
+    # 用户问过的话不该因为岗位下架而消失。
+    job_id: Mapped[str | None] = mapped_column(
+        ForeignKey("jobs.id", ondelete="SET NULL"), index=True
+    )
+    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime, server_default=func.now(), onupdate=func.now()
+    )
+
+    messages: Mapped[list["QAMessage"]] = relationship(
+        back_populates="session", cascade="all, delete-orphan",
+        order_by="QAMessage.created_at",
+    )
+
+
+class QAMessage(Base):
+    """会话里的一条消息。用户提问与 AI 回答都存这里。"""
+
+    __tablename__ = "qa_messages"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=gen_uuid)
+    session_id: Mapped[str] = mapped_column(
+        ForeignKey("qa_sessions.id", ondelete="CASCADE"), index=True
+    )
+    role: Mapped[str] = mapped_column(String(16))  # user / assistant
+    content: Mapped[str] = mapped_column(Text)
+    # 回答的引用出处（[{job_id, title, snippet, score}, ...]）。
+    # 存下来而不是每次重算：同一个问题重新检索未必命中同样的片段，
+    # 那样历史记录里的"依据"就会和当初给用户看的不一致。
+    sources: Mapped[list | None] = mapped_column(JSON)
+    # 检索没命中时为 False。区分"AI 说不知道"和"AI 答了"，
+    # 便于日后统计拒答率，也让前端能对拒答用不同样式。
+    found: Mapped[bool | None] = mapped_column(Boolean)
+    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+
+    session: Mapped["QASession"] = relationship(back_populates="messages")
+
+
+# --------------------------------------------------------------------------- #
 # 2. 用户配置（求职信息，1:1）                                                   #
 # --------------------------------------------------------------------------- #
 class UserProfile(Base):

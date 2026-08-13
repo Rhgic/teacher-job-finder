@@ -76,6 +76,28 @@ h1.display{font-weight:700;font-size:var(--fs-2xl);line-height:1.2;letter-spacin
   border:1px solid var(--line-strong);font-size:var(--fs-sm);color:var(--ink-soft);background:var(--surface);transition:var(--t-fast)}
 .chip:hover{border-color:var(--primary);color:var(--primary-700)}
 .chip[aria-pressed="true"]{background:var(--primary);border-color:var(--primary);color:#fff}
+.chat-head{display:flex;justify-content:space-between;align-items:flex-start;gap:var(--s4);flex-wrap:wrap}
+.chat-head-actions{display:flex;gap:var(--s2);align-items:center;flex-shrink:0}
+.chat-head-actions select{padding:6px var(--s2);border:1px solid var(--line);border-radius:var(--r-pill);
+  background:var(--bg);color:var(--fg);font-size:var(--fs-sm);max-width:220px}
+.chat{display:flex;flex-direction:column;gap:var(--s4);min-height:220px;margin:var(--s4) 0}
+.msg{max-width:min(76ch,92%);padding:var(--s3) var(--s4);border-radius:14px;line-height:1.65;white-space:pre-wrap}
+.msg.user{align-self:flex-end;background:var(--primary);color:#fff;border-bottom-right-radius:4px}
+.msg.ai{align-self:flex-start;background:var(--surface,#f6f7f8);border:1px solid var(--line);border-bottom-left-radius:4px}
+.msg.ai.notfound{border-style:dashed;color:var(--muted)}
+.msg.pending{opacity:.6}
+.cites{margin-top:var(--s3);padding-top:var(--s2);border-top:1px dashed var(--line);font-size:var(--fs-sm)}
+.cites b{font-weight:600;color:var(--muted);display:block;margin-bottom:4px}
+.cite{display:block;color:var(--primary-700);text-decoration:none;margin-bottom:2px}
+.cite:hover{text-decoration:underline}
+.cite small{color:var(--muted);display:block;font-weight:400}
+.composer{display:flex;gap:var(--s2);align-items:flex-end}
+.composer textarea{flex:1;resize:none;max-height:160px;padding:var(--s3);border:1px solid var(--line);
+  border-radius:12px;background:var(--bg);color:var(--fg);font:inherit;line-height:1.6}
+.composer textarea:focus{outline:none;border-color:var(--primary)}
+.composer textarea[disabled]{opacity:.55;cursor:not-allowed}
+.composer-hint{color:var(--muted);font-size:var(--fs-sm);margin:var(--s2) 0 0;min-height:1.2em}
+.sugg-inline{display:flex;flex-wrap:wrap;gap:var(--s2);margin-top:var(--s3)}
 .panel-title{font-size:var(--fs-xl,1.5rem);font-weight:650;margin:0 0 var(--s2)}
 .panel-sub{color:var(--muted);margin:0 0 var(--s5);max-width:60ch}
 .authbox{margin-left:var(--s4)}
@@ -232,19 +254,26 @@ h1.display{font-weight:700;font-size:var(--fs-2xl);line-height:1.2;letter-spacin
 
   <!-- 问答 -->
   <section class="panel" id="panel-ask" role="tabpanel" aria-labelledby="tab-ask">
-    <h1 class="panel-title">公告问答</h1>
-    <p class="panel-sub">只依据已收录的公告内容作答，每条回答都给出出处。</p>
-    <div class="askbar">
-      <input type="text" id="askInput" placeholder="问公告里的事，比如报名材料、面试比例、资格条件…" aria-label="向公告提问">
-      <button class="btn btn-primary" id="askBtn">提问</button>
+    <div class="chat-head">
+      <div>
+        <h1 class="panel-title">公告问答</h1>
+        <p class="panel-sub" id="chatScope">只依据已收录的公告内容作答，每条回答都给出出处。</p>
+      </div>
+      <div class="chat-head-actions">
+        <select id="sessionPicker" aria-label="历史会话"><option value="">新会话</option></select>
+        <button class="btn-auth" id="clearChatBtn" type="button">清空当前会话</button>
+      </div>
     </div>
-    <div class="sugg">
-      <button>报名需要哪些材料？</button>
-      <button>面试比例是多少？</button>
-      <button>应届生能报吗？</button>
-      <button>有编制吗？</button>
+
+    <div class="chat" id="chatStream" aria-live="polite" aria-label="对话内容"></div>
+
+    <div class="composer">
+      <textarea id="askInput" rows="1"
+        placeholder="问公告里的事，比如报名材料、面试比例、资格条件…（Enter 发送，Shift+Enter 换行）"
+        aria-label="向公告提问"></textarea>
+      <button class="btn btn-primary" id="askBtn" type="button">发送</button>
     </div>
-    <div class="qa" id="qa"></div>
+    <p class="composer-hint" id="composerHint"></p>
   </section>
 
   <!-- 投递记录 -->
@@ -283,7 +312,14 @@ async function api(path, opts={}) {
   const t = getToken();
   if (t) headers.Authorization = `Bearer ${t}`;
   const res = await fetch(path, {...opts, headers});
-  if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
+  if (!res.ok) {
+    // 把状态码挂到 error 上：调用方要据此区分"没配 Key"(409) 这类
+    // 产品分支和真正的失败，靠解析文案太脆。
+    const err = new Error(`${res.status} ${res.statusText}`);
+    err.status = res.status;
+    try { err.detail = (await res.json()).detail; } catch { /* 非 JSON 响应 */ }
+    throw err;
+  }
   return res.json();
 }
 
@@ -462,27 +498,158 @@ async function loadRecommendations() {
 }
 
 /* ---------- 问答 ---------- */
-async function ask(q) {
-  q = (q || '').trim();
-  if (!q) return;
-  const qa = $('#qa');
-  qa.insertAdjacentHTML('beforeend', `<div class="bubble user">${q.replace(/</g,'&lt;')}</div>`);
-  const loading = document.createElement('div');
-  loading.className = 'bubble ai';
-  loading.innerHTML = '<p>正在检索公告…</p>';
-  qa.appendChild(loading);
-  $('#askInput').value = '';
+/* ---------- 公告问答（会话式） ---------- */
+const SUGGESTIONS = ['报名需要哪些材料？', '应届生能报吗？', '这份公告的面试比例是多少？'];
+let currentSession = null;   // null 表示"下一条消息会新开会话"
+let chatJobId = null;        // 从岗位详情进来时锁定的岗位
+let sending = false;
+
+const esc = t => String(t == null ? '' : t).replace(/[<>&]/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;'}[c]));
+
+function citeHtml(sources) {
+  if (!sources || !sources.length) return '';
+  const items = sources.map(sc => sc.job_id
+    // 出处做成可点的岗位链接。只给标题的话，用户看到"某某学校招聘公告"却无从查证。
+    ? `<a class="cite" href="#" data-job-id="${sc.job_id}">📎 ${esc(sc.title)}<small>${esc(sc.snippet)}</small></a>`
+    : `<span class="cite">📎 ${esc(sc.title)}<small>${esc(sc.snippet)}</small></span>`).join('');
+  return `<div class="cites"><b>依据以下公告作答</b>${items}</div>`;
+}
+
+function addMsg(role, content, { sources, found, pending } = {}) {
+  const el = document.createElement('div');
+  el.className = `msg ${role === 'user' ? 'user' : 'ai'}`
+    + (pending ? ' pending' : '') + (found === false ? ' notfound' : '');
+  el.innerHTML = esc(content) + (role === 'assistant' ? citeHtml(sources) : '');
+  $('#chatStream').appendChild(el);
+  el.scrollIntoView({ block: 'nearest' });
+  return el;
+}
+
+function renderEmptyState() {
+  const stream = $('#chatStream');
+  stream.innerHTML = `<div class="state">先问一句试试，回答只依据已收录的公告。</div>
+    <div class="sugg-inline">${SUGGESTIONS.map(q => `<button class="chip" data-q="${esc(q)}">${esc(q)}</button>`).join('')}</div>`;
+}
+
+function setSending(on) {
+  sending = on;
+  $('#askInput').disabled = on;
+  $('#askBtn').disabled = on;
+  $('#askBtn').textContent = on ? '思考中…' : '发送';
+}
+
+async function loadSessions() {
+  const picker = $('#sessionPicker');
   try {
-    const r = await api('/rag/ask', { method: 'POST', body: JSON.stringify({ question: q }) });
-    const cites = (r.sources || []).map(s => `<span class="cite">📎 出处：${s.title}</span>`).join('');
-    loading.innerHTML = `<p>${r.answer.replace(/</g,'&lt;')}</p>${cites}`;
-  } catch (e) {
-    loading.innerHTML = `<p class="state err">问答失败：${e.message}</p>`;
+    const list = await api('/qa/sessions');
+    picker.innerHTML = '<option value="">新会话</option>'
+      + list.map(x => `<option value="${x.id}">${esc(x.title || '未命名')}</option>`).join('');
+    if (currentSession) picker.value = currentSession;
+  } catch {
+    // 未登录或无权限：不报错，保持"新会话"即可，提问时自然会走到引导
+    picker.innerHTML = '<option value="">新会话</option>';
   }
 }
+
+async function openSession(id) {
+  currentSession = id || null;
+  chatJobId = null;
+  $('#chatScope').textContent = '只依据已收录的公告内容作答，每条回答都给出出处。';
+  if (!id) { renderEmptyState(); return; }
+  $('#chatStream').innerHTML = '<div class="state">加载中…</div>';
+  try {
+    const s = await api(`/qa/sessions/${id}`);
+    chatJobId = s.job_id || null;
+    $('#chatStream').innerHTML = '';
+    if (!s.messages.length) renderEmptyState();
+    s.messages.forEach(m => addMsg(m.role, m.content, { sources: m.sources, found: m.found }));
+    if (s.job_id) $('#chatScope').textContent = '本会话锁定在一条公告上，回答会优先依据它。';
+  } catch (e) {
+    $('#chatStream').innerHTML = `<div class="state err">会话加载失败：${esc(e.message)}</div>`;
+  }
+}
+
+async function ask(q) {
+  q = (q || '').trim();
+  if (!q || sending) return;
+  if ($('#chatStream').querySelector('.state')) $('#chatStream').innerHTML = '';
+
+  addMsg('user', q);
+  $('#askInput').value = '';
+  autoGrow();
+  const placeholder = addMsg('assistant', '正在检索公告…', { pending: true });
+  setSending(true);
+  $('#composerHint').textContent = '';
+
+  const path = currentSession ? `/qa/sessions/${currentSession}/ask` : '/qa/ask';
+  try {
+    const r = await api(path, {
+      method: 'POST',
+      body: JSON.stringify({ question: q, job_id: currentSession ? undefined : chatJobId }),
+    });
+    currentSession = r.session_id;
+    placeholder.className = 'msg ai' + (r.found ? '' : ' notfound');
+    placeholder.innerHTML = esc(r.answer) + citeHtml(r.sources);
+    loadSessions();
+  } catch (e) {
+    placeholder.remove();
+    // 没配 Key 是产品上的正常分支，不是错误——给可点的引导而不是一句报错
+    if (e.status === 409) {
+      $('#composerHint').innerHTML =
+        '还没有配置 DeepSeek API Key。<a href="me.html">前往「我的 → 模型配置」添加</a>后即可提问。';
+    } else {
+      $('#composerHint').textContent = '提问失败：' + e.message;
+    }
+  } finally {
+    setSending(false);
+    $('#askInput').focus();
+  }
+}
+
+function autoGrow() {
+  const t = $('#askInput');
+  t.style.height = 'auto';
+  t.style.height = Math.min(t.scrollHeight, 160) + 'px';
+}
+
 $('#askBtn').addEventListener('click', () => ask($('#askInput').value));
-$('#askInput').addEventListener('keydown', e => { if (e.key === 'Enter') ask($('#askInput').value); });
-document.querySelectorAll('.sugg button').forEach(b => b.addEventListener('click', () => ask(b.textContent)));
+$('#askInput').addEventListener('input', autoGrow);
+$('#askInput').addEventListener('keydown', e => {
+  // Enter 发送、Shift+Enter 换行。输入法组合中的 Enter 不能当发送，
+  // 否则中文还没选词就把半截拼音发出去了。
+  if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) {
+    e.preventDefault();
+    ask($('#askInput').value);
+  }
+});
+$('#chatStream').addEventListener('click', e => {
+  const b = e.target.closest('[data-q]');
+  if (b) { ask(b.dataset.q); return; }
+  const c = e.target.closest('.cite[data-job-id]');
+  if (c) { e.preventDefault(); openJob(c.dataset.jobId); }
+});
+$('#sessionPicker').addEventListener('change', e => openSession(e.target.value));
+$('#clearChatBtn').addEventListener('click', async () => {
+  if (currentSession) {
+    try { await api(`/qa/sessions/${currentSession}`, { method: 'DELETE' }); } catch { /* 已不存在也无妨 */ }
+  }
+  currentSession = null;
+  $('#sessionPicker').value = '';
+  renderEmptyState();
+  loadSessions();
+});
+
+/* 从岗位详情「就该岗位提问」进来：新开一个绑定该岗位的会话 */
+function askAboutJob(jobId, schoolName) {
+  currentSession = null;
+  chatJobId = jobId;
+  $('#sessionPicker').value = '';
+  renderEmptyState();
+  $('#chatScope').textContent = `正在就「${schoolName}」这条公告提问，回答会优先依据它。`;
+  closeJob();
+  showPanel('ask');
+  $('#askInput').focus();
+}
 
 /* ---------- 环动画 ---------- */
 function animateRings() {
@@ -584,9 +751,11 @@ async function openJob(id) {
       <div class="desc">${j.description ? j.description.replace(/</g,'&lt;') : ''}</div>
       <div class="detail-actions">
         <button class="btn btn-primary" id="applyBtn" data-job-id="${j.id}">投递此岗位</button>
+        <button class="btn-auth" id="askAboutBtn" type="button">就该岗位提问</button>
       </div>
     </div>`;
     $('#applyBtn').addEventListener('click', () => applyJob(j.id));
+    $('#askAboutBtn').addEventListener('click', () => askAboutJob(j.id, j.school_name));
   } catch (e) {
     body.innerHTML = `<div class="state err">岗位详情加载失败：${e.message}</div>`;
   }
@@ -704,6 +873,8 @@ $('#recList').addEventListener('click', e => { const b = e.target.closest('[data
 loadFacets();
 loadJobs();
 refreshAuthBox();
+renderEmptyState();
+loadSessions();
 showPanel((location.hash || '#jobs').slice(1), { push: false });
 </script>
 </body>

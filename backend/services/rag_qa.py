@@ -204,8 +204,11 @@ def build_user_prompt(question: str, chunks: list[RetrievedChunk]) -> str:
 
 
 def _sources(chunks: list[RetrievedChunk]) -> list[dict]:
+    """引用出处。带上 source_id，前端才能把它做成可点开的岗位链接——
+    只给标题的话，用户看到"某某学校招聘公告"却无从查证。"""
     return [
         {
+            "job_id": chunk.source_id,
             "title": chunk.source_title,
             "snippet": chunk.content[:160],
             "score": round(chunk.score, 4),
