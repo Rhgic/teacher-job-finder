@@ -32,9 +32,13 @@
 
     <h2>今天</h2>
     <div class="stat"><span>已评估岗位</span><b id="evaluated">-</b></div>
+    <div class="stat"><span>已打招呼</span><b id="sent">-</b></div>
     <div class="stat"><span>模型调用</span><b id="llmCalls">-</b></div>
     <div class="stat"><span>检索调用</span><b id="searchCalls">-</b></div>
     <div class="stat"><span>绿灯 / 黄灯 / 红灯</span><b id="verdicts">-</b></div>
+    <div class="stat" id="attentionRow" style="display: none">
+      <span>待核实</span><b id="attention" style="color: var(--amber)">-</b>
+    </div>
 
     <h2>开关</h2>
     <div class="check">
@@ -45,6 +49,11 @@
       <input type="checkbox" id="enableSearch" />
       <label for="enableSearch" style="margin: 0">公开信息背调</label>
     </div>
+    <div class="check">
+      <input type="checkbox" id="autoSend" />
+      <label for="autoSend" style="margin: 0">自动点发送</label>
+    </div>
+    <p class="sub" id="sendState"></p>
     <p class="sub" id="keyState"></p>
 
     <div class="bar">

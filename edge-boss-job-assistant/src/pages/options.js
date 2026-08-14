@@ -84,6 +84,57 @@ function readApi() {
   return api;
 }
 
+function fillSend(sendConfig) {
+  $('fillOnly').checked = Boolean(sendConfig.fillOnly);
+  $('autoSend').checked = Boolean(sendConfig.autoSend);
+  $('allowReviewSend').checked = Boolean(sendConfig.allowReviewSend);
+  $('dailySendLimit').value = sendConfig.dailySendLimit ?? 30;
+  const [start, end] = sendConfig.workingHours || [9, 22];
+  $('hourStart').value = start;
+  $('hourEnd').value = end;
+  refreshSendWarning();
+}
+
+function readSend() {
+  const start = Number($('hourStart').value);
+  const end = Number($('hourEnd').value);
+  return {
+    fillOnly: $('fillOnly').checked,
+    autoSend: $('autoSend').checked,
+    allowReviewSend: $('allowReviewSend').checked,
+    dailySendLimit: Number($('dailySendLimit').value) || 0,
+    workingHours: [Number.isFinite(start) ? start : 9, Number.isFinite(end) ? end : 22]
+  };
+}
+
+/** 把当前组合会产生什么后果直说，别让人靠猜。 */
+function refreshSendWarning() {
+  const el = $('sendWarning');
+  const fillOnly = $('fillOnly').checked;
+  const autoSend = $('autoSend').checked;
+  const review = $('allowReviewSend').checked;
+
+  if (fillOnly || !autoSend) {
+    el.textContent = '当前：只把招呼语填进输入框，发送键你自己按。';
+    el.className = 'sub';
+    return;
+  }
+  el.textContent = review
+    ? '当前：绿灯和黄灯岗位都会自动点发送。黄灯本来就是「没把握」，这个组合最容易发错。'
+    : '当前：绿灯岗位会自动点发送，你不需要点任何东西。账号风险由你承担。';
+  el.className = 'sub';
+  el.style.color = 'var(--red)';
+}
+
+for (const id of ['fillOnly', 'autoSend', 'allowReviewSend']) {
+  $(id).addEventListener('change', () => {
+    // 只填不发 和 自动发送 是互斥的，勾一个就把另一个放下
+    if (id === 'fillOnly' && $('fillOnly').checked) $('autoSend').checked = false;
+    if (id === 'autoSend' && $('autoSend').checked) $('fillOnly').checked = false;
+    refreshSendWarning();
+  });
+}
+
 async function load() {
   const res = await send('GET_STATE');
   if (!res?.ok) {
@@ -92,6 +143,7 @@ async function load() {
   }
   fillProfile(res.data.profile);
   fillApi(res.data.apiConfig);
+  fillSend(res.data.sendConfig || {});
 }
 
 $('save').addEventListener('click', async () => {
@@ -104,13 +156,14 @@ $('save').addEventListener('click', async () => {
   }
   const a = await send('SAVE_PROFILE', { profile });
   const b = await send('SAVE_API_CONFIG', { apiConfig: readApi() });
-  if (a?.ok && b?.ok) {
+  const c = await send('SAVE_SEND_CONFIG', { sendConfig: readSend() });
+  if (a?.ok && b?.ok && c?.ok) {
     $('llmApiKey').value = '';
     $('searchApiKey').value = '';
     await load();
     status('已保存。画像变了，旧的评估缓存已作废。');
   } else {
-    status(a?.error || b?.error || '保存失败', true);
+    status(a?.error || b?.error || c?.error || '保存失败', true);
   }
 });
 

@@ -12,6 +12,8 @@ import { jobKey, isUsableSnapshot } from '../domain/job.js';
 import { validateMatch, validateVerification, parseJsonStrict } from '../domain/schema.js';
 import { MATCH_SYSTEM, buildMatchPrompt } from '../prompts/match.js';
 import { VERIFY_SYSTEM, buildVerifyPrompt, buildSearchQueries } from '../prompts/verify.js';
+import { GREETING_SYSTEM, buildGreetingPrompt } from '../prompts/greeting.js';
+import { validateGreetingPayload } from '../domain/greeting.js';
 import { chatJson } from './llm-client.js';
 import { searchMany } from './search-client.js';
 import * as store from '../storage/store.js';
@@ -127,6 +129,13 @@ export async function evaluate(snapshot, profile, apiConfig) {
 
   // 5. 决策
   const result = decide({ hardFilter, ruleScore, llmMatch, verification, profile, degraded });
+
+  // 6. 招呼语。红灯不生成 —— 不打算投的岗位没必要花这次调用
+  let greeting = null;
+  if (result.decision !== DECISION.SKIP) {
+    greeting = await generateGreeting({ snapshot, profile, apiConfig, llmMatch, degraded });
+  }
+
   return finish({
     key,
     snapshot,
@@ -135,12 +144,64 @@ export async function evaluate(snapshot, profile, apiConfig) {
     llmMatch,
     verification,
     result,
+    greeting,
     sources: collectSources(verification),
     searchResults
   });
 }
 
-function finish({ key, snapshot, hardFilter, ruleScore, llmMatch, verification, result, sources, searchResults = [] }) {
+/**
+ * 生成招呼语。校验不过就退回 null，让侧边栏显示「需要你自己写」，
+ * 而不是把一条含幻觉的话摆在那里等你顺手发出去。
+ */
+async function generateGreeting({ snapshot, profile, apiConfig, llmMatch, degraded }) {
+  if (!apiConfig.enableLlm || !apiConfig.llmApiKey) {
+    degraded.push('没启用模型，无法生成招呼语');
+    return null;
+  }
+  if (!(await store.canCallLlm(apiConfig))) {
+    degraded.push('模型调用已达上限，跳过招呼语生成');
+    return null;
+  }
+  try {
+    const text = await chatJson({
+      baseUrl: apiConfig.llmBaseUrl,
+      apiKey: apiConfig.llmApiKey,
+      model: apiConfig.llmModel,
+      system: GREETING_SYSTEM,
+      user: buildGreetingPrompt(snapshot, profile, llmMatch),
+      temperature: 0.5
+    });
+    await store.bumpUsage('llmCalls');
+    const parsed = parseJsonStrict(text);
+    if (!parsed.ok) {
+      degraded.push(`招呼语不是合法 JSON：${parsed.error}`);
+      return null;
+    }
+    const validated = validateGreetingPayload(parsed.value, profile);
+    if (!validated.ok) {
+      degraded.push(`招呼语没过校验：${validated.errors.join('；')}`);
+      return null;
+    }
+    return { ...validated.value, warnings: validated.warnings || [] };
+  } catch (e) {
+    degraded.push(`招呼语生成失败：${e.message}`);
+    return null;
+  }
+}
+
+function finish({
+  key,
+  snapshot,
+  hardFilter,
+  ruleScore,
+  llmMatch,
+  verification,
+  result,
+  sources,
+  greeting = null,
+  searchResults = []
+}) {
   return {
     ok: true,
     jobKey: key,
@@ -150,6 +211,7 @@ function finish({ key, snapshot, hardFilter, ruleScore, llmMatch, verification, 
     ruleScore,
     llmMatch,
     verification,
+    greeting,
     sources,
     searchResults,
     decision: result.decision,

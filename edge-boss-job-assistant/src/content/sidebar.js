@@ -129,9 +129,15 @@
     const body = h('div', { class: 'body' });
 
     body.appendChild(h('div', { class: 'headline' }, result.headline || ''));
-    body.appendChild(
-      h('div', { class: 'readonly-note' }, '只读模式：这里只给结论和证据。打招呼、发送、回复都由你自己在 BOSS 上操作。')
-    );
+
+    // 招呼语。红灯不生成，绿黄灯都给，但发不发是另一回事
+    if (result.greeting) {
+      body.appendChild(renderGreeting(result, handlers));
+    } else if (result.decision !== 'skip') {
+      body.appendChild(
+        h('div', { class: 'readonly-note' }, '没能生成招呼语（原因见下方降级说明），这条得你自己写。')
+      );
+    }
 
     // 规则分
     const breakdown = (result.ruleScore?.breakdown || []).map((b) =>
@@ -216,6 +222,71 @@
     p.appendChild(body);
   }
 
+  /**
+   * 招呼语区。文本框是可编辑的 —— 模型写的东西你有最终决定权，
+   * 改完再填/再发，走的是框里的实际内容，不是模型原稿。
+   */
+  function renderGreeting(result, handlers) {
+    const g = result.greeting;
+    const box = h('div', { class: 'greeting' });
+
+    // 理想区间 80–140，超出只是标黄提醒，不拦
+    const counterClass = (n) => (n < 80 || n > 140 ? 'counter warn' : 'counter');
+
+    box.appendChild(
+      h('div', { class: 'greeting-head' }, [
+        h('span', {}, '招呼语'),
+        h('span', { class: 'spacer' }),
+        h('span', { class: counterClass(g.charCount), id: 'g-count' }, `${g.charCount} 字`)
+      ])
+    );
+
+    const ta = h('textarea', { class: 'greeting-text', id: 'greeting-text', rows: '5' });
+    ta.value = g.greeting;
+    ta.addEventListener('input', () => {
+      const n = Array.from(ta.value.trim()).length;
+      const counter = box.querySelector('#g-count');
+      counter.textContent = `${n} 字`;
+      counter.className = counterClass(n);
+    });
+    box.appendChild(ta);
+
+    if (g.jd_point_used) {
+      box.appendChild(h('div', { class: 'detail' }, `对上的 JD 要求：${g.jd_point_used}`));
+    }
+    if (g.fact_used) {
+      box.appendChild(h('div', { class: 'detail' }, `引用的项目事实：${g.fact_used}`));
+    }
+    for (const w of g.warnings || []) {
+      box.appendChild(h('div', { class: 'note' }, w));
+    }
+
+    const status = h('div', { class: 'send-status', id: 'send-status' }, '');
+
+    const actions = h('div', { class: 'actions' }, [
+      h('button', { onclick: () => handlers.onCopy(ta.value) }, '复制'),
+      h('button', { onclick: () => handlers.onFill(ta.value) }, '填入输入框'),
+      h('button', { class: 'send', onclick: () => handlers.onSend(ta.value) }, '填入并发送')
+    ]);
+
+    box.appendChild(actions);
+    box.appendChild(status);
+    return box;
+  }
+
+  function setSendStatus(text, kind = '') {
+    const root = document.getElementById(HOST_ID)?.shadowRoot;
+    const el = root?.querySelector('#send-status');
+    if (!el) return;
+    el.textContent = text;
+    el.className = `send-status ${kind}`;
+  }
+
+  function getGreetingText() {
+    const root = document.getElementById(HOST_ID)?.shadowRoot;
+    return root?.querySelector('#greeting-text')?.value || '';
+  }
+
   function verdictText(verdict) {
     return { supported: '有公开信息支撑', insufficient: '信息不足', contradicted: '发现矛盾' }[verdict] || verdict;
   }
@@ -251,5 +322,14 @@
     document.getElementById(HOST_ID)?.remove();
   }
 
-  NS.sidebar = { renderLoading, renderError, renderResult, renderDiagnostics, setMarkHint, remove };
+  NS.sidebar = {
+    renderLoading,
+    renderError,
+    renderResult,
+    renderDiagnostics,
+    setMarkHint,
+    setSendStatus,
+    getGreetingText,
+    remove
+  };
 })();

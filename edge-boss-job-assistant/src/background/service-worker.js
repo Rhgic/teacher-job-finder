@@ -8,6 +8,7 @@
 import { evaluate } from './pipeline.js';
 import { normalizeProfile } from '../domain/profile.js';
 import { jobKey } from '../domain/job.js';
+import { canSend } from '../domain/send-guard.js';
 import * as store from '../storage/store.js';
 
 chrome.runtime.onInstalled.addListener(() => {
@@ -59,10 +60,12 @@ const handlers = {
   },
 
   async GET_STATE() {
-    const [profile, apiConfig, usage] = await Promise.all([
+    const [profile, apiConfig, usage, sendConfig, sentToday] = await Promise.all([
       store.get(store.KEYS.PROFILE, null),
       store.getApiConfig(),
-      store.getUsage()
+      store.getUsage(),
+      store.getSendConfig(),
+      store.sentToday()
     ]);
     const safeApi = { ...apiConfig };
     // 不把 Key 回传给页面，只回传「配没配」
@@ -70,7 +73,7 @@ const handlers = {
     safeApi.hasSearchKey = Boolean(safeApi.searchApiKey);
     delete safeApi.llmApiKey;
     delete safeApi.searchApiKey;
-    return { profile: normalizeProfile(profile), apiConfig: safeApi, usage };
+    return { profile: normalizeProfile(profile), apiConfig: safeApi, usage, sendConfig, sentToday };
   },
 
   async GET_API_CONFIG_FULL() {
@@ -88,6 +91,81 @@ const handlers = {
     const current = await store.getApiConfig();
     await store.set(store.KEYS.API, { ...current, ...apiConfig });
     return { saved: true };
+  },
+
+  async GET_SEND_CONFIG() {
+    return store.getSendConfig();
+  },
+
+  async SAVE_SEND_CONFIG({ sendConfig }) {
+    const current = await store.getSendConfig();
+    await store.set(store.KEYS.SEND, { ...current, ...sendConfig });
+    return { saved: true };
+  },
+
+  /**
+   * 发送闸门。判断全在这里做，content script 只能问、不能自己决定。
+   * 放行的同时就把账记上 —— content script 拿到 allowed 之后才碰页面。
+   */
+  async CHECK_SEND({ jobKey: key, snapshot, pageSnapshot, greeting, decision, auto }) {
+    const [profile, sendConfig, alreadySent, sentToday] = await Promise.all([
+      store.get(store.KEYS.PROFILE, null).then(normalizeProfile),
+      store.getSendConfig(),
+      store.wasSent(key),
+      store.sentToday()
+    ]);
+
+    // 人工点「填入并发送」时，autoSend 开关不该拦着 —— 那个开关管的是「不用你点」
+    const effective = auto ? sendConfig : { ...sendConfig, autoSend: true, allowReviewSend: true };
+
+    const verdict = canSend({
+      snapshot,
+      pageSnapshot,
+      greeting,
+      decision,
+      alreadySent,
+      sentToday,
+      config: effective,
+      profile
+    });
+
+    if (verdict.allowed) {
+      await store.markSent(key, {
+        jobTitle: snapshot.jobTitle,
+        companyName: snapshot.companyName,
+        jobUrl: snapshot.jobUrl,
+        greeting,
+        auto,
+        status: 'pending'
+      });
+    }
+
+    return { ...verdict, fillOnly: sendConfig.fillOnly };
+  },
+
+  /** content script 汇报执行结果。这里只如实记录，不做补救、不重试。 */
+  async CONFIRM_SENT({ jobKey: key, status, reason }) {
+    const log = await store.getSentLog();
+    const entry = log[key];
+
+    // 这几种状态说明压根没点下去，把账撤了，免得这个岗位被永久锁死
+    const neverClicked = ['fill_failed', 'no_button', 'disabled', 'captcha'];
+    if (entry && neverClicked.includes(status)) {
+      delete log[key];
+      await store.set(store.KEYS.SENT, log);
+    } else if (entry) {
+      log[key] = { ...entry, status, reason: reason || '' };
+      await store.set(store.KEYS.SENT, log);
+    }
+
+    await store.appendRecord({
+      jobKey: key,
+      sendStatus: status,
+      sendReason: reason || '',
+      sentAt: Date.now(),
+      needsAttention: status === 'unknown' || status === 'captcha'
+    });
+    return { recorded: true };
   },
 
   async GET_RECORDS() {

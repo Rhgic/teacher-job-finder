@@ -201,11 +201,94 @@ li {
   font-size: 12px;
 }
 
+.greeting {
+  margin: 10px 0 4px;
+  padding: 10px;
+  background: #f6f8fa;
+  border: 1px solid #d0d7de;
+  border-radius: 8px;
+}
+
+.greeting-head {
+  display: flex;
+  align-items: center;
+  font-size: 12px;
+  font-weight: 700;
+  color: #57606a;
+  margin-bottom: 6px;
+}
+
+.counter {
+  font-weight: 400;
+  font-variant-numeric: tabular-nums;
+}
+
+.counter.warn {
+  color: #9a6700;
+  font-weight: 700;
+}
+
+.greeting-text {
+  width: 100%;
+  border: 1px solid #d0d7de;
+  border-radius: 6px;
+  padding: 7px 8px;
+  font-family: inherit;
+  font-size: 13px;
+  line-height: 1.6;
+  color: #1f2328;
+  background: #ffffff;
+  resize: vertical;
+  box-sizing: border-box;
+}
+
+.greeting-text:focus {
+  outline: 2px solid #0969da;
+  outline-offset: -1px;
+}
+
+.send-status {
+  font-size: 12px;
+  margin-top: 6px;
+  min-height: 16px;
+  color: #57606a;
+}
+
+.send-status.ok {
+  color: #1a7f37;
+  font-weight: 600;
+}
+
+.send-status.err {
+  color: #b42318;
+  font-weight: 600;
+}
+
+.send-status.blocked {
+  color: #9a6700;
+  font-weight: 600;
+}
+
 .actions {
   display: flex;
   gap: 6px;
   margin-top: 12px;
   flex-wrap: wrap;
+}
+
+.actions button.send {
+  background: #1a7f37;
+  border-color: #1a7f37;
+  color: #ffffff;
+}
+
+.actions button.send:hover {
+  background: #166a2e;
+}
+
+.actions button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .actions button {

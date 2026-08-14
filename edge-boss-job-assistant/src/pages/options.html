@@ -11,7 +11,8 @@
       <p class="sub">所有配置和 Key 只存在这台电脑的浏览器里，不上传任何服务器。</p>
 
       <div class="callout">
-        这是只读版：扩展只做判断和取证，不会替你打招呼、发消息或点任何按钮。
+        默认只生成招呼语并填进输入框，<b>发送键由你自己按</b>。要让它自己点发送，
+        得在下面「发送」一节里主动打开——那意味着你接受账号被平台限制的风险。
       </div>
 
       <h2>求职画像</h2>
@@ -115,6 +116,41 @@
           <input type="password" id="searchApiKey" placeholder="留空表示不改" />
         </div>
       </div>
+
+      <h2>发送</h2>
+      <p class="sub">
+        招呼语一直都会生成。这一节只决定「谁按发送键」。
+      </p>
+
+      <div class="check">
+        <input type="checkbox" id="fillOnly" />
+        <label for="fillOnly" style="margin: 0">只填不发（推荐）<span class="hint">把招呼语填进输入框就停手</span></label>
+      </div>
+      <div class="check">
+        <input type="checkbox" id="autoSend" />
+        <label for="autoSend" style="margin: 0">开绿灯岗位自动发送<span class="hint">需先关掉「只填不发」</span></label>
+      </div>
+      <div class="check">
+        <input type="checkbox" id="allowReviewSend" />
+        <label for="allowReviewSend" style="margin: 0">黄灯岗位也自动发<span class="hint">不建议，黄灯就是没把握的意思</span></label>
+      </div>
+
+      <div class="grid">
+        <div>
+          <label>每日发送上限</label>
+          <input type="number" id="dailySendLimit" min="0" max="200" />
+        </div>
+        <div>
+          <label>发送时段起（点）</label>
+          <input type="number" id="hourStart" min="0" max="23" />
+        </div>
+        <div>
+          <label>发送时段止（点）</label>
+          <input type="number" id="hourEnd" min="1" max="24" />
+        </div>
+      </div>
+
+      <p class="sub" id="sendWarning"></p>
 
       <div class="bar">
         <button class="primary" id="save">保存</button>

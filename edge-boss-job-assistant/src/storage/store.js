@@ -9,6 +9,8 @@ export const KEYS = {
   CACHE: 'evalCache',
   RECORDS: 'records',
   USAGE: 'usage',
+  SEND: 'sendConfig',
+  SENT: 'sentLog',
   SCHEMA_VERSION: 'schemaVersion'
 };
 
@@ -31,6 +33,54 @@ export const DEFAULT_API_CONFIG = {
   enableLlm: true,
   enableSearch: true
 };
+
+/**
+ * 发送相关配置。autoSend 默认关 —— 打开它等于把封号风险揽到自己身上，
+ * 必须是用户在配置页主动拧的，不能是装上就生效。
+ */
+export const DEFAULT_SEND_CONFIG = {
+  autoSend: false,
+  /** 黄灯岗位是否也允许自动发。默认否，黄灯只能人工点。 */
+  allowReviewSend: false,
+  dailySendLimit: 30,
+  /** 只在这个时段发。半夜发招呼语除了显得不正常没有任何好处。 */
+  workingHours: [9, 22],
+  /** 生成招呼语但不发，只填进输入框。介于纯只读和全自动之间。 */
+  fillOnly: true
+};
+
+export async function getSendConfig() {
+  const saved = await get(KEYS.SEND, {});
+  return { ...DEFAULT_SEND_CONFIG, ...saved };
+}
+
+/* ---------------- 已发送台账 ---------------- */
+
+/**
+ * 记录已经打过招呼的岗位。这是防重复的唯一依据，
+ * 所以写在点击之前，宁可多记一条也不能漏记。
+ */
+export async function markSent(jobKey, payload) {
+  const log = await get(KEYS.SENT, {});
+  log[jobKey] = { ...payload, at: Date.now() };
+  await set(KEYS.SENT, log);
+}
+
+export async function wasSent(jobKey) {
+  const log = await get(KEYS.SENT, {});
+  return Boolean(log[jobKey]);
+}
+
+export async function getSentLog() {
+  return get(KEYS.SENT, {});
+}
+
+export async function sentToday() {
+  const log = await get(KEYS.SENT, {});
+  const start = new Date();
+  start.setHours(0, 0, 0, 0);
+  return Object.values(log).filter((e) => (e.at || 0) >= start.getTime()).length;
+}
 
 export async function get(key, fallback) {
   const res = await chrome.storage.local.get(key);
