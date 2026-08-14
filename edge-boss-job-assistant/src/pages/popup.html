@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <title>BOSS 岗位核验助手</title>
+    <link rel="stylesheet" href="pages.css" />
+    <style>
+      body {
+        width: 300px;
+        padding: 14px;
+      }
+      .stat {
+        display: flex;
+        justify-content: space-between;
+        padding: 3px 0;
+      }
+      .stat b {
+        font-variant-numeric: tabular-nums;
+      }
+      .bar {
+        margin-top: 14px;
+        padding-top: 12px;
+      }
+      .bar button {
+        flex: 1;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>岗位核验助手</h1>
+    <p class="sub" id="mode">只读模式 · 不代你发送</p>
+
+    <h2>今天</h2>
+    <div class="stat"><span>已评估岗位</span><b id="evaluated">-</b></div>
+    <div class="stat"><span>模型调用</span><b id="llmCalls">-</b></div>
+    <div class="stat"><span>检索调用</span><b id="searchCalls">-</b></div>
+    <div class="stat"><span>绿灯 / 黄灯 / 红灯</span><b id="verdicts">-</b></div>
+
+    <h2>开关</h2>
+    <div class="check">
+      <input type="checkbox" id="enableLlm" />
+      <label for="enableLlm" style="margin: 0">模型匹配</label>
+    </div>
+    <div class="check">
+      <input type="checkbox" id="enableSearch" />
+      <label for="enableSearch" style="margin: 0">公开信息背调</label>
+    </div>
+    <p class="sub" id="keyState"></p>
+
+    <div class="bar">
+      <button id="records">记录</button>
+      <button id="options">配置</button>
+    </div>
+  </body>
+  <script type="module" src="popup.js"></script>
+</html>

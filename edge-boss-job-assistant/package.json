@@ -1,0 +1,14 @@
+{
+  "name": "edge-boss-job-assistant",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "只读版 BOSS 岗位核验助手（Edge MV3 扩展）。零运行时依赖，测试用 node:test。",
+  "scripts": {
+    "test": "node --test 'tests/*.test.js'",
+    "check:no-send": "node --test 'tests/no-send-guard.test.js'"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

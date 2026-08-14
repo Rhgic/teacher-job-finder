@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <title>评估记录</title>
+    <link rel="stylesheet" href="pages.css" />
+    <style>
+      .wrap {
+        max-width: 1100px;
+      }
+      .filters {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        flex-wrap: wrap;
+        margin-bottom: 12px;
+      }
+      .filters input[type='text'] {
+        width: 220px;
+      }
+      .filters select {
+        width: auto;
+      }
+      .src {
+        font-size: 12px;
+      }
+      .src a {
+        display: block;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        max-width: 220px;
+      }
+      .muted {
+        color: var(--muted);
+        font-size: 12px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <h1>评估记录</h1>
+      <p class="sub">
+        每个看过的岗位一条，含决策、分数和证据链接。这里没有「已发送」状态 —— 发送不归它管。
+      </p>
+
+      <div class="filters">
+        <select id="filterDecision">
+          <option value="">全部决策</option>
+          <option value="apply">建议投</option>
+          <option value="review">待定</option>
+          <option value="skip">别投</option>
+        </select>
+        <select id="filterAction">
+          <option value="">全部标记</option>
+          <option value="applied">我投了</option>
+          <option value="skipped">我跳过</option>
+          <option value="none">未标记</option>
+        </select>
+        <input type="text" id="search" placeholder="搜公司或职位" />
+        <span class="spacer"></span>
+        <button id="exportCsv">导出 CSV</button>
+        <button id="exportJson">导出 JSON</button>
+        <span class="muted" id="count"></span>
+      </div>
+
+      <table>
+        <thead>
+          <tr>
+            <th>时间</th>
+            <th>决策</th>
+            <th>分</th>
+            <th>职位</th>
+            <th>公司</th>
+            <th>薪资</th>
+            <th>结论</th>
+            <th>证据</th>
+            <th>我的标记</th>
+          </tr>
+        </thead>
+        <tbody id="rows"></tbody>
+      </table>
+    </div>
+    <script type="module" src="records.js"></script>
+  </body>
+</html>

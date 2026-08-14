@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <title>BOSS 岗位核验助手 · 配置</title>
+    <link rel="stylesheet" href="pages.css" />
+  </head>
+  <body>
+    <div class="wrap">
+      <h1>配置</h1>
+      <p class="sub">所有配置和 Key 只存在这台电脑的浏览器里，不上传任何服务器。</p>
+
+      <div class="callout">
+        这是只读版：扩展只做判断和取证，不会替你打招呼、发消息或点任何按钮。
+      </div>
+
+      <h2>求职画像</h2>
+      <div class="grid">
+        <div>
+          <label>目标城市</label>
+          <input type="text" id="city" />
+        </div>
+        <div>
+          <label>薪资底线（K）</label>
+          <input type="number" id="salaryMinK" min="0" />
+        </div>
+        <div>
+          <label>期望薪资（K）</label>
+          <input type="number" id="salaryIdealK" min="0" />
+        </div>
+        <div>
+          <label>可接受的最高经验要求（年）</label>
+          <input type="number" id="maxRequiredYears" min="0" />
+        </div>
+        <div>
+          <label>我的学历</label>
+          <select id="educationLevel">
+            <option value="college">大专</option>
+            <option value="bachelor">本科</option>
+            <option value="master">硕士</option>
+          </select>
+        </div>
+      </div>
+
+      <label>目标方向关键词<span class="hint">一行一个，出现在职位名里加分最多</span></label>
+      <textarea id="targetKeywords"></textarea>
+
+      <label>屏蔽词<span class="hint">一行一个。出现在职位名里直接否决；出现在 JD 里只扣分</span></label>
+      <textarea id="blocklist"></textarea>
+
+      <label>我的技术栈<span class="hint">一行一个，用来算 JD 重合度</span></label>
+      <textarea id="skills"></textarea>
+
+      <label>偏好公司规模<span class="hint">一行一个，写 BOSS 的原文档位，如 20-99人</span></label>
+      <textarea id="preferredCompanySizes"></textarea>
+
+      <label>偏好发布者身份<span class="hint">一行一个</span></label>
+      <textarea id="preferredPublisherTitles"></textarea>
+
+      <div class="grid">
+        <div>
+          <label>绿灯阈值<span class="hint">≥ 这个分才建议投</span></label>
+          <input type="number" id="applyThreshold" min="0" max="100" />
+        </div>
+        <div>
+          <label>黄灯阈值<span class="hint">低于这个分直接判「别投」</span></label>
+          <input type="number" id="reviewThreshold" min="0" max="100" />
+        </div>
+      </div>
+
+      <h2>简历事实库</h2>
+      <p class="sub">
+        模型只能引用这里的内容作为「我会什么」的证据。没跑过的指标别往里写 —— 面试官会当场问，
+        参见仓库根目录《求职事实核验表》。
+      </p>
+      <textarea id="facts" class="code" spellcheck="false"></textarea>
+
+      <h2>模型与检索</h2>
+      <div class="check">
+        <input type="checkbox" id="enableLlm" />
+        <label for="enableLlm" style="margin: 0">启用模型匹配</label>
+      </div>
+      <div class="check">
+        <input type="checkbox" id="enableSearch" />
+        <label for="enableSearch" style="margin: 0">启用公开信息背调</label>
+      </div>
+
+      <div class="grid">
+        <div>
+          <label>模型接口地址</label>
+          <input type="text" id="llmBaseUrl" placeholder="https://api.deepseek.com" />
+        </div>
+        <div>
+          <label>模型名</label>
+          <input type="text" id="llmModel" placeholder="deepseek-chat" />
+        </div>
+        <div>
+          <label>模型 API Key</label>
+          <input type="password" id="llmApiKey" placeholder="留空表示不改" />
+        </div>
+        <div>
+          <label>每日模型调用上限</label>
+          <input type="number" id="dailyLlmLimit" min="0" />
+        </div>
+        <div>
+          <label>检索服务</label>
+          <select id="searchProvider">
+            <option value="tavily">Tavily</option>
+            <option value="serper">Serper</option>
+            <option value="none">不用</option>
+          </select>
+        </div>
+        <div>
+          <label>检索 API Key</label>
+          <input type="password" id="searchApiKey" placeholder="留空表示不改" />
+        </div>
+      </div>
+
+      <div class="bar">
+        <button class="primary" id="save">保存</button>
+        <button id="reset">恢复默认画像</button>
+        <button id="export">导出数据</button>
+        <button class="danger" id="clear">清空全部数据</button>
+        <span class="status" id="status"></span>
+      </div>
+    </div>
+    <script type="module" src="options.js"></script>
+  </body>
+</html>

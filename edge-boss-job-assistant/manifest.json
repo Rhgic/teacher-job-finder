@@ -1,0 +1,42 @@
+{
+  "manifest_version": 3,
+  "name": "BOSS 岗位核验助手（只读）",
+  "version": "0.1.0",
+  "description": "在 BOSS 直聘岗位页做硬筛、匹配打分和公开信息背调，只给结论和证据，不代替你点任何按钮。",
+  "minimum_chrome_version": "114",
+  "permissions": ["storage"],
+  "host_permissions": [
+    "https://www.zhipin.com/*",
+    "https://*.zhipin.com/*",
+    "https://api.deepseek.com/*",
+    "https://api.tavily.com/*",
+    "https://google.serper.dev/*"
+  ],
+  "optional_host_permissions": ["https://*/*"],
+  "background": {
+    "service_worker": "src/background/service-worker.js",
+    "type": "module"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://www.zhipin.com/*", "https://*.zhipin.com/*"],
+      "js": [
+        "src/content/boss-adapter.js",
+        "src/content/sidebar.js",
+        "src/content/main.js"
+      ],
+      "run_at": "document_idle"
+    }
+  ],
+  "options_page": "src/pages/options.html",
+  "action": {
+    "default_popup": "src/pages/popup.html",
+    "default_title": "BOSS 岗位核验助手"
+  },
+  "web_accessible_resources": [
+    {
+      "resources": ["src/content/sidebar.css"],
+      "matches": ["https://*.zhipin.com/*"]
+    }
+  ]
+}
