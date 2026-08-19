@@ -1,16 +1,71 @@
 # 深圳教师求职助手
 
+[![CI](https://github.com/Rhgic/teacher-job-finder/actions/workflows/ci.yml/badge.svg?branch=v2)](https://github.com/Rhgic/teacher-job-finder/actions/workflows/ci.yml)
+
 抓取深圳公开教师招聘岗位，用**规则粗筛 + LLM 精排**两层管道生成可解释推荐，
-并在用户逐条确认后辅助投递。Web 全栈 + 真实上线运行。
+用户自带 DeepSeek Key，投递前逐条确认。
 
-**在线体验**：<http://42.194.146.44/>（免注册，点「创建体验身份」即可，数据只存在你的浏览器）
+## 30 秒速览
 
-> ⚠️ 线上这份**落后于本仓库**：截至 2026-08-09，服务器上还没有改版后的
-> `web/redesign.html`，也不含「命中点与差距」的可解释匹配（commit `10f055e`）。
-> 要看最新界面请按下面的[本地运行](#本地运行)跑，或等这台机器重新部署。
+|  |  |
+|---|---|
+| **是什么** | 全栈 Web 应用：爬虫 → 两层匹配管道 → 可解释推荐 → 公告 RAG 问答 → 辅助投递 |
+| **技术栈** | FastAPI · SQLAlchemy 2.0 · MySQL 8 · Redis · arq · DeepSeek · Alembic · Docker |
+| **规模** | 后端 6000 行 / 前端 3800 行 / **测试 3000 行 · 184 项** / 14 张表 / 5 个迁移 |
+| **可复现** | 性能、RAG 召回、备份 RTO 全部有脚本可重跑，命令写在 README 里 |
+| **安全** | 用户 API Key 服务端加密（Fernet），接口只回掩码，不进日志、不进任务载荷 |
+
+**在线体验**：<http://42.194.146.44/>
+（免注册；此机器上的版本落后于本仓库，最新界面请按[本地运行](#本地运行)跑）
 
 > 定位：面试作品，不是运营中的招聘服务。刻意保留三条红线——不做全自动投递、
 > 不编造简历内容、爬虫遵守 robots 与限速。这些约束在代码里是硬拦截，不是文档承诺。
+
+---
+
+## 最值得看的三件事
+
+不是功能，是三个**所有自动化检查都通过、但东西实际是坏的**的问题。
+它们不会让任何测试变红，只会让用户拿到错的结果。
+
+### 1. 66% 的岗位学科标错了，而测试全绿
+
+`_guess_subject` 在公告全文里按标准表顺序找第一个命中的学科名，
+而「语文」恰好排在标准表第一位。于是「深圳中学招语文/数学/英语/物理/政治/科学教师」
+整条被打成**语文**。全库回填统计：105 个岗位里 **69 个是错标的**。
+
+后果不是标签难看：数学老师筛「数学」只有 5 条，那 28 条「语文」里一大批其实也招数学，
+他一条都看不到。修复后 数学 5→27、英语 3→22、物理 3→22。
+
+修法：承认「一个公告可以招多个学科」，加 `subjects` 字段（竖线包裹便于 SQL `LIKE` 筛选，
+且首尾带竖线防止筛「科学」命中「信息科学技术」）。单值改为**只在恰好命中一个时才给值**——
+多学科时置空，因为错标签比没标签更有害。
+
+### 2. 主页面的登录态从未生效，被开发模式掩盖了
+
+主页面读 `localStorage` 的 `tf_token`，而登录流程写的是 `tjf_session_token`。
+全站搜索，`tf_token` **只有一处读、没有任何地方写**——所以主页面的 token 永远是 `null`，
+从不发认证头。
+
+本地看不出来，因为 `AUTH_DEV_MODE=1` 时后端会回落到 demo 用户，数据照常出来。
+生产环境会让推荐、问答、投递三个页签一起 401：在「我的」页登录完，回主页面依然是未登录。
+
+### 3. README 里的性能数字，没有产出它的脚本
+
+原先写着「128 并发 QPS 257、零错误、P50 483ms」。全仓库 grep，
+`scripts/` 下没有任何压测脚本，这个数字复跑不出来。
+
+补了 `scripts/bench_api.py` 重测后发现真实问题在别处：`_engine_kwargs()` 对 SQLite 分支
+直接 `return`，跳过了 `pool_size / max_overflow / pool_timeout`，落到 SQLAlchemy 默认池
+（timeout **30 秒**）。也就是说「等待超时压到 5 秒、快速失败」这条设计
+**在默认开发路径上从未生效**。修复前 56 并发 P50 30.0 秒，修复后 110ms。
+
+定位方法是四层探针逐层加一个变量（async 无库 / sync 无库 / sync+SELECT 1 / 完整查询），
+四层都不塌，才把范围收敛到池配置本身——而不是一上来就归因给「数据库慢」。
+
+> 补一句：我为替换那个数字所写的**第一版压测结果同样是错的**——
+> 当时压测打的端口上已经有另一个 `--reload` 服务在监听，就绪探测被它骗过。
+> 这段经过和结论都保留在 README 的[压测基线](#压测基线)里，没有抹掉。
 
 ---
 
@@ -105,7 +160,7 @@ flowchart TB
 | 爬虫 | httpx + 自研 `BaseCrawler` | robots、限速、缓存、去重做成基类能力 |
 | 可观测 | JSON 结构化日志 + `request_id` 全链路 + `/metrics` | 含 LLM 调用数与 token 消耗 |
 | 部署 | 云服务器 + systemd（API/worker/爬虫/备份）+ Nginx | |
-| 质量 | pytest 148 项 + ruff + GitHub Actions | 含 38 项穿过完整栈的接口测试与邮箱/Key 安全测试 |
+| 质量 | pytest 184 项 + ruff + GitHub Actions | 含 38 项穿过完整栈的接口测试与邮箱/Key 安全测试 |
 
 > 仓库里的 `miniprogram/` 是早期的小程序版本，已不是主线，保留作演进记录。
 
@@ -138,7 +193,7 @@ cd backend && .venv/bin/arq services.tasks.WorkerSettings
 
 ```bash
 cd backend
-.venv/bin/python -m pytest              # 148 项
+.venv/bin/python -m pytest              # 184 项
 .venv/bin/ruff check .
 .venv/bin/python scripts/eval_rag.py    # RAG 检索质量基线，出数字
 .venv/bin/python scripts/verify_backup_restore.py   # 备份恢复演练
@@ -225,7 +280,7 @@ backend/
   routers/           岗位、推荐、投递、档案、规则、爬虫、问答、状态
   services/          规则过滤、LLM 匹配、爬虫、简历改写、RAG、限流、任务队列
   web/               Web 前端（9 页 + assets）
-  tests/             pytest（148 项，含 38 项接口级）
+  tests/             pytest（184 项，含 38 项接口级）
   scripts/           RAG 评测、压测、备份、恢复演练、定时抓取、上线检查
   migrations/        Alembic 迁移
   deploy/            systemd / Nginx 模板
