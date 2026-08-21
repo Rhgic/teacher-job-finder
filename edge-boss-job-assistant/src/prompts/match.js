@@ -8,6 +8,7 @@
  */
 
 import { factsToPromptText } from '../domain/profile.js';
+import { preferenceActive } from '../domain/preference.js';
 
 export const MATCH_SYSTEM = `你是一个严格的求职匹配评估器。你只输出 JSON，不输出任何解释性文字。
 
@@ -16,10 +17,36 @@ export const MATCH_SYSTEM = `你是一个严格的求职匹配评估器。你只
 2. 绝对不许把 JD 的要求改写成候选人的经历。JD 说「需要 3 年 Java」不代表候选人有 Java 经验。
 3. 事实库里标注为「不许引用」或「还没有评测证据」的内容，不能写进 matched_points。
 4. 打分要吝啬。JD 的核心要求如果在事实库里找不到对应证据，就是 gap，必须扣分。
-5. 察觉到 JD 名不副实（挂技术岗名义实际做销售、招生、客服、驻场），写进 doubts。`;
+5. 察觉到 JD 名不副实（挂技术岗名义实际做销售、招生、客服、驻场），写进 doubts。
+6. 如果给了「偏好清单」，命中项的 item 必须原样抄清单里的文字，不许改写、不许自己新增条目。
+   JD 里没写的一律不算命中 —— 「没提到双休」不等于「双休」。`;
 
 export function buildMatchPrompt(snapshot, profile) {
   const facts = factsToPromptText(profile.facts);
+  const pref = profile.preference;
+  const prefBlock = preferenceActive(pref)
+    ? `
+
+## 偏好清单
+
+只能从下面两张表里选，选中的 item 必须和表里的文字一字不差。JD 里找不到依据的不要选。
+
+加分项（每项最多 ${pref.perItem} 分）：
+${pref.positives.map((s) => `- ${s}`).join('\n') || '（无）'}
+
+扣分项（每项最多 ${pref.perItem} 分）：
+${pref.negatives.map((s) => `- ${s}`).join('\n') || '（无）'}`
+    : '';
+  const prefFields = preferenceActive(pref)
+    ? `,
+  "preference_positive": [
+    { "item": "加分项表里的原文", "reason": "JD 里哪句话让你判定命中", "score": 0 到 ${pref.perItem} 的整数 }
+  ],
+  "preference_negative": [
+    { "item": "扣分项表里的原文", "reason": "JD 里哪句话让你判定命中", "score": 0 到 ${pref.perItem} 的整数 }
+  ]`
+    : '';
+
   return `## 岗位信息
 
 职位：${snapshot.jobTitle}
@@ -39,7 +66,7 @@ ${(snapshot.jobDescription || '（页面没有抓到 JD 正文）').slice(0, 400
 
 身份：2026 届计算机本科应届生，目标城市${profile.city}，期望 ${profile.salaryMinK}-${profile.salaryIdealK}K。
 
-${facts}
+${facts}${prefBlock}
 
 ## 任务
 
@@ -52,7 +79,7 @@ ${facts}
   ],
   "gaps": ["JD 要求但事实库里没有证据的点"],
   "doubts": ["对这个岗位真实性或内容的疑点，没有就给空数组"],
-  "summary": "一句话结论，30 字以内"
+  "summary": "一句话结论，30 字以内"${prefFields}
 }`;
 }
 

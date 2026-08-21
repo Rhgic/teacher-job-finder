@@ -105,11 +105,22 @@ export function parseSalary(text) {
     return out;
   }
 
-  // 万 单位
-  const wan = raw.match(/(\d+(?:\.\d+)?)\s*[-~到]\s*(\d+(?:\.\d+)?)\s*万/);
-  if (wan) {
-    out.min = Number(wan[1]) * 10;
-    out.max = Number(wan[2]) * 10;
+  // 带单位的区间。BOSS 写「1.5-2万」，智联/51job 写「1.2万-1.8万」「8千-1.2万」，
+  // 三种都得认 —— 认不出来薪资就等于没筛，硬筛整条形同虚设。
+  const unitScale = { 万: 10, 千: 1, k: 1, K: 1 };
+  const bothUnits = raw.match(/(\d+(?:\.\d+)?)\s*([万千])\s*[-~到]\s*(\d+(?:\.\d+)?)\s*([万千])/);
+  if (bothUnits) {
+    out.min = Number(bothUnits[1]) * unitScale[bothUnits[2]];
+    out.max = Number(bothUnits[3]) * unitScale[bothUnits[4]];
+    out.unit = 'month';
+    return out;
+  }
+  // 单位只写在后面：「1.5-2万」「6-9千」
+  const tailUnit = raw.match(/(\d+(?:\.\d+)?)\s*[-~到]\s*(\d+(?:\.\d+)?)\s*([万千])/);
+  if (tailUnit) {
+    const scale = unitScale[tailUnit[3]];
+    out.min = Number(tailUnit[1]) * scale;
+    out.max = Number(tailUnit[2]) * scale;
     out.unit = 'month';
     return out;
   }

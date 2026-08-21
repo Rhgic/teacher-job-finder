@@ -1,4 +1,4 @@
-# 深圳教师求职助手
+# 师途 · 深圳教师求职助手
 
 [![CI](https://github.com/Rhgic/teacher-job-finder/actions/workflows/ci.yml/badge.svg?branch=v2)](https://github.com/Rhgic/teacher-job-finder/actions/workflows/ci.yml)
 

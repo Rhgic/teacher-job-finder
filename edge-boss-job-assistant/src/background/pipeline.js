@@ -14,6 +14,7 @@ import { MATCH_SYSTEM, buildMatchPrompt } from '../prompts/match.js';
 import { VERIFY_SYSTEM, buildVerifyPrompt, buildSearchQueries } from '../prompts/verify.js';
 import { GREETING_SYSTEM, buildGreetingPrompt } from '../prompts/greeting.js';
 import { validateGreetingPayload } from '../domain/greeting.js';
+import { evaluatePreference } from '../domain/preference.js';
 import { chatJson } from './llm-client.js';
 import { searchMany } from './search-client.js';
 import * as store from '../storage/store.js';
@@ -81,6 +82,16 @@ export async function evaluate(snapshot, profile, apiConfig) {
     degraded.push('未启用模型匹配');
   }
 
+  // 3.5 偏好过滤。不过就地结束：背调和招呼语都是给「可能要投」的岗位准备的
+  const preference = evaluatePreference(llmMatch, profile.preference);
+  if (preference.dropped.length) {
+    degraded.push(`偏好命中项有 ${preference.dropped.length} 条不在你的清单里，已丢弃`);
+  }
+  if (preference.filtered) {
+    const result = decide({ hardFilter, ruleScore, llmMatch, verification: null, preference, profile, degraded });
+    return finish({ key, snapshot, hardFilter, ruleScore, llmMatch, verification: null, preference, result, sources: [] });
+  }
+
   // 4. 公开信息背调
   let verification = null;
   let searchResults = [];
@@ -128,7 +139,7 @@ export async function evaluate(snapshot, profile, apiConfig) {
   }
 
   // 5. 决策
-  const result = decide({ hardFilter, ruleScore, llmMatch, verification, profile, degraded });
+  const result = decide({ hardFilter, ruleScore, llmMatch, verification, preference, profile, degraded });
 
   // 6. 招呼语。红灯不生成 —— 不打算投的岗位没必要花这次调用
   let greeting = null;
@@ -143,6 +154,7 @@ export async function evaluate(snapshot, profile, apiConfig) {
     ruleScore,
     llmMatch,
     verification,
+    preference,
     result,
     greeting,
     sources: collectSources(verification),
@@ -197,6 +209,7 @@ function finish({
   ruleScore,
   llmMatch,
   verification,
+  preference = null,
   result,
   sources,
   greeting = null,
@@ -211,6 +224,7 @@ function finish({
     ruleScore,
     llmMatch,
     verification,
+    preference,
     greeting,
     sources,
     searchResults,

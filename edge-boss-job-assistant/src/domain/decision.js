@@ -22,10 +22,11 @@ const LLM_WEIGHT = 0.6;
  * @param {{score:number,breakdown:Array,penalties:Array}} input.ruleScore
  * @param {{match_score:number,summary:string}|null} input.llmMatch
  * @param {{verdict:string,consistency_conflicts:Array,sources:Array}|null} input.verification
+ * @param {{enabled:boolean,evaluated:boolean,score:number,minScore:number,filtered:boolean}|null} input.preference
  * @param {object} input.profile
  * @param {string[]} input.degraded 降级说明，例如「模型调用失败」
  */
-export function decide({ hardFilter, ruleScore, llmMatch, verification, profile, degraded = [] }) {
+export function decide({ hardFilter, ruleScore, llmMatch, verification, preference = null, profile, degraded = [] }) {
   const notes = [...degraded];
 
   if (!hardFilter.passed) {
@@ -66,6 +67,20 @@ export function decide({ hardFilter, ruleScore, llmMatch, verification, profile,
       conflicts
     };
   }
+
+  // 偏好过滤：你自己写的「不愿意去」的条件，优先级高于分数
+  if (preference?.enabled && preference.evaluated && preference.filtered) {
+    const worst = [...(preference.negative || [])].sort((a, b) => b.score - a.score)[0];
+    return {
+      decision: DECISION.SKIP,
+      finalScore,
+      headline: `偏好过滤：净分 ${preference.score} 低于 ${preference.minScore}${worst ? `（${worst.item}）` : ''}`,
+      reasons: [...reasons, ...(preference.negative || []).map((n) => `扣分 ${n.score}：${n.reason}`)],
+      notes,
+      conflicts
+    };
+  }
+  if (preference?.enabled && !preference.evaluated) notes.push('偏好过滤没跑（模型没结果），本次不参与决策');
 
   if (finalScore < profile.reviewThreshold) {
     return {

@@ -13,6 +13,7 @@
   NS.__started = true;
 
   let currentUrl = '';
+  let currentIdentity = '';
   let currentSnapshot = null;
   let currentDiagnostics = null;
   let currentResult = null;
@@ -219,10 +220,18 @@
     hardTimer = setTimeout(finish, timeoutMs);
   }
 
+  /**
+   * 页面换没换。URL 和「当前是哪个岗位」两个信号都看，任一变化就重来。
+   * 只看 URL 会漏掉 BOSS 原地换岗位内容的情况，那种情况下
+   * 你会拿着上一个岗位的分数和招呼语去投这一个。
+   */
   function onLocationChange() {
     const url = location.href.split('?')[0];
-    if (url === currentUrl) return;
+    const identity = NS.isJobPage() ? NS.pageIdentity() : '';
+    if (url === currentUrl && identity === currentIdentity) return;
+
     currentUrl = url;
+    currentIdentity = identity;
     currentSnapshot = null;
     currentDiagnostics = null;
     currentResult = null;

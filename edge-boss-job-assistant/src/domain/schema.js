@@ -71,9 +71,25 @@ export function validateMatch(raw) {
       matched_points: matched,
       gaps: arr(raw.gaps).map(str).filter(Boolean),
       doubts: arr(raw.doubts).map(str).filter(Boolean),
-      summary
+      summary,
+      preference_positive: cleanPreferenceItems(raw.preference_positive),
+      preference_negative: cleanPreferenceItems(raw.preference_negative)
     }
   };
+}
+
+/**
+ * 偏好命中项。这里只做形状清洗，「这条是不是用户真配过」由 domain/preference.js 判，
+ * 因为只有那边拿得到配置。
+ */
+function cleanPreferenceItems(v) {
+  return arr(v)
+    .map((p) => ({
+      item: str(p?.item),
+      reason: str(p?.reason),
+      score: Number.isFinite(Number(p?.score)) ? Math.max(0, Math.round(Number(p.score))) : 0
+    }))
+    .filter((p) => p.item);
 }
 
 /**

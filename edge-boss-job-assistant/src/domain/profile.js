@@ -7,6 +7,8 @@
  * 因为下游会把这些条目当成「可验证事实」直接用于判断和展示。
  */
 
+import { DEFAULT_PREFERENCE, normalizePreference } from './preference.js';
+
 /** 硬性排除关键词：命中即 skip，不进入打分。 */
 export const DEFAULT_BLOCKLIST = [
   '外包',
@@ -149,7 +151,10 @@ export const DEFAULT_PROFILE = {
 
   /** 阈值，对应设计文档 §4.2。 */
   applyThreshold: 80,
-  reviewThreshold: 60
+  reviewThreshold: 60,
+
+  /** 个人偏好加分/扣分，默认关，见 domain/preference.js。 */
+  preference: DEFAULT_PREFERENCE
 };
 
 /** 合并用户配置和默认值，容忍旧版本存档缺字段。 */
@@ -168,6 +173,7 @@ export function normalizeProfile(saved) {
   p.applyThreshold = clampScore(p.applyThreshold, DEFAULT_PROFILE.applyThreshold);
   p.reviewThreshold = clampScore(p.reviewThreshold, DEFAULT_PROFILE.reviewThreshold);
   if (p.reviewThreshold > p.applyThreshold) p.reviewThreshold = p.applyThreshold;
+  p.preference = normalizePreference(p.preference);
   return p;
 }
 

@@ -21,6 +21,18 @@ test('薪资：万为单位换算成 K', () => {
   assert.deepEqual(pick(parseSalary('1.5-2万')), { min: 15, max: 20, unit: 'month' });
 });
 
+test('薪资：智联/51job 的「两头都带单位」写法', () => {
+  assert.deepEqual(pick(parseSalary('1.2万-1.8万')), { min: 12, max: 18, unit: 'month' });
+  assert.deepEqual(pick(parseSalary('8千-1.2万')), { min: 8, max: 12, unit: 'month' });
+  assert.deepEqual(pick(parseSalary('6千-9千')), { min: 6, max: 9, unit: 'month' });
+});
+
+test('薪资：千为单位不能被当成万', () => {
+  const s = parseSalary('6-9千');
+  assert.equal(s.min, 6);
+  assert.equal(s.max, 9);
+});
+
 test('薪资：日结/时结单独标记，不折算月薪', () => {
   const day = parseSalary('300-500元/天');
   assert.equal(day.unit, 'day');

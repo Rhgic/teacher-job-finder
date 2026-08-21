@@ -28,7 +28,20 @@ function fillProfile(profile) {
   for (const f of LIST_FIELDS) $(f).value = (profile[f] || []).join('\n');
   $('educationLevel').value = profile.educationLevel || 'bachelor';
   $('facts').value = JSON.stringify(profile.facts || [], null, 2);
+
+  const pref = profile.preference || {};
+  $('preferenceEnabled').checked = Boolean(pref.enabled);
+  $('preferencePositives').value = (pref.positives || []).join('\n');
+  $('preferenceNegatives').value = (pref.negatives || []).join('\n');
+  $('preferencePerItem').value = pref.perItem ?? 10;
+  $('preferenceMinScore').value = pref.minScore ?? 0;
 }
+
+const lines = (id) =>
+  $(id)
+    .value.split('\n')
+    .map((s) => s.trim())
+    .filter(Boolean);
 
 function readProfile() {
   const profile = {};
@@ -41,6 +54,13 @@ function readProfile() {
       .filter(Boolean);
   }
   profile.educationLevel = $('educationLevel').value;
+  profile.preference = {
+    enabled: $('preferenceEnabled').checked,
+    positives: lines('preferencePositives'),
+    negatives: lines('preferenceNegatives'),
+    perItem: Number($('preferencePerItem').value),
+    minScore: Number($('preferenceMinScore').value)
+  };
 
   const factsRaw = $('facts').value.trim();
   if (factsRaw) {

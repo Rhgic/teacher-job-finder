@@ -173,6 +173,33 @@
       if (sec) body.appendChild(sec);
     }
 
+    // 偏好过滤
+    const pf = result.preference;
+    if (pf?.enabled) {
+      const rows = [
+        ...(pf.positive || []).map((i) =>
+          h('div', {}, [
+            h('div', { class: 'row' }, [h('span', { class: 'k' }, `+ ${i.item}`), h('span', { class: 'v' }, `+${i.score}`)]),
+            h('div', { class: 'detail' }, i.reason)
+          ])
+        ),
+        ...(pf.negative || []).map((i) =>
+          h('div', {}, [
+            h('div', { class: 'row' }, [h('span', { class: 'k' }, `− ${i.item}`), h('span', { class: 'v' }, `-${i.score}`)]),
+            h('div', { class: 'detail' }, i.reason)
+          ])
+        )
+      ];
+      const title = pf.evaluated
+        ? `偏好净分 ${pf.score > 0 ? '+' : ''}${pf.score}（门槛 ${pf.minScore}）`
+        : '偏好过滤未评估';
+      const sec = section(title, [
+        rows.length ? h('div', {}, rows) : h('div', { class: 'detail' }, pf.evaluated ? 'JD 里一条都没命中' : '模型没有结果'),
+        pf.dropped?.length ? h('div', { class: 'note' }, `已丢弃清单外条目：${pf.dropped.join('、')}`) : null
+      ]);
+      if (sec) body.appendChild(sec);
+    }
+
     // 背调
     if (result.verification) {
       const v = result.verification;

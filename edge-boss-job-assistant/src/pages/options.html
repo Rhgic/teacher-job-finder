@@ -69,6 +69,34 @@
         </div>
       </div>
 
+      <h2>偏好过滤</h2>
+      <p class="sub">
+        匹配分回答「我干不干得了」，这里回答「我愿不愿意去」。默认关，开了以后
+        净分低于门槛的岗位直接判红灯，连背调和招呼语都不生成。
+        模型只能在下面两张表里选，选出表外的条目会被丢掉。
+      </p>
+      <div class="check">
+        <input type="checkbox" id="preferenceEnabled" />
+        <label for="preferenceEnabled" style="margin: 0">启用偏好过滤</label>
+      </div>
+
+      <label>加分项<span class="hint">一行一个，如「双休」「弹性上下班」</span></label>
+      <textarea id="preferencePositives"></textarea>
+
+      <label>扣分项<span class="hint">一行一个，如「需要驻场」「带销售性质」</span></label>
+      <textarea id="preferenceNegatives"></textarea>
+
+      <div class="grid">
+        <div>
+          <label>每项分值<span class="hint">命中一条算几分，模型给超了按这个截断</span></label>
+          <input type="number" id="preferencePerItem" min="1" max="100" />
+        </div>
+        <div>
+          <label>过滤门槛<span class="hint">加分减扣分低于它就红灯，0 = 加分不少于扣分即可</span></label>
+          <input type="number" id="preferenceMinScore" min="-1000" max="1000" />
+        </div>
+      </div>
+
       <h2>简历事实库</h2>
       <p class="sub">
         模型只能引用这里的内容作为「我会什么」的证据。没跑过的指标别往里写 —— 面试官会当场问，

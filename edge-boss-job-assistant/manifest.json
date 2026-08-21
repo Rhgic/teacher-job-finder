@@ -1,27 +1,55 @@
 {
   "manifest_version": 3,
-  "name": "BOSS 岗位核验助手",
-  "version": "0.2.0",
-  "description": "在 BOSS 直聘岗位页做硬筛、匹配打分和公开信息背调，生成有依据的招呼语。发送默认由你自己点。",
+  "name": "求职岗位核验助手",
+  "version": "0.3.0",
+  "description": "在求职平台岗位页做硬筛、匹配打分和公开信息背调，生成有依据的招呼语。发送默认由你自己点。",
   "minimum_chrome_version": "114",
-  "permissions": ["storage"],
+  "permissions": [
+    "storage"
+  ],
   "host_permissions": [
-    "https://www.zhipin.com/*",
     "https://*.zhipin.com/*",
+    "https://*.zhaopin.com/*",
+    "https://*.51job.com/*",
+    "https://*.nowcoder.com/*",
+    "https://*.yingjiesheng.com/*",
+    "https://*.yupao.com/*",
+    "https://zhipin.com/*",
+    "https://zhaopin.com/*",
+    "https://51job.com/*",
+    "https://nowcoder.com/*",
+    "https://yingjiesheng.com/*",
+    "https://yupao.com/*",
     "https://api.deepseek.com/*",
     "https://api.tavily.com/*",
     "https://google.serper.dev/*"
   ],
-  "optional_host_permissions": ["https://*/*"],
+  "optional_host_permissions": [
+    "https://*/*"
+  ],
   "background": {
     "service_worker": "src/background/service-worker.js",
     "type": "module"
   },
   "content_scripts": [
     {
-      "matches": ["https://www.zhipin.com/*", "https://*.zhipin.com/*"],
+      "matches": [
+        "https://*.zhipin.com/*",
+        "https://*.zhaopin.com/*",
+        "https://*.51job.com/*",
+        "https://*.nowcoder.com/*",
+        "https://*.yingjiesheng.com/*",
+        "https://*.yupao.com/*",
+        "https://zhipin.com/*",
+        "https://zhaopin.com/*",
+        "https://51job.com/*",
+        "https://nowcoder.com/*",
+        "https://yingjiesheng.com/*",
+        "https://yupao.com/*"
+      ],
       "js": [
-        "src/content/boss-adapter.js",
+        "src/content/site-rules.js",
+        "src/content/page-adapter.js",
         "src/content/sender.js",
         "src/content/sidebar.js",
         "src/content/main.js"
@@ -32,12 +60,27 @@
   "options_page": "src/pages/options.html",
   "action": {
     "default_popup": "src/pages/popup.html",
-    "default_title": "BOSS 岗位核验助手"
+    "default_title": "求职岗位核验助手"
   },
   "web_accessible_resources": [
     {
-      "resources": ["src/content/sidebar.css"],
-      "matches": ["https://*.zhipin.com/*"]
+      "resources": [
+        "src/content/sidebar.css"
+      ],
+      "matches": [
+        "https://*.zhipin.com/*",
+        "https://*.zhaopin.com/*",
+        "https://*.51job.com/*",
+        "https://*.nowcoder.com/*",
+        "https://*.yingjiesheng.com/*",
+        "https://*.yupao.com/*",
+        "https://zhipin.com/*",
+        "https://zhaopin.com/*",
+        "https://51job.com/*",
+        "https://nowcoder.com/*",
+        "https://yingjiesheng.com/*",
+        "https://yupao.com/*"
+      ]
     }
   ]
 }
