@@ -74,3 +74,6 @@ cross-border-agent-ui/
 .playwright-cli/
 output/
 salespilot/
+
+简历/
+resume-export/
